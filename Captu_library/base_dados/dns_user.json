@@ -1,0 +1,31 @@
+[
+  {
+    "perfil_id": 1,
+    "nome": "Alexia",
+    "username": "alexia123",
+    "senha": "123",
+    "link_foto": "https://i.pravatar.cc/150?img=1"
+  }, 
+  {
+    "perfil_id": 2,
+    "nome": "Bruno",
+    "username": "bruno_b",
+    "senha": "456",
+    "link_foto": "https://i.pravatar.cc/150?img=5"
+  },
+  {
+    "perfil_id": 3,
+    "nome": "admin",
+    "username": "admin",
+    "senha": "admin",
+    "link_foto": "https://i.pravatar.cc/150?img=32"
+  }, 
+  {
+    "perfil_id": 4,
+    "nome": "VGPRL",
+    "username": "admin",
+    "senha": "admin",
+    "link_foto": "https://i.pravatar.cc/150?img=32"
+  } 
+ 
+]

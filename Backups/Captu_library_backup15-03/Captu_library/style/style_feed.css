@@ -1,0 +1,619 @@
+/* ========================================================================= */
+/* 1. VARIÁVEIS DE TEMA (Threads Inspired) */
+/* ========================================================================= */
+:root {
+    /* Cores de Fundo e Containers */
+    --color-bg-primary: #FFFFFF;
+    --color-bg-secondary: #F0F2F5; /* Fundo de elementos/Search (Cinza muito leve) */
+    --color-border-subtle: #DEE1E6; /* Bordas e divisores (Cinza claro, discreto) */
+    /* NOVA VARIÁVEL: Sombra sutil para bordas */
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-header: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+
+    /* Cores de Texto */
+    --color-text-primary: #0F1419;
+    --color-text-subtle: #657786;
+
+    /* Cores de Ação */
+    --color-accent: #0077ff;
+    --color-accent-hover: #0056b3;
+    --color-like-active: #F91880; /* ❤️ Rosa Threads */
+
+    /* Cores de Navbar (MANTIDAS) */
+    --navbar-bg: white;
+    --navbar-text: #888;
+    --navbar-text-active: #333;
+}
+
+/* ========================================================================= */
+/* 2. RESET GERAL E BASE */
+/* ========================================================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+    color: var(--color-accent);
+}
+
+input[type="text"] {
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: 1em;
+    padding: 0;
+    flex-grow: 1;
+    outline: none;
+}
+
+/* ========================================================================= */
+/* 3. LAYOUT E ESTRUTURA PRINCIPAL */
+/* ========================================================================= */
+.main-wrapper {
+    /* Adicionamos padding inferior para a nav-bar */
+    padding-bottom: 75px;
+}
+
+.container {
+    display: flex;
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* --- FEED PRINCIPAL --- */
+.feed {
+    flex-grow: 1;
+    max-width: 600px;
+    /* REMOVIDA BORDER LEFT/RIGHT - SUBSTITUÍDA POR SOMBRA NA ESTRUTURA VISÍVEL */
+    /* border-left: 1px solid var(--color-border-subtle); */
+    /* border-right: 1px solid var(--color-border-subtle); */
+    box-shadow: 1px 0 0 var(--color-border-subtle), -1px 0 0 var(--color-border-subtle); /* Borda visível com sombra sutil */
+    position: relative;
+    min-height: 100vh;
+}
+
+/* --- FEED HEADER (DESKTOP) --- */
+.feed-header {
+    display: flex; /* Novo: Para alinhar logo e título */
+    align-items: center;
+    padding: 15px;
+    /* REMOVIDA BORDER BOTTOM - SUBSTITUÍDA POR SOMBRA */
+    /* border-bottom: 1px solid var(--color-border-subtle); */
+    box-shadow: var(--shadow-header);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--color-bg-primary);
+    font-size: 1.2em;
+    font-weight: 800;
+}
+.poefo-logo-header {
+    width: 30px; /* Tamanho da logo */
+    height: 30px;
+    margin-right: 10px;
+}
+
+.loading-message, .error-message, .no-results-message {
+    padding: 30px;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-align: center;
+}
+.hidden {
+    display: none !important;
+}
+
+/* ========================================================================= */
+/* 4. ESTILO DE POSTAGEM (Threads-Inspired) */
+/* ========================================================================= */
+.post {
+    padding: 15px;
+    /* REMOVIDA BORDER BOTTOM - SUBSTITUÍDA POR SOMBRA */
+    /* border-bottom: 1px solid var(--color-border-subtle); */
+    box-shadow: 0 1px 0 0 var(--color-border-subtle), var(--shadow-subtle); /* Borda sutil na parte inferior */
+    transition: background-color 0.1s;
+}
+
+.post:hover {
+    background-color: #F7F7F7;
+}
+
+/* Container para alinhar: Avatar (esquerda) e Conteúdo (direita) */
+.post-main-content {
+    display: flex;
+    width: 100%;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    cursor: pointer;
+    object-fit: cover; 
+}
+
+.post-content-wrapper {
+    flex-grow: 1;
+    padding-right: 5px;
+}
+
+/* --- Header Info: Deve estar ao lado da imagem (e não abaixo) --- */
+.post-header-info {
+    cursor: pointer;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1;
+}
+
+.username {
+    font-weight: 700;
+    font-size: 0.95em;
+    color: var(--color-text-primary);
+}
+
+.handle, .time {
+    color: var(--color-text-subtle);
+    font-size: 0.85em;
+}
+
+.post-text {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    line-height: 1.45;
+    font-size: 0.95em;
+    word-wrap: break-word;
+}
+
+/* --- Anexo de Imagem (ATUALIZADO para exibir em tamanho grande) --- */
+.image-attachment {
+    max-width: 100%;
+    /* Define uma altura máxima baseada na tela para que a imagem seja proeminente, mas não ocupe a tela inteira */
+    max-height: 70vh; 
+    margin-top: 10px;
+    /* Adicionada box-shadow ao redor da imagem */
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-subtle);
+    border-radius: 12px;
+    overflow: hidden; 
+    display: block;
+}
+.image-attachment img {
+    width: 100%; 
+    height: 100%; /* Permite que o <img> utilize toda a altura do container (.image-attachment) */
+    display: block;
+    /* max-height: 400px; foi removida/ajustada para permitir um tamanho maior */
+    object-fit: contain; /* Garante que a imagem inteira seja visível dentro do container, sem cortes */
+}
+
+
+/* --- Anexo de Livro --- */
+.book-attachment {
+    display: flex;
+    align-items: center;
+    /* Adicionada box-shadow ao redor do livro */
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-subtle);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--color-text-primary);
+    transition: background-color 0.2s, box-shadow 0.2s;
+    margin-top: 10px;
+}
+.book-attachment:hover {
+    background-color: #f7f7f7;
+}
+
+.book-cover {
+    width: 60px;
+    height: 90px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.book-info {
+    padding: 8px 10px;
+    flex-grow: 1;
+}
+
+.book-title {
+    font-weight: 700;
+    font-size: 0.95em;
+}
+
+.book-author, .book-genre {
+    color: var(--color-text-subtle);
+    font-size: 0.8em;
+    margin-top: 2px;
+}
+
+/* Ações do Post */
+.post-actions {
+    display: flex;
+    justify-content: space-between;
+    max-width: 250px;
+    margin-top: 15px;
+}
+
+.action {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-subtle);
+    font-size: 0.85em;
+    padding: 8px;
+    border-radius: 50px;
+    transition: background-color 0.2s;
+}
+
+.action i {
+    color: var(--color-text-subtle);
+    font-size: 1.1em;
+    transition: color 0.2s;
+}
+
+.action:hover {
+    background-color: rgba(0, 119, 255, 0.1);
+    color: var(--color-accent);
+}
+
+.action.like i.fa-solid {
+    color: var(--color-like-active) !important;
+}
+.action.like:hover {
+    background-color: rgba(249, 24, 128, 0.1);
+}
+.action.like:hover i {
+    color: var(--color-like-active) !important;
+}
+
+/* ========================================================================= */
+/* 5. SEÇÃO DE COMENTÁRIOS (Abaixo do Post) */
+/* ========================================================================= */
+.comments-section {
+    margin-top: 10px;
+    /* Ajustado o padding para ficar alinhado com o conteúdo, e não a imagem */
+    padding: 10px 15px 0 67px;
+    /* REMOVIDA BORDER TOP - Substituída por box-shadow para manter a quebra visual */
+    /* border-top: 1px solid var(--color-border-subtle); */
+    box-shadow: 0 -1px 0 0 var(--color-border-subtle);
+}
+
+.hidden-comment-section {
+    display: none;
+}
+
+.comment-input-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-right: 5px;
+}
+
+.comment-input-area input {
+    background-color: var(--color-bg-secondary);
+    border-radius: 20px;
+    padding: 8px 15px;
+    flex-grow: 1;
+    border: none;
+}
+
+.comment-input-area button {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+/* Ajuste o hover para cores de ação */
+.comment-input-area button:hover {
+    background-color: var(--color-accent-hover);
+}
+
+.comment-item {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: 0.9em;
+}
+
+.comment-item .avatar {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+}
+
+/* ========================================================================= */
+/* 6. BARRA LATERAL DIREITA (Desktop) e Busca Fixa */
+/* ========================================================================= */
+.right-sidebar {
+    width: 350px;
+    padding: 20px 0 20px 20px;
+    position: sticky;
+    top: 0; /* Fixa o sidebar no topo */
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* Garante que a barra de pesquisa do desktop fique fixa */
+.search-bar-desktop {
+    position: sticky;
+    top: 0;
+    padding-top: 5px; /* Pequeno espaçamento do topo */
+    background-color: var(--color-bg-primary);
+    z-index: 5;
+    margin-bottom: 20px;
+}
+
+.search-input {
+    background-color: var(--color-bg-secondary);
+    border-radius: 999px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    color: var(--color-text-subtle);
+    transition: border-color 0.2s;
+}
+
+.search-input:focus-within {
+    border: 1px solid var(--color-accent);
+    background-color: var(--color-bg-primary);
+}
+
+.img_search{
+    margin-right: 10px;
+    font-size: 1em;
+}
+
+.trends-box {
+    background-color: var(--color-bg-primary);
+    /* Adicionada box-shadow sutil */
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-subtle);
+    border-radius: 12px;
+    padding: 15px 0;
+    overflow: hidden;
+    margin-top: 0;
+}
+.trends-box h3 {
+    padding: 0 15px 10px;
+    font-size: 1.1em;
+    font-weight: 800;
+    /* REMOVIDA BORDER BOTTOM - Substituída por box-shadow */
+    /* border-bottom: 1px solid var(--color-border-subtle); */
+    box-shadow: 0 1px 0 0 var(--color-border-subtle);
+    margin-bottom: 5px;
+}
+.trend-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.trend-item:hover {
+    background-color: var(--color-bg-secondary);
+}
+.trend-category {
+    font-size: 0.8em;
+    color: var(--color-text-subtle);
+}
+.trend-posts {
+    font-size: 0.8em;
+    color: var(--color-text-subtle);
+}
+
+/* ========================================================================= */
+/* 7. BARRA DE NAVEGAÇÃO E FAB */
+/* ========================================================================= */
+.fab {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    background-color: var(--color-accent);
+    color: white;
+    border-radius: 50%;
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    transition: transform 0.2s;
+}
+.fab i {
+    font-size: 24px;
+}
+
+.fab:active {
+    transform: scale(0.95);
+}
+
+.nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--navbar-bg);
+    /* REMOVIDA BORDER TOP - SUBSTITUÍDA POR SOMBRA MAIS PROEMINENTE */
+    /* border-top: 1px solid #eee; */
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--navbar-text);
+    font-size: 10px;
+}
+
+.nav-item-active {
+    color: var(--navbar-text-active);
+}
+
+.nav-icon {
+    filter: invert(1);
+    width: 15px;
+    height: 15px;
+    margin-bottom: 3px;
+}
+
+.nav-icon-active {
+    filter: none;
+    filter:invert(0.9)
+}
+
+.home-indicator {
+    display: none;
+}
+
+/* ========================================================================= */
+/* 8. MEDIA QUERIES (RESPONSIVIDADE) */
+/* ========================================================================= */
+
+@media (min-width: 601px) {
+    /* Desktop */
+    .top-bar-mobile {
+        display: none !important;
+    }
+
+    .search-bar-desktop {
+        display: block;
+    }
+}
+
+@media (max-width: 1024px) {
+    /* Tablet */
+    .right-sidebar {
+        display: none;
+    }
+
+    .feed {
+        max-width: 100%;
+        /* Ajuste a box-shadow para sumir nas laterais em mobile/tablet */
+        box-shadow: none;
+        border-left: none;
+        border-right: none;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Mobile */
+    .feed {
+        padding-top: 60px;
+    }
+
+    /* --- TOP BAR MOBILE (Sempre Visível) --- */
+    .top-bar-mobile {
+        display: flex;
+        align-items: center;
+        padding: 8px 15px;
+        height: 55px;
+        /* REMOVIDA BORDER BOTTOM - SUBSTITUÍDA POR SOMBRA */
+        /* border-bottom: 1px solid var(--color-border-subtle); */
+        box-shadow: var(--shadow-header);
+        position: fixed; /* FIXO */
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--color-bg-primary);
+        z-index: 50;
+    }
+
+    .profile-pic-mobile {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    .search-input-wrapper {
+        flex-grow: 1;
+    }
+
+    .search-input {
+        margin-bottom: 0;
+        padding: 8px 15px;
+        width: 100%;
+    }
+
+    .feed-header {
+        display: none; /* Oculta o header de desktop */
+    }
+
+    .fab {
+        bottom: 75px;
+        right: 10px;
+        width: 48px;
+        height: 48px;
+    }
+    .fab i {
+        font-size: 20px;
+         /* Ajuste para mobile */
+    }
+
+    .post {
+        padding: 10px 15px;
+    }
+    .avatar {
+        width: 35px;
+        height: 35px;
+    }
+
+    /* Ajuste de padding de comentários em mobile */
+    .comments-section {
+        padding: 10px 15px 0 62px;
+    }
+
+    .book-cover {
+        width: 50px;
+        height: 75px;
+    }
+    .book-info {
+        padding: 6px 8px;
+    }
+}
+.fab_icon{
+  
+        bottom: 75px;
+        right: 10px;
+        width: 48px;
+        height: 48px;
+        padding: 8px;
+
+}
+}

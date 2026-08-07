@@ -1,0 +1,272 @@
+/* --- 1. Variáveis de Cores (Padronizadas para Rosa Vibrante) --- */
+:root {
+    --primary-color: #777575; /* Rosa Vibrante (Deep Pink) */
+    --secondary-color: #383637; /* Um tom de rosa mais suave para contraste */
+    --background-light: #f4f7f6; 
+    --text-dark: #333333;
+    --text-medium: #777777;
+    --border-light: #cccccc;
+    --shadow-soft: 0 6px 15px rgba(0, 0, 0, 0.1);
+    --transition-duration: 0.3s;
+}
+
+/* --- 2. Estilo Global e Body --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #f5f4f2;;
+    transition: background-color var(--transition-duration);
+}
+
+/* --- 3. Container do Formulário (Comum para Login e Cadastro) --- */
+.login-container, .Cadastro-container {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 380px;
+    padding: 35px 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    transition: box-shadow var(--transition-duration);
+    z-index: 10;
+}
+
+/* Efeito de destaque no canto superior esquerdo - AGORA ROSA PADRÃO */
+.login-container::before, .Cadastro-container::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    left: -80px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background-color: var(--primary-color); /* Padronizado para rosa vibrante */
+    z-index: 1;
+    opacity: 0.85;
+    transition: background-color var(--transition-duration);
+}
+/* Estilos Específicos Removidos, pois o antes é o mesmo */
+
+
+/* --- 4. Área do Ícone/Logo --- */
+.icon-area {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.icon-circle {
+    width: 90px;
+    height: 90px;
+    background-color: var(--background-light);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    border: 3px solid #e0e0e0;
+     background: #f5f4f2;
+}
+
+.logo {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    display: block;
+}
+
+/* --- 5. Título --- */
+h1 {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 30px;
+    margin-top: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+/* --- 6. Campos de Entrada (Input Group) --- */
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-light);
+    padding-bottom: 5px;
+    position: relative;
+    z-index: 2;
+    transition: border-bottom var(--transition-duration);
+}
+
+/* Foco no Input: Muda a cor da borda e do ícone (AGORA ROSA PADRÃO) */
+.input-group:focus-within {
+    border-bottom: 2px solid var(--primary-color);
+}
+.input-group:focus-within i {
+    color: var(--primary-color);
+}
+
+.input-group i {
+    font-size: 18px;
+    color: var(--text-medium);
+    margin-right: 12px;
+    transition: color var(--transition-duration);
+}
+
+.input-group input {
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 8px 0;
+    font-size: 16px;
+    color: var(--text-dark);
+    background: transparent;
+}
+
+.input-group input::placeholder {
+    color: var(--text-medium);
+    opacity: 0.7;
+}
+
+/* NOVO: Estilo para o botão de visualizar senha */
+.password-group {
+    padding-right: 40px; /* Espaço para o botão */
+}
+.toggle-password {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    outline: none;
+    color: var(--secondary-color); /* Rosa mais suave para contraste */
+    transition: color var(--transition-duration);
+}
+.toggle-password:hover {
+    color: var(--primary-color); /* Rosa vibrante no hover */
+}
+.toggle-password i {
+    margin-right: 0;
+    font-size: 18px;
+}
+/* Garante que o input não se sobreponha ao botão */
+.password-group input {
+    width: calc(100% - 40px);
+}
+
+/* --- Estilos para o campo de upload de foto --- */
+.foto-perfil-upload {
+    cursor: pointer;
+    border-bottom: 2px solid var(--border-light);
+}
+
+/* Garante que o input file (escondido) não ocupe espaço, mas a label sim */
+.foto-perfil-upload input[type="file"] {
+    display: none;
+}
+
+.file-label-text {
+    width: 100%;
+    padding: 8px 0;
+    font-size: 16px;
+    color: var(--text-medium);
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--transition-duration);
+}
+
+/* --- 7. Botões (Links e Botão Submit) --- */
+/* Botão primário (usado para Entrar) - Renomeado e estilizado com Rosa */
+.btn-primary {
+    display: block; 
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color); /* Rosa Vibrante */
+    color: #ffffff;
+    border: none;
+    border-radius: 25px;
+    font-size: 17px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 15px;
+    position: relative;
+    z-index: 2;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color var(--transition-duration), transform 0.2s;
+}
+
+/* Estilo para o botão secundário (Criar Conta) - Estilo Primário mas com cor Secundária */
+.btn-secondary-style {
+    background-color: var(--secondary-color); /* Rosa Suave (Secundário) */
+    color: #ffffff; /* Texto branco para contraste */
+    margin-top: 8px; 
+}
+
+/* Efeito de hover e click */
+.btn-primary:hover:not(:disabled) {          
+    background-color: #000000; /* Rosa mais claro no hover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary-style:hover:not(:disabled) {
+    background-color: #707070; /* Rosa mais claro no hover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-secondary-style:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Efeito para botão desabilitado (enquanto processa) */
+.btn-primary:disabled,
+.btn-secondary-style:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- 8. Marca d'água --- */
+.watermark-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: var(--primary-color); /* Rosa Vibrante */
+    opacity: 0.15;
+    z-index: 1;
+}
+
+/* --- 9. Responsividade --- */
+@media (max-width: 480px) {
+    .login-container, .Cadastro-container {
+        margin: 20px;
+        padding: 30px 20px;
+        max-width: 90%;
+    }
+}
+.criaracont {
+    display: block; 
+    margin-top: 15px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    position: relative;
+    z-index: 2;
+    transition: color var(--transition-duration);
+} 

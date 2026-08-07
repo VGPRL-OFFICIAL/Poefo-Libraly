@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Livros Completo (vFinal)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        .upload-card {
+            background-color: white;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app" class="p-4 sm:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-indigo-700">Gerenciador de Livros</h1>
+            <p class="text-lg text-gray-500">Lista Estática + Upload, Edição, Exclusão e Importação em Tempo Real.</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
+
+            <div class="lg:w-1/3 w-full">
+                
+                <div id="upload-form-card" class="upload-card p-6 rounded-xl border border-gray-200">
+                    <h2 id="form-title" class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Cadastrar Novo Livro</h2>
+                    
+                    <input type="hidden" id="edit-book-id" value=""> 
+
+                    <form id="book-form" class="space-y-4">
+                        <div><label for="titulo" class="block text-sm font-medium text-gray-700">Título</label><input type="text" id="titulo" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"></div>
+                        <div><label for="autor" class="block text-sm font-medium text-gray-700">Autor</label><input type="text" id="autor" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"></div>
+                        <div><label for="sinopse" class="block text-sm font-medium text-gray-700">Sinopse</label><textarea id="sinopse" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"></textarea></div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="genero" class="block text-sm font-medium text-gray-700">Gênero</label><input type="text" id="genero" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" value="Ficção"></div>
+                            <div><label for="classificacao" class="block text-sm font-medium text-gray-700">Classificação (Idade)</label><input type="number" id="classificacao" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" value="16"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="likes" class="block text-sm font-medium text-gray-700">Likes (Número)</label><input type="number" id="likes" required value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"></div>
+                            </div>
+                        
+                        <div id="file-inputs-container" class="pt-2 border-t mt-4 space-y-4">
+                            <div>
+                                <label for="capa_file" class="block text-sm font-medium text-gray-700">Arquivo da Capa (Imagem)</label>
+                                <input type="file" id="capa_file" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                <p id="capa-status" class="text-xs text-gray-500 mt-1 hidden">Deixe vazio para manter a capa atual.</p>
+                            </div>
+                            
+                            <div class="border p-3 rounded-md bg-gray-50">
+                                <p class="text-sm font-medium text-gray-700 mb-2">Opção de Acesso ao Conteúdo:</p>
+                                
+                                <label for="acesso_link" class="block text-sm font-medium text-gray-700 mt-2">Link Direto (URL)</label>
+                                <input type="url" id="acesso_link" placeholder="Ex: https://dominio.com/livro.pdf" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-purple-500 focus:border-purple-500">
+                                
+                                <p class="text-center my-3 text-xs text-gray-500">OU</p>
+                                
+                                <label for="acesso_file" class="block text-sm font-medium text-gray-700">Upload de Arquivo (PDF, Ebook, etc.)</label>
+                                <input type="file" id="acesso_file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                                <p id="acesso-status" class="text-xs text-gray-500 mt-1 hidden">Deixe vazio para manter o link/arquivo atual.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button type="submit" id="submit-button" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                                Adicionar Livro
+                            </button>
+                            <button type="button" id="cancel-edit-button" class="hidden py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="feedback-message" class="mt-4 p-3 rounded-md text-sm hidden"></div>
+                </div>
+
+                <div id="result-area" class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200 hidden">
+                    <h3 class="text-xl font-bold text-yellow-800 mb-3">✅ Último Envio Concluído!</h3>
+                    <p class="text-sm font-medium mt-2">ID Numérico Gerado: <span id="uploaded-numeric-id" class="font-bold text-lg text-indigo-700"></span></p>
+                    <p class="text-sm font-medium mt-2">Capa nomeada como: <span id="uploaded-cover-filename" class="font-mono text-xs text-blue-600"></span></p>
+                    <h4 class="text-base font-bold mt-4 border-t pt-3 text-gray-700">JSON Salvo no Firestore:</h4>
+                    <pre id="saved-json" class="mt-2 p-3 bg-gray-800 text-green-300 rounded-md text-xs overflow-x-auto whitespace-pre-wrap"></pre>
+                </div>
+
+                <div class="mt-6 space-y-3">
+                    <button id="export-json-button" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
+                        Exportar JSON do Firestore
+                    </button>
+                    
+                    <button id="upload-list-to-storage-button" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out">
+                        Enviar Lista para o Storage (livros.json) 🚨
+                    </button>
+
+                    <label for="import-file" class="block w-full text-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out cursor-pointer">
+                        Importar JSON para o Firestore (SOBRESCREVE)
+                    </label>
+                    <input type="file" id="import-file" accept=".json" class="hidden">
+
+                    <button id="show-json-button" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out">
+                        Mostrar JSON Completo dos Uploads (${0} livros)
+                    </button>
+                    <div id="firestore-json-output" class="mt-2 hidden">
+                        <pre class="p-4 bg-gray-800 text-yellow-300 rounded-md text-xs overflow-x-auto whitespace-pre-wrap"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:w-2/3 w-full">
+                <div class="upload-card p-6 rounded-xl border border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Livros Cadastrados (Estático + Upload)</h2>
+                    <div id="book-list" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <p id="loading-status" class="text-center text-gray-500 sm:col-span-2">Carregando livros...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, onSnapshot, collection, query, serverTimestamp, setDoc, doc, deleteDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // === CONFIGURAÇÃO DO FIREBASE (Suas Credenciais) ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2",
+            measurementId: "G-7NM9CC35CX"
+        };
+        
+        // Configurações do arquivo estático
+        const STORAGE_FOLDER = "livros_json";
+        const STORAGE_FILE_NAME = "livros.json";
+        
+        // URL BASE para o arquivo no Storage. Não usamos o token fixo para evitar cache/expiração.
+        // O `alt=media` é essencial para baixar o conteúdo bruto
+        const BASE_STATIC_JSON_URL = `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${STORAGE_FOLDER}%2F${STORAGE_FILE_NAME}?alt=media`; 
+        
+        const BOOKS_COLLECTION_PATH = "livros"; 
+
+        // Variáveis de Estado
+        let db;
+        let storage; 
+        let staticBooks = []; 
+        let firestoreBooks = []; 
+        
+        // DOM elements
+        const feedbackMessageEl = document.getElementById('feedback-message');
+        const bookListEl = document.getElementById('book-list');
+        const bookFormEl = document.getElementById('book-form');
+        const submitButtonEl = document.getElementById('submit-button');
+        const loadingStatusEl = document.getElementById('loading-status');
+        
+        const formTitleEl = document.getElementById('form-title');
+        const editBookIdEl = document.getElementById('edit-book-id');
+        const cancelEditButtonEl = document.getElementById('cancel-edit-button');
+        const capaStatusEl = document.getElementById('capa-status');
+        const acessoStatusEl = document.getElementById('acesso-status');
+        const acessoLinkEl = document.getElementById('acesso_link'); 
+        const acessoFileEl = document.getElementById('acesso_file'); 
+        const importFileEl = document.getElementById('import-file');
+        const uploadListToStorageButtonEl = document.getElementById('upload-list-to-storage-button'); 
+
+
+        // === FUNÇÕES AUXILIARES E FIREBASE ===
+
+        /**
+         * Gera o próximo ID numérico sequencial.
+         */
+        async function getNextNumericId() {
+            // IDs do Firestore (upload) + IDs da lista estática
+            const allIds = [
+                ...firestoreBooks.map(book => book.id),
+                ...staticBooks.map(book => book.id)
+            ];
+            
+            // Converte IDs de string para números para encontrar o máximo
+            const ids = allIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+            const maxId = ids.length > 0 ? Math.max(...ids) : 0;
+            return maxId + 1;
+        }
+
+        /**
+         * Envia um arquivo para o Firebase Storage com um nome específico.
+         */
+        async function uploadFile(file, folder, fileNameWithoutExtension) {
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${fileNameWithoutExtension}.${fileExtension}`;
+            
+            const storageRef = ref(storage, `${folder}/${fileName}`);
+            
+            // Usando Content-Type correto para a capa e metadados para garantir o MIME-type no Storage
+            const metadata = {
+                contentType: file.type || 'application/octet-stream',
+            };
+            
+            const snapshot = await uploadBytes(storageRef, file, metadata);
+            return {
+                url: await getDownloadURL(snapshot.ref),
+                fileName: fileName
+            };
+        }
+
+        /**
+         * Combina e renderiza as listas estáticas e dinâmicas.
+         */
+        function renderBookList() {
+            // Garante que o ID do Firestore seja string para o mapeamento
+            const firestoreBooksWithSource = firestoreBooks.map(book => ({ ...book, source: 'firestore', id: book.id.toString() }));
+            
+            // Garante que o ID do estático seja string para o mapeamento
+            const staticBooksWithSource = staticBooks.map(book => ({ ...book, source: 'static', id: book.id.toString() }));
+
+            const combinedBooks = [...staticBooksWithSource, ...firestoreBooksWithSource];
+            combinedBooks.sort((a, b) => a.titulo.localeCompare(b.titulo));
+
+            bookListEl.innerHTML = combinedBooks.map(createBookCard).join('');
+            loadingStatusEl.classList.add('hidden');
+
+            combinedBooks.forEach(book => {
+                if (book.source === 'firestore') { 
+                    const editButton = document.getElementById(`edit-${book.id}`);
+                    const deleteButton = document.getElementById(`delete-${book.id}`);
+
+                    if (editButton) editButton.addEventListener('click', () => startEdit(book.id));
+                    if (deleteButton) deleteButton.addEventListener('click', () => deleteBook(book.id));
+                }
+            });
+            
+            document.getElementById('show-json-button').textContent = `Mostrar JSON Completo dos Uploads (${firestoreBooks.length} livros)`;
+
+            if (combinedBooks.length === 0) {
+                bookListEl.innerHTML = '<p class="text-center text-gray-500 sm:col-span-2">Nenhum livro cadastrado.</p>';
+            }
+        }
+        
+        /**
+         * Renderiza o cartão do livro.
+         */
+        function createBookCard(book) {
+            const coverUrl = book.link_capa || 'https://placehold.co/150x225/e0e0e0/333?text=Sem+Capa';
+            
+            const actions = book.source === 'firestore' ? `
+                <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end space-x-2">
+                    <button id="edit-${book.id}" class="text-xs text-blue-600 hover:text-blue-800 font-medium transition duration-150">
+                        Editar
+                    </button>
+                    <button id="delete-${book.id}" class="text-xs text-red-600 hover:text-red-800 font-medium transition duration-150">
+                        Excluir
+                    </button>
+                </div>
+            ` : `<p class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">Dados Estáticos</p>`;
+
+
+            return `
+                <div class="book-card bg-white p-4 rounded-lg shadow-md border border-gray-100 hover:shadow-xl transition duration-300">
+                    <div class="flex space-x-4">
+                        <div class="flex-shrink-0">
+                            <img src="${coverUrl}" 
+                                onerror="this.onerror=null;this.src='https://placehold.co/150x225/e0e0e0/333?text=Erro+Capa';"
+                                alt="Capa de ${book.titulo}" 
+                                class="w-24 h-36 object-cover rounded-md shadow-lg"
+                            >
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="text-xs font-bold text-gray-400">ID: ${book.id || 'N/A'}</span>
+                            <h3 class="text-lg font-semibold text-indigo-800 truncate" title="${book.titulo}">${book.titulo}</h3>
+                            <p class="text-sm text-gray-600 mb-2 truncate" title="${book.autor}">Por: ${book.autor}</p>
+                            
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full font-medium">Class: ${book.classificacao || 'N/A'}</span>
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-medium">${book.genero || 'N/A'}</span>
+                                <span class="px-2 py-0.5 bg-red-100 text-red-800 rounded-full font-medium">❤️ ${book.likes || 0}</span>
+                            </div>
+                            
+                            <p class="text-xs text-gray-500 mt-2 overflow-hidden max-h-10">
+                                ${book.sinopse ? book.sinopse.substring(0, 100) + '...' : ''}
+                            </p>
+                            <a href="${book.link_acesso}" target="_blank" class="mt-2 inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium transition duration-150">
+                                Acessar Livro
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 ml-1"><path d="M7 7h10v10"/><path d="M7 17L17 7"/></svg>
+                            </a>
+                            ${actions}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        /**
+         * Escuta em tempo real os livros adicionados pelo usuário no Firestore.
+         */
+        function listenForNewBooksInFirestore() {
+            const booksCollectionRef = collection(db, BOOKS_COLLECTION_PATH);
+            const q = query(booksCollectionRef);
+
+            onSnapshot(q, (snapshot) => {
+                firestoreBooks = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    firestoreBooks.push({ id: doc.id, ...data }); 
+                });
+
+                renderBookList(); 
+            }, (error) => {
+                console.error("[Firestore] Erro ao buscar livros novos:", error);
+                showFeedback(`Erro ao carregar uploads do usuário: ${error.message}. Verifique suas regras do Firestore.`, 'error');
+            });
+        }
+
+        /**
+         * Carrega a lista inicial.
+         * Tenta usar o modo 'no-cors' como último recurso, se o ambiente local for o problema.
+         */
+        async function fetchStaticDataFromStorage() {
+            try {
+                // Adiciona um timestamp para FORÇAR o navegador a buscar a versão mais nova e evitar cache
+                const uniqueUrl = `${BASE_STATIC_JSON_URL}&t=${Date.now()}`; 
+                
+                let response = await fetch(uniqueUrl); 
+                
+                if (!response.ok) {
+                    // SE FALHAR (Pode ser CORS em ambiente local), tenta com 'no-cors'
+                    // Nota: 'no-cors' impede que o JS leia o conteúdo, mas é um teste válido
+                    // Caso o fetch falhe completamente, tentamos o modo padrão novamente
+                    
+                    try {
+                        response = await fetch(uniqueUrl, { mode: 'no-cors' });
+                        // Se o 'no-cors' passar, ainda não podemos ler o body. Voltamos ao fetch simples
+                        response = await fetch(uniqueUrl);
+                        if (!response.ok) throw new Error("Fallback failed to retrieve readable stream.");
+                    } catch (e) {
+                         // Se tudo falhar, tentamos a URL base simples
+                        const fallbackUrl = `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${STORAGE_FOLDER}%2F${STORAGE_FILE_NAME}`;
+                        response = await fetch(fallbackUrl);
+                        if (!response.ok) throw new Error(`Final fallback failed.`);
+                    }
+                }
+                
+                // Tenta ler o JSON
+                staticBooks = await response.json();
+                
+                // Validação mínima para garantir que os dados são um array
+                if (!Array.isArray(staticBooks)) {
+                    throw new Error("O arquivo livros.json não é uma lista (array) válida.");
+                }
+
+                renderBookList();
+                showFeedback(`Lista estática (${staticBooks.length} livros) carregada com sucesso.`, 'success');
+                
+            } catch (error) {
+                console.error("[Storage] Erro ao buscar lista estática:", error);
+                showFeedback(`Aviso: Não foi possível carregar a lista estática. Erro: ${error.message}. Por favor, verifique se o arquivo 'livros.json' existe na pasta 'livros_json' do seu Storage e **HOSPEDE A PÁGINA EM UM SERVIDOR WEB** (ou use Live Server) para evitar problemas de CORS.`, 'error');
+                staticBooks = [];
+                renderBookList();
+            }
+        }
+        
+        /**
+         * Função para Exportar o JSON completo dos dados do Firestore (ID como número).
+         */
+        function exportFirestoreJson() {
+            // Mapeia os dados, garantindo que o 'id' seja um Number e removendo 'createdAt'
+            const data = firestoreBooks.map(book => {
+                const { createdAt, ...rest } = book;
+                return { ...rest, id: Number(book.id) }; 
+            });
+
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `livros_firestore_export_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showFeedback(`JSON de ${data.length} livros exportado com sucesso.`, 'success');
+        }
+
+        /**
+         * Envia a lista atual (FirestoresBooks) como livros.json para o Storage (ID como número).
+         * INCLUÍDO METADADOS DE CORS PARA TENTAR SOLUCIONAR O PROBLEMA.
+         */
+        async function uploadListToStorage() {
+            if (!confirm("ATENÇÃO: Este processo irá sobrescrever o arquivo 'livros.json' no Storage com a lista atual do Firestore. A lista inicial será atualizada após o próximo carregamento. Continuar?")) {
+                return;
+            }
+
+            uploadListToStorageButtonEl.disabled = true;
+            uploadListToStorageButtonEl.textContent = "Processando Upload...";
+
+            try {
+                // 1. Prepara os dados para upload (garantindo que o 'id' seja Number e removendo 'createdAt')
+                const dataToUpload = firestoreBooks.map(book => {
+                    const { createdAt, ...rest } = book;
+                    return { ...rest, id: Number(book.id) };
+                });
+                
+                // 2. Converte para JSON e para Blob
+                const jsonString = JSON.stringify(dataToUpload, null, 2);
+                const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+
+                // 3. Define a referência no Storage
+                const storagePath = `${STORAGE_FOLDER}/${STORAGE_FILE_NAME}`;
+                const storageRef = ref(storage, storagePath);
+                
+                // Metadados para garantir que o Content-Type é JSON e, opcionalmente, configurar cabeçalhos CORS
+                const metadata = {
+                    contentType: 'application/json',
+                    customMetadata: {
+                        'Access-Control-Allow-Origin': '*' // Isso é um teste, mas o CORS real é feito no bucket
+                    }
+                };
+                
+                // 4. Faz o upload e sobrescreve o arquivo existente
+                await uploadBytes(storageRef, jsonBlob, metadata);
+                
+                showFeedback(`Upload de '${STORAGE_FILE_NAME}' concluído. A nova lista estática será carregada!`, 'success');
+
+                // Recarrega os dados estáticos imediatamente para refletir a mudança
+                await fetchStaticDataFromStorage();
+
+            } catch (error) {
+                console.error("Erro ao enviar lista para o Storage:", error);
+                showFeedback(`Erro ao enviar lista para o Storage: ${error.message}.`, 'error');
+            } finally {
+                uploadListToStorageButtonEl.disabled = false;
+                uploadListToStorageButtonEl.textContent = "Enviar Lista para o Storage (livros.json) 🚨";
+            }
+        }
+        
+        /**
+         * Deleta todos os documentos na coleção 'livros' do Firestore.
+         */
+        async function deleteAllFirestoreBooks() {
+            showFeedback("Apagando todos os livros existentes no Firestore antes de importar...", 'info');
+            
+            const booksSnapshot = await getDocs(collection(db, BOOKS_COLLECTION_PATH));
+            let deletedCount = 0;
+
+            const deletePromises = [];
+            booksSnapshot.forEach(docSnapshot => {
+                deletePromises.push(deleteDoc(doc(db, BOOKS_COLLECTION_PATH, docSnapshot.id)));
+                deletedCount++;
+            });
+
+            await Promise.all(deletePromises);
+            
+            firestoreBooks = []; 
+            showFeedback(`${deletedCount} livros antigos foram apagados com sucesso.`, 'success');
+        }
+
+        /**
+         * Função de Importação com Sobrescrita.
+         */
+        function importFirestoreJson(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                event.target.value = null; 
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                let jsonContent;
+                let jsonString = e.target.result;
+                
+                if (typeof jsonString !== 'string') {
+                    showFeedback("Erro ao ler o arquivo: O conteúdo não é uma string válida.", 'error');
+                    return;
+                }
+                
+                try {
+                    jsonContent = JSON.parse(jsonString);
+
+                    if (!Array.isArray(jsonContent)) {
+                        throw new Error("O arquivo JSON deve ser um array de objetos (uma lista de livros).");
+                    }
+
+                    // 1. CONFIRMAÇÃO DE SOBRESCRITA
+                    if (!confirm(`Você está prestes a importar ${jsonContent.length} livros. Isso irá APAGAR TODOS os livros existentes no Firestore antes de iniciar a importação. Continuar?`)) {
+                        event.target.value = null; 
+                        return;
+                    }
+
+                    // 2. DELETA TODOS OS LIVROS ANTERIORES
+                    await deleteAllFirestoreBooks();
+
+                    // 3. IMPORTA OS NOVOS LIVROS
+                    showFeedback(`Iniciando importação de ${jsonContent.length} novos livros...`, 'info');
+                    
+                    let importCount = 0;
+                    // O próximo ID sequencial é baseado nos IDs da lista estática, pois a do Firestore foi limpa
+                    let nextSequentialId = await getNextNumericId(); 
+
+                    for (let book of jsonContent) {
+                        
+                        let numericId;
+                        
+                        // Prioriza o ID numérico/string do JSON
+                        if (book.id && book.id.toString().trim() !== '') { 
+                            numericId = book.id.toString(); 
+                            // Garante que o contador sequencial não seja menor que este ID
+                            if (Number(numericId) >= nextSequentialId) {
+                                nextSequentialId = Number(numericId) + 1;
+                            }
+                        } else {
+                            // Se não houver ID, usa o sequencial
+                            numericId = nextSequentialId.toString();
+                            nextSequentialId++;
+                        }
+                        
+                        const { id, ...dataToSave } = book;
+
+                        await setDoc(doc(db, BOOKS_COLLECTION_PATH, numericId), {
+                            ...dataToSave,
+                            createdAt: dataToSave.createdAt || serverTimestamp() 
+                        });
+                        importCount++;
+                    }
+
+                    event.target.value = null; 
+                    showFeedback(`Importação e Sobrescrita concluída! ${importCount} livros adicionados no Firestore.`, 'success');
+                } catch (error) {
+                    console.error("Erro na importação:", error);
+                    showFeedback(`Erro ao importar JSON: ${error.message}. Certifique-se de que o arquivo está formatado corretamente.`, 'error');
+                }
+            };
+            
+            reader.onerror = (error) => {
+                console.error("Erro do FileReader:", error);
+                showFeedback("Erro na leitura do arquivo. Tente novamente.", 'error');
+            };
+
+            reader.readAsText(file);
+        }
+
+        /**
+         * Função para exibir o JSON completo (ID como número na exibição).
+         */
+        function showFirestoreJson() {
+            const preElement = document.getElementById('firestore-json-output').querySelector('pre');
+            const firestoreJsonOutputEl = document.getElementById('firestore-json-output');
+
+            if (firestoreJsonOutputEl.classList.contains('hidden')) {
+                const booksForDisplay = firestoreBooks.map(book => {
+                    const { createdAt, ...rest } = book;
+                    return { ...rest, id: Number(book.id) };
+                });
+
+                const jsonString = JSON.stringify(booksForDisplay, null, 2);
+                preElement.textContent = jsonString;
+                firestoreJsonOutputEl.classList.remove('hidden');
+                document.getElementById('show-json-button').textContent = `Ocultar JSON Completo (${firestoreBooks.length} livros)`;
+            } else {
+                firestoreJsonOutputEl.classList.add('hidden');
+                document.getElementById('show-json-button').textContent = `Mostrar JSON Completo dos Uploads (${firestoreBooks.length} livros)`;
+            }
+        }
+
+
+        // =========================================================
+        // === FUNÇÕES: EDIÇÃO E EXCLUSÃO (Sem alterações na lógica) ===
+        // =========================================================
+
+        function startEdit(bookId) {
+            const bookToEdit = firestoreBooks.find(b => b.id === bookId);
+            
+            if (!bookToEdit) {
+                showFeedback(`Livro com ID ${bookId} não encontrado.`, 'error');
+                return;
+            }
+
+            document.getElementById('titulo').value = bookToEdit.titulo || '';
+            document.getElementById('autor').value = bookToEdit.autor || '';
+            document.getElementById('sinopse').value = bookToEdit.sinopse || '';
+            document.getElementById('genero').value = bookToEdit.genero || '';
+            document.getElementById('classificacao').value = bookToEdit.classificacao || '';
+            document.getElementById('likes').value = bookToEdit.likes || 0;
+            
+            const isLink = bookToEdit.link_acesso && !bookToEdit.link_acesso.includes(firebaseConfig.storageBucket);
+            acessoLinkEl.value = isLink ? bookToEdit.link_acesso : '';
+            acessoFileEl.value = ''; 
+
+            editBookIdEl.value = bookId;
+            formTitleEl.textContent = `Editando Livro ID: ${bookId}`;
+            submitButtonEl.textContent = 'Atualizar Livro';
+            submitButtonEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            submitButtonEl.classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            capaStatusEl.classList.remove('hidden');
+            acessoStatusEl.classList.remove('hidden');
+            cancelEditButtonEl.classList.remove('hidden');
+            
+            document.getElementById('upload-form-card').scrollIntoView({ behavior: 'smooth' });
+            
+            showFeedback(`Pronto para editar Livro ID ${bookId}. Altere os campos e clique em "Atualizar".`, 'info');
+        }
+
+        function cancelEdit() {
+            bookFormEl.reset();
+            editBookIdEl.value = '';
+            formTitleEl.textContent = 'Cadastrar Novo Livro';
+            submitButtonEl.textContent = 'Adicionar Livro';
+            submitButtonEl.classList.remove('bg-green-600', 'hover:bg-green-700');
+            submitButtonEl.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            
+            capaStatusEl.classList.add('hidden');
+            acessoStatusEl.classList.add('hidden');
+            cancelEditButtonEl.classList.add('hidden');
+            
+            showFeedback('Modo de edição cancelado. Pronto para adicionar novos livros.', 'info');
+        }
+        
+        cancelEditButtonEl.addEventListener('click', cancelEdit);
+
+        async function deleteBook(bookId) {
+            if (!confirm(`Tem certeza que deseja EXCLUIR permanentemente o livro ID ${bookId}?`)) {
+                return;
+            }
+
+            const bookToDelete = firestoreBooks.find(b => b.id === bookId);
+            if (!bookToDelete) {
+                showFeedback(`Erro ao excluir: Livro ID ${bookId} não encontrado.`, 'error');
+                return;
+            }
+
+            showFeedback(`Excluindo livro ID ${bookId}...`, 'info');
+
+            try {
+                // Excluir Capa
+                const coverRef = ref(storage, `capas/${bookId}`);
+                await deleteObject(coverRef).catch(e => console.warn(`Capa não encontrada ou erro ao excluir: ${e.message}`));
+                
+                // Excluir Conteúdo SE for um link do Storage
+                if (bookToDelete.link_acesso && bookToDelete.link_acesso.includes(firebaseConfig.storageBucket)) {
+                    const accessRef = ref(storage, `conteudo/conteudo_${bookId}`);
+                    await deleteObject(accessRef).catch(e => console.warn(`Conteúdo de Storage não encontrado ou erro ao excluir: ${e.message}`));
+                }
+
+                // Excluir Documento do Firestore
+                await deleteDoc(doc(db, BOOKS_COLLECTION_PATH, bookId));
+
+                showFeedback(`Livro ID ${bookId} excluído com sucesso (documento e arquivos relacionados).`, 'success');
+            } catch (error) {
+                console.error("Erro ao excluir livro:", error);
+                showFeedback(`Erro ao excluir livro ID ${bookId}: ${error.message}.`, 'error');
+            }
+        }
+
+        // =========================================================
+        // === MANIPULAÇÃO DO FORMULÁRIO (Adicionar/Atualizar) ===
+        // =========================================================
+
+        bookFormEl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('result-area').classList.add('hidden'); 
+
+            const isEditing = !!editBookIdEl.value;
+            // O ID é sempre gerado/obtido como string para o Firestore
+            const bookId = isEditing ? editBookIdEl.value : (await getNextNumericId()).toString();
+            
+            const capaFile = document.getElementById('capa_file').files[0];
+            const acessoFile = acessoFileEl.files[0];
+            const acessoLink = acessoLinkEl.value.trim();
+
+            if (!isEditing && !acessoFile && !acessoLink) {
+                showFeedback('Para um **NOVO** livro, você deve fornecer o **Link Direto** ou fazer o **Upload do Arquivo de Conteúdo**.', 'error');
+                return;
+            }
+            if (!isEditing && !capaFile) {
+                showFeedback('Para um **NOVO** livro, o **Arquivo da Capa** é obrigatório.', 'error');
+                return;
+            }
+            if (!isEditing && acessoFile && acessoLink) {
+                 showFeedback('Escolha **apenas uma opção** para o Acesso ao Conteúdo: Link Direto OU Upload de Arquivo.', 'error');
+                 return;
+            }
+
+            feedbackMessageEl.classList.add('hidden');
+            
+            submitButtonEl.disabled = true;
+            submitButtonEl.textContent = isEditing ? `Atualizando Livro ${bookId}...` : `ID ${bookId}: Enviando Arquivos...`;
+            
+            try {
+                let newBookData = {
+                    id: bookId, // Mantido como string no objeto de dados antes de ser excluído para o Firestore
+                    titulo: document.getElementById('titulo').value.trim(),
+                    autor: document.getElementById('autor').value.trim(),
+                    sinopse: document.getElementById('sinopse').value.trim(),
+                    genero: document.getElementById('genero').value.trim(),
+                    classificacao: document.getElementById('classificacao').value.trim(),
+                    likes: document.getElementById('likes').value.trim(),
+                    comentarios: `comentarios_livro_${bookId}`, 
+                };
+
+                // 1. UPLOAD DA CAPA
+                if (capaFile) {
+                    showFeedback(`1/3: Enviando Nova Capa (ID: ${bookId})...`, 'info');
+                    const coverFileNameWithoutExt = `${bookId}`;
+                    const coverUploadResult = await uploadFile(capaFile, 'capas', coverFileNameWithoutExt);
+                    newBookData.link_capa = coverUploadResult.url;
+                }
+
+                // 2. TRATAMENTO DO LINK DE ACESSO
+                if (acessoFile) {
+                    submitButtonEl.textContent = '2/3: Enviando Novo Conteúdo...';
+                    showFeedback('2/3: Enviando Novo Conteúdo...', 'info');
+                    const accessFileNameWithoutExt = `conteudo_${bookId}`;
+                    const accessUploadResult = await uploadFile(acessoFile, 'conteudo', accessFileNameWithoutExt);
+                    newBookData.link_acesso = accessUploadResult.url;
+                } else if (acessoLink) {
+                    newBookData.link_acesso = acessoLink;
+                }
+                
+                // 3. ATUALIZAÇÃO/CRIAÇÃO NO FIRESTORE
+                submitButtonEl.textContent = '3/3: Salvando Dados...';
+                
+                const docRef = doc(db, BOOKS_COLLECTION_PATH, bookId);
+                
+                if (isEditing) {
+                    delete newBookData.id; 
+                    await updateDoc(docRef, newBookData);
+                    showFeedback(`Livro ID ${bookId} atualizado com sucesso!`, 'success');
+                    cancelEdit();
+                } else {
+                    newBookData.createdAt = serverTimestamp();
+                    await setDoc(docRef, newBookData);
+                    showFeedback(`Livro ${bookId} adicionado com sucesso!`, 'success');
+                    bookFormEl.reset();
+                }
+
+                // 4. Exibe os resultados
+                if (!isEditing) {
+                    document.getElementById('uploaded-numeric-id').textContent = bookId;
+                    document.getElementById('uploaded-cover-filename').textContent = newBookData.link_capa ? 'Novo link gerado' : 'Link antigo mantido'; 
+                    const jsonToDisplay = {...newBookData, createdAt: "SERVER_TIMESTAMP_FIELD", id: Number(bookId)};
+                    delete jsonToDisplay.createdAt; 
+                    document.getElementById('saved-json').textContent = JSON.stringify(jsonToDisplay, null, 2);
+                    document.getElementById('result-area').classList.remove('hidden');
+                }
+                
+                showFirestoreJson();
+
+            } catch (error) {
+                console.error("Erro no Processo de Submissão:", error);
+                showFeedback(`Erro ao processar: ${error.message}.`, 'error');
+            } finally {
+                submitButtonEl.disabled = false;
+                submitButtonEl.textContent = isEditing ? 'Atualizar Livro' : 'Adicionar Livro';
+            }
+        });
+
+
+        /**
+         * Inicializa o Firebase App.
+         */
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                storage = getStorage(app); 
+
+                await fetchStaticDataFromStorage();
+                listenForNewBooksInFirestore();
+                
+                document.getElementById('show-json-button').addEventListener('click', showFirestoreJson);
+                document.getElementById('export-json-button').addEventListener('click', exportFirestoreJson);
+                importFileEl.addEventListener('change', importFirestoreJson); 
+                uploadListToStorageButtonEl.addEventListener('click', uploadListToStorage); 
+                
+                // Limpeza mútua de campos de acesso
+                acessoLinkEl.addEventListener('input', () => { if(acessoLinkEl.value) acessoFileEl.value = ''; });
+                acessoFileEl.addEventListener('change', () => { if(acessoFileEl.files.length > 0) acessoLinkEl.value = ''; });
+
+            } catch (error) {
+                console.error("Erro na inicialização do Firebase:", error);
+                showFeedback(`Erro Fatal na inicialização do Firebase: ${error.message}.`, 'error');
+            }
+        }
+        
+        /**
+         * Função de Feedback.
+         */
+        function showFeedback(message, type) {
+            feedbackMessageEl.textContent = message;
+            const classList = ['hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700'];
+            feedbackMessageEl.classList.remove(...classList.map(c => String(c)));
+
+            if (type === 'success') {
+                feedbackMessageEl.classList.add('bg-green-100', 'text-green-700');
+            } else if (type === 'error') {
+                feedbackMessageEl.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'info') {
+                feedbackMessageEl.classList.add('bg-blue-100', 'text-blue-700');
+            }
+            feedbackMessageEl.classList.remove('hidden');
+        }
+
+
+        // Initialize the application when the window loads
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>

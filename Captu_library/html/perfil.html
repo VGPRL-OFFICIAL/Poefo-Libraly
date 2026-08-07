@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Poefo</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Link para o arquivo de estilo separado -->
+    <link rel="stylesheet" href="../style/style_perfil.css"> 
+    
+    <!-- Firebase SDK v8 (Mantido por consistência) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+</head>
+<body>
+
+    <!-- MODAL CUSTOMIZADO (SUBSTITUTO DO ALERT) -->
+    <div id="custom-modal" class="custom-modal">
+        <div class="modal-content">
+            <p id="modal-message"></p>
+            <button id="modal-ok-btn" class="botao-acao-modal">OK</button>
+        </div>
+    </div>
+
+    <div class="app-screen">
+        <!-- Barra superior com seta para voltar igual à referência do app -->
+        <header class="app-top-bar">
+            <a href="./home.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        </header>
+
+        <div class="perfil-card-container">
+            <!-- Seção do Perfil Principal -->
+            <section class="perfil-header-block">
+                <div class="foto-perfil-wrapper"> 
+                    <div class="foto-perfil">
+                        <img id="profile-pic" src="../images/icon_logo.png" alt="Foto de Perfil do Usuário">
+                        <input type="file" id="foto-perfil-upload" accept="image/*" style="display: none;">
+                        <button id="btn-change-photo" class="editar-foto-btn" title="Alterar Foto" style="display:none;"><i class="fas fa-camera"></i></button>
+                    </div>
+                </div>
+                
+                <div class="info-usuario-bloco">
+                    <h1 class="display-nome" id="display-nome-completo">Carregando Nome...</h1>
+                    <input type="text" id="edit-nome-completo" class="edit-input" style="display:none;">
+                    
+                    <p class="display-username" id="display-username">@carregando...</p>
+                    
+                    <p class="display-localizacao"><i class="fas fa-map-marker-alt"></i> <span id="display-bio">Carregando Biografia...</span></p>
+                    <textarea id="edit-bio" class="edit-textarea" style="display:none;"></textarea>
+                </div>
+            </section>
+
+            <!-- Contadores Numéricos (Fans, Seguindo, Posts) mapeados em chaves reais do JS -->
+            <section class="estatisticas-container">
+                <div class="stat-box">
+                    <span class="stat-numero" id="stat-seguidores">0</span>
+                    <span class="stat-label">Fans</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-numero" id="stat-likes">0</span>
+                    <span class="stat-label">Following</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-numero" id="stat-posts">0</span>
+                    <span class="stat-label">Posts</span>
+                </div>
+            </section>
+
+            <!-- Botões de Ação Principais em Gradiente da Imagem de Referência -->
+            <section class="botoes-acao-wrapper">
+                <button id="btn-editar-salvar" class="btn-gradiente btn-follow">Editar Perfil</button>
+                <button id="btn-logout" class="btn-gradiente btn-message">Sair</button>
+            </section>
+
+            <!-- Abas Limpas (Removido as anteriores, fixado em Photo e Video conforme a imagem) -->
+            <nav class="nav-abas-perfil">
+                <a href="#" class="aba-item ativo" data-tab="posts">Photo</a>
+                <a href="#" class="aba-item" data-tab="anexos">Video</a>
+            </nav>
+            
+            <!-- Feed / Grade de Postagens Assimétrica/Estilo Pinterest e Responsiva -->
+            <main class="grid-galeria-posts" id="grid-posts-container">
+                <!-- Conteúdo carregado via JS dinamicamente -->
+                <div class="post-item placeholder" id="posts-placeholder">
+                    <span>Nenhum Post Encontrado</span>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<script>
+    // URL estática para os posts
+    const POSTS_JSON_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Fposts.json?alt=media&token=e7b7b6fb-275a-45e3-9482-7830189c671f';
+
+    // === CONFIGURAÇÃO DO FIREBASE ===
+    const firebaseConfig = {
+        apiKey: "SEU_API_KEY_AQUI", 
+        authDomain: "captu-libraly.firebaseapp.com",
+        databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/",
+        projectId: "captu-libraly",
+        storageBucket: "captu-libraly.firebasestorage.app",
+        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+        appId: "SEU_APP_ID_AQUI",
+        measurementId: "SEU_MEASUREMENT_ID_AQUI"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const storage = firebase.storage();
+    const PROFILE_IMAGES_FOLDER = "captu-libraly/profile_images/";
+    const DEFAULT_PROFILE_PIC = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.appspot.com/o/default_profile.png?alt=media';
+
+    // === VARIÁVEIS DE ESTADO E REFERÊNCIAS ===
+    let isEditing = false;
+    let currentUserId = sessionStorage.getItem('currentUserId'); 
+    let allUserPosts = []; 
+
+    // Elementos de Display
+    const displayUsername = document.getElementById('display-username');
+    const displayNomeCompleto = document.getElementById('display-nome-completo');
+    const displayBio = document.getElementById('display-bio');
+    const profilePic = document.getElementById('profile-pic');
+    
+    // Elementos de Edição
+    const editNomeCompleto = document.getElementById('edit-nome-completo');
+    const editBio = document.getElementById('edit-bio');
+    
+    // Botões
+    const btnEditarSalvar = document.getElementById('btn-editar-salvar');
+    const btnChangePhoto = document.getElementById('btn-change-photo');
+    const inputPhotoUpload = document.getElementById('foto-perfil-upload');
+    const btnLogout = document.getElementById('btn-logout');
+
+    // Containers de Posts e Navegação
+    const gridPostsContainer = document.getElementById('grid-posts-container');
+    const navItems = document.querySelectorAll('.nav-abas-perfil .aba-item');
+    const postsPlaceholder = document.getElementById('posts-placeholder');
+    
+    // Estatísticas
+    const statPosts = document.getElementById('stat-posts');
+    const statLikes = document.getElementById('stat-likes');
+    const statSeguidores = document.getElementById('stat-seguidores');
+
+    /**
+     * Exibe um modal customizado no lugar de alert().
+     */
+    function showCustomMessage(message) {
+        const modal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalBtn = document.getElementById('modal-ok-btn');
+
+        modalMessage.textContent = message;
+        modal.classList.add('active');
+
+        modalBtn.onclick = () => {
+            modal.classList.remove('active');
+        };
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
+    }
+
+    // === FUNÇÕES DE CARREGAMENTO DE DADOS ===
+    async function loadUserData() {
+        if (!currentUserId) {
+            showCustomMessage('Você não está logado. Redirecionando para o login...');
+            window.location.href = './login.html'; 
+            return;
+        }
+
+        try {
+            const userRef = database.ref(`usuarios/${currentUserId}`);
+            const snapshot = await userRef.once('value');
+            const userData = snapshot.val();
+
+            if (!userData) {
+                showCustomMessage('Dados do usuário não encontrados. Redirecionando para o login.');
+                sessionStorage.clear();
+                window.location.href = './login.html';
+                return;
+            }
+
+            // Exibir dados dinâmicos do Firebase nos campos novos
+            displayUsername.textContent = `@${userData.nome_usuario || 'username'}`;
+            displayNomeCompleto.textContent = userData.nome_completo || 'Nome do Usuário';
+            displayBio.textContent = userData.bio && userData.bio.trim() !== '' ? userData.bio : 'Localização não definida';
+            profilePic.src = userData.foto_perfil || DEFAULT_PROFILE_PIC;
+            
+            // Atribuição de Fans / Seguidores vindos do banco de dados (chave real)
+            statSeguidores.textContent = userData.seguidores_count || userData.fans || '0';
+            
+            // Preencher inputs de edição
+            editNomeCompleto.value = userData.nome_completo || '';
+            editBio.value = userData.bio || '';
+
+            // Carregar posts e exibir a aba padrão
+            await fetchUserPosts();
+            handleTabSwitch('posts'); 
+            
+        } catch (error) {
+            console.error("Erro ao carregar dados do usuário:", error);
+            showCustomMessage("Erro ao carregar seu perfil. Tente novamente.");
+        }
+    }
+
+    async function fetchUserPosts() {
+        if (!currentUserId) return;
+
+        try {
+            const response = await fetch(POSTS_JSON_URL);
+            if (!response.ok) {
+                throw new Error(`Erro ao buscar posts: ${response.statusText}`);
+            }
+            const postsData = await response.json();
+
+            allUserPosts = Object.values(postsData).filter(post => {
+                if (!post) return false;
+                if (post.userId && String(post.userId) === String(currentUserId)) return true;
+                if (post.author && post.author.userId && String(post.author.userId) === String(currentUserId)) return true;
+                if (post.autor && post.autor.userId && String(post.autor.userId) === String(currentUserId)) return true;
+                if (post.user && String(post.user) === String(currentUserId)) return true;
+                return false;
+            });
+            
+            // Atualiza as chaves reais de contagem de Posts e Likes (Preenchendo "Following")
+            statPosts.textContent = allUserPosts.length;
+            const totalLikes = allUserPosts.reduce((sum, post) => sum + (post.likes || 0), 0);
+            statLikes.textContent = totalLikes; // Vinculado dinamicamente ao container 'Following'
+
+        } catch (error) {
+            console.error("Erro ao carregar posts do usuário:", error);
+            showCustomMessage("Erro ao carregar postagens.");
+            allUserPosts = [];
+        }
+    }
+
+    function renderPosts(postsToRender) {
+        gridPostsContainer.innerHTML = ''; 
+
+        if (postsToRender.length === 0) {
+            postsPlaceholder.style.display = 'flex';
+            gridPostsContainer.appendChild(postsPlaceholder);
+            postsPlaceholder.querySelector('span').textContent = 'Nenhuma imagem ou post encontrado.';
+            return;
+        }
+
+        postsPlaceholder.style.display = 'none'; 
+
+        postsToRender.forEach(post => {
+            const postItem = document.createElement('div');
+            postItem.className = 'post-card-item';
+
+            const imgUrl = (post.anexo_url && post.anexo_url.startsWith('http') && post.anexo_url)
+                || (post.imagem_url && post.imagem_url.startsWith('http') && post.imagem_url)
+                || (post.attachment && post.attachment.url && post.attachment.url.startsWith('http') && post.attachment.url)
+                || (post.anexo && post.anexo.url && post.anexo.url.startsWith('http') && post.anexo.url)
+                || (post.imagem && post.imagem.startsWith && post.imagem.startsWith('http') && post.imagem)
+                || null;
+
+            let content;
+            if (imgUrl) {
+                content = `<img src="${imgUrl}" alt="Mídia do Post" class="post-img-content">`;
+            } else {
+                const text = post.content || post.conteudo || post.conteúdo || post.texto || post.titulo || '';
+                const snippet = (text || 'Post sem conteúdo.').substring(0, 100);
+                content = `<div class="post-text-card">${snippet}</div>`;
+            }
+
+            postItem.innerHTML = content;
+            gridPostsContainer.appendChild(postItem);
+        });
+    }
+
+    function handleTabSwitch(tabName) {
+        navItems.forEach(item => {
+            item.classList.remove('ativo');
+            if (item.getAttribute('data-tab') === tabName) {
+                item.classList.add('ativo');
+            }
+        });
+
+        let postsToRender = [];
+        if (tabName === 'posts') {
+            postsToRender = allUserPosts;
+        } else if (tabName === 'anexos') {
+            postsToRender = allUserPosts.filter(post => post.anexo_url && post.anexo_url.startsWith('http'));
+        }
+
+        renderPosts(postsToRender);
+    }
+
+    // === FUNÇÕES DE EDIÇÃO E SALVAMENTO ===
+    function toggleEditMode(isSaving = false) {
+        if (isSaving) {
+            isEditing = false; 
+            btnEditarSalvar.textContent = 'Editar Perfil'; 
+            btnChangePhoto.style.display = 'none';
+            displayNomeCompleto.style.display = 'block';
+            editNomeCompleto.style.display = 'none';
+            displayBio.style.display = 'block';
+            editBio.style.display = 'none';
+        } else {
+            isEditing = !isEditing;
+            if (isEditing) {
+                btnEditarSalvar.textContent = 'Salvar Alterações';
+                btnChangePhoto.style.display = 'flex';
+                displayNomeCompleto.style.display = 'none';
+                editNomeCompleto.style.display = 'block';
+                displayBio.style.display = 'none';
+                editBio.style.display = 'block';
+            } else {
+                btnEditarSalvar.textContent = 'Editar Perfil';
+                btnChangePhoto.style.display = 'none';
+                displayNomeCompleto.style.display = 'block';
+                editNomeCompleto.style.display = 'none';
+                displayBio.style.display = 'block';
+                editBio.style.display = 'none';
+            }
+        }
+    }
+
+    async function saveProfileData() {
+        const novoNomeCompleto = editNomeCompleto.value.trim();
+        const novaBio = editBio.value.trim();
+
+        if (novoNomeCompleto === '') {
+             showCustomMessage('O Nome Completo não pode estar vazio.');
+             return;
+        }
+
+        try {
+            const updates = {
+                nome_completo: novoNomeCompleto,
+                bio: novaBio
+            };
+
+            await database.ref(`usuarios/${currentUserId}`).update(updates);
+            showCustomMessage('Perfil atualizado com sucesso!');
+            
+            displayNomeCompleto.textContent = novoNomeCompleto;
+            displayBio.textContent = novaBio;
+            
+            toggleEditMode(true); 
+        } catch (error) {
+            console.error("Erro ao salvar dados do perfil:", error);
+            showCustomMessage("Erro ao salvar as alterações. Tente novamente.");
+        }
+    }
+
+    async function handlePhotoUpload(file) {
+        if (!file) return;
+        try {
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${currentUserId}_${Date.now()}.${fileExtension}`;
+            const imageRef = storage.ref(`${PROFILE_IMAGES_FOLDER}${fileName}`); 
+
+            const uploadTask = imageRef.put(file);
+            
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    btnEditarSalvar.textContent = `Carregando... ${Math.round(progress)}%`;
+                    btnEditarSalvar.disabled = true;
+                }, 
+                (error) => {
+                    btnEditarSalvar.disabled = false;
+                    showCustomMessage(`Erro no upload: ${error.message}`);
+                }, 
+                async () => {
+                    const downloadURL = await imageRef.getDownloadURL();
+                    await database.ref(`usuarios/${currentUserId}`).update({
+                        foto_perfil: downloadURL
+                    });
+
+                    profilePic.src = downloadURL;
+                    showCustomMessage('Foto de perfil atualizada com sucesso!');
+                    btnEditarSalvar.textContent = 'Salvar Alterações'; 
+                    btnEditarSalvar.disabled = false;
+                }
+            );
+        } catch (error) {
+            console.error("Erro no upload da foto:", error);
+            btnEditarSalvar.disabled = false;
+        }
+    }
+    
+    function handleLogout(e) {
+        e.preventDefault();
+        sessionStorage.clear(); 
+        localStorage.removeItem('rememberedUsername'); 
+        window.location.href = './login.html';
+    }
+
+    // === LISTENERS ===
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUserData();
+        
+        btnEditarSalvar.addEventListener('click', () => {
+            if (isEditing) {
+                saveProfileData();
+            } else {
+                toggleEditMode();
+            }
+        });
+
+        btnChangePhoto.addEventListener('click', () => {
+            inputPhotoUpload.click();
+        });
+
+        inputPhotoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handlePhotoUpload(file);
+        });
+
+        btnLogout.addEventListener('click', handleLogout);
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleTabSwitch(item.getAttribute('data-tab'));
+            });
+        });
+    });
+</script>
+<script src="../scripts/script_perfil_actions.js"></script>
+</body>
+</html>

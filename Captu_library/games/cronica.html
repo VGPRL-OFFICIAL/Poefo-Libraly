@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scribe - Desafio Literário</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #f9f6f0;
+            --accent-soft: #b8ced2;
+            --text-main: #3d3d3d; 
+            --error-flash: #f8d7da;
+            --success-flash: #e8f5e9;
+            --card-white: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            transition: background-color 0.2s ease;
+            overflow: hidden;
+        }
+
+        .reader-container {
+            background-color: var(--card-white);
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem 2rem;
+            border-radius: 30px;
+            border: 1px solid var(--accent-soft);
+            box-shadow: 0 15px 35px rgba(184, 206, 210, 0.2);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        #score-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card-white);
+            border-radius: 30px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            z-index: 10;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-item {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px inset #f0f0f0;
+            font-size: 1.1rem;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        @keyframes success-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); color: #66bb6a; }
+        }
+        .success-anim { animation: success-bounce 0.4s ease; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .shake-effect { animation: shake 0.2s ease-in-out 2; }
+
+        .progress-container {
+            width: 100%; height: 4px;
+            background-color: #eee;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 100%; height: 100%;
+            background-color: var(--accent-soft);
+            transition: width 0.3s ease;
+        }
+
+        .stats-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .stat-value {
+            color: var(--text-main);
+            font-weight: 600;
+            display: block;
+            font-size: 1.1rem;
+        }
+
+        .word-box {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-style: italic;
+            margin-bottom: 2.5rem;
+            min-height: 80px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        input {
+            width: 100%; padding: 15px;
+            border: 1.5px solid #eee;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            background-color: #fafafa;
+        }
+
+        input:focus { border-color: var(--accent-soft); }
+
+        .feedback {
+            margin-top: 1rem;
+            font-size: 0.85rem; height: 20px;
+            font-weight: 800;
+            text-transform: uppercase;
+            opacity: 0;
+        }
+
+        button {
+            margin-top: 2rem;
+            background-color: var(--accent-soft);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reader-container" id="main-card">
+        <div id="score-menu">
+            <h1 style="margin-bottom: 0.5rem;">Fim da Obra</h1>
+            <p style="font-family: 'Playfair Display'; font-style: italic; margin-bottom: 2rem; color: #888;">Resumo da sua escrita</p>
+            
+            <div class="result-item">
+                <span>Léxico Total:</span>
+                <span id="final-score" style="font-weight: bold;">0</span>
+            </div>
+            <div class="result-item">
+                <span>Capítulo Alcançado:</span>
+                <span id="final-level" style="font-weight: bold;">1</span>
+            </div>
+            <div class="result-item">
+                <span>Palavras Corretas:</span>
+                <span id="final-words" style="font-weight: bold;">0</span>
+            </div>
+
+            <button onclick="startGame()" style="width: 100%;">Nova Edição</button>
+            <button onclick="window.location.href='index.html'" style="width: 100%; background: none; color: #888; border: 1px solid #eee; margin-top: 10px;">Sair</button>
+        </div>
+
+        <div id="game-ui">
+            <h1>Scribe</h1>
+            <div class="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div class="stats-grid">
+                <div>Capítulo <span id="level" class="stat-value">1</span></div>
+                <div>Léxico <span id="score" class="stat-value">0</span></div>
+                <div>Tempo <span id="timer" class="stat-value">60</span></div>
+            </div>
+            <div class="word-box" id="word-to-type">Pronto?</div>
+            <input type="text" id="input-word" placeholder="Clique para começar..." disabled autocomplete="off">
+            <div class="feedback" id="feedback-msg">TEXTO</div>
+            <button id="start-btn" onclick="startGame()">Iniciar Escrita</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const library = {
+            easy: ["poesia", "livro", "conto", "verso", "autor", "trama", "frase", "obra", "página", "rima"],
+            medium: ["escritura", "narrativa", "clássico", "literatura", "romance", "metáfora", "contexto", "prosa", "epílogo", "soneto"],
+            hard: ["antropomorfismo", "intertextualidade", "verossimilhança", "paralelismo", "anacronismo", "justaposição", "modernismo"]
+        };
+
+        let score = 0, timeLeft = 60, level = 1, wordsCount = 0, isPlaying = false;
+        let queue = [], timerInterval, currentWord;
+
+        const elements = {
+            word: document.getElementById('word-to-type'),
+            input: document.getElementById('input-word'),
+            score: document.getElementById('score'),
+            timer: document.getElementById('timer'),
+            level: document.getElementById('level'),
+            progress: document.getElementById('progress-bar'),
+            feedback: document.getElementById('feedback-msg'),
+            startBtn: document.getElementById('start-btn'),
+            card: document.getElementById('main-card'),
+            menu: document.getElementById('score-menu'),
+            gameUI: document.getElementById('game-ui'),
+            fScore: document.getElementById('final-score'),
+            fLevel: document.getElementById('final-level'),
+            fWords: document.getElementById('final-words')
+        };
+
+        function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+        function startGame() {
+            isPlaying = true;
+            score = 0; timeLeft = 60; level = 1; wordsCount = 0;
+            
+            elements.menu.style.display = "none";
+            elements.gameUI.style.display = "block";
+            elements.score.innerText = score;
+            elements.level.innerText = level;
+            elements.input.disabled = false;
+            elements.input.value = "";
+            elements.input.focus();
+            elements.startBtn.style.display = "none";
+            
+            nextWord();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            if (timeLeft < 0) timeLeft = 0;
+            elements.timer.innerText = timeLeft;
+            elements.progress.style.width = (timeLeft / 60) * 100 + "%";
+            if (timeLeft <= 0) gameOver();
+        }
+
+        function nextWord() {
+            if (queue.length === 0) {
+                let diff = level < 3 ? 'easy' : level < 6 ? 'medium' : 'hard';
+                queue = shuffle([...library[diff]]);
+            }
+            currentWord = queue.pop();
+            elements.word.innerText = currentWord;
+        }
+
+        function triggerError() {
+            timeLeft = Math.max(0, timeLeft - 5);
+            elements.feedback.innerText = "-5 SEGUNDOS!";
+            elements.feedback.style.color = "#d9534f";
+            elements.feedback.style.opacity = "1";
+            document.body.style.backgroundColor = "var(--error-flash)";
+            elements.card.classList.add('shake-effect');
+            setTimeout(() => {
+                document.body.style.backgroundColor = "var(--bg-page)";
+                elements.feedback.style.opacity = "0";
+                elements.card.classList.remove('shake-effect');
+            }, 400);
+            if (timeLeft <= 0) gameOver();
+        }
+
+        function triggerSuccess() {
+            wordsCount++;
+            document.body.style.backgroundColor = "var(--success-flash)";
+            elements.word.classList.add('success-anim');
+            setTimeout(() => {
+                document.body.style.backgroundColor = "var(--bg-page)";
+                elements.word.classList.remove('success-anim');
+            }, 400);
+        }
+
+        elements.input.addEventListener('input', () => {
+            const val = elements.input.value.trim().toLowerCase();
+            if (val !== "" && !currentWord.startsWith(val)) {
+                elements.input.value = "";
+                triggerError();
+                nextWord();
+                return;
+            }
+            if (val === currentWord) {
+                score += currentWord.length * 10;
+                elements.score.innerText = score;
+                timeLeft = Math.min(60, timeLeft + 2);
+                triggerSuccess();
+                if (score >= level * 400) {
+                    level++;
+                    elements.level.innerText = level;
+                    queue = [];
+                }
+                elements.input.value = "";
+                nextWord();
+            }
+        });
+
+        async function gameOver() {
+            clearInterval(timerInterval);
+            isPlaying = false;
+            elements.input.disabled = true;
+            
+            // Envio de Pontuação: Salva recorde no localStorage
+            let record = parseInt(localStorage.getItem('poefo_cronica')) || 0;
+            if (score > record) {
+                localStorage.setItem('poefo_cronica', score);
+            }
+            
+            if (typeof incrementUserScore === 'function') {
+                await incrementUserScore(score).catch(() => saveUserProgressLocalFallback(score, 0));
+            } else {
+                saveUserProgressLocalFallback(score, 0);
+            }
+            
+            elements.fScore.innerText = score;
+            elements.fLevel.innerText = level;
+            elements.fWords.innerText = wordsCount;
+            
+            elements.gameUI.style.display = "none";
+            elements.menu.style.display = "flex";
+        }
+    </script>
+</body>
+</html>

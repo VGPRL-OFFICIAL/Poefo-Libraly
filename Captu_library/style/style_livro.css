@@ -1,0 +1,359 @@
+/* style/style_livro.css */
+
+/* --- Variáveis Globais (Tema Claro) --- */
+:root {
+    --primary-color: #4e4e4e;
+    --background-color: #ffffff; 
+    --card-background: #ffffff;
+    --text-color: #212121; 
+    --secondary-text-color: #6c757d; 
+    --border-color: #e9ecef;
+    --action-icon-color: #495057;
+    --disabled-color: #ced4da;
+    --header-height: 250px; 
+    --like-active-color: #F91880; /* Cor do Like Ativo */
+}
+
+body {
+    font-family: 'Roboto', 'Arial', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.main-screen {
+    padding-bottom: 70px;
+    min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+    .main-screen {
+        padding-bottom: 130px;
+    }
+}
+
+/* --- Top Header e Ações (Voltar) --- */
+.top-header-actions {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    /* Estilo transparente para sobrepor a capa */
+    background: transparent; 
+}
+
+.action-icon-top {
+    font-size: 1.2em;
+    color: #fff; /* Ícone branco sobre a capa */
+    background: rgba(0, 0, 0, 0.4);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* --- Capa e Header de Fundo --- */
+.main-content-header {
+    height: var(--header-height);
+    background: var(--book-cover-url) no-repeat center center / cover;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-content-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: blur(5px); /* Suaviza o blur */
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* --- Detalhes do Livro (Conteúdo Principal) --- */
+.book-details-section {
+    margin-top: calc(-1 * var(--header-height) / 3); /* Sobe um terço da capa */
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+    padding: 20px 20px 0;
+    position: relative;
+    z-index: 5;
+    box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.1);
+    background-color: var(--card-background); /* Adicionado para garantir o fundo */
+}
+
+.book-cover-large {
+    width: 120px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-top: -80px; /* Puxa a capa para fora do container */
+    margin-bottom: 15px;
+}
+
+.book-title-detail {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 5px;
+}
+
+.book-author-detail {
+    font-size: 1.1em;
+    color: var(--secondary-text-color);
+    margin-bottom: 10px;
+}
+
+.book-metadata-tags {
+    display: inline-block;
+    background-color: #e6f7ff; /* Cor de tag */
+    color: var(--primary-color);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+/* --- Botão Ler Central --- */
+.read-button-container-central {
+    padding: 0 20px 20px;
+    background-color: var(--card-background);
+}
+
+.ler-btn-main {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    color: #ffffff;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.ler-btn-main:hover:not(:disabled) {
+    background-color: #000000;
+}
+
+.ler-btn-main:disabled, .ler-btn-main.disabled {
+    background-color: var(--disabled-color);
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* --- Barra de Ações (Likes, Diva, Salvar) --- */
+.book-actions-row-simple {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--card-background);
+}
+
+.action-item-simple {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--secondary-text-color);
+    transition: color 0.2s;
+}
+
+.action-icon {
+    font-size: 1.4em;
+    color: var(--action-icon-color);
+    margin-bottom: 5px;
+}
+
+.classification-icon {
+    width: 25px;
+    height: 25px;
+    object-fit: contain;
+    margin-bottom: 5px;
+}
+
+.action-count {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--primary-color); 
+    margin-top: 2px;
+}
+
+/* ⭐️ Estilos para o Like (CORRIGIDO) ⭐️ */
+#like-action {
+    /* Define o item de ação de like como clicável */
+    cursor: pointer; 
+}
+
+#like-icon {
+    /* Garante que o ícone em si tenha transições suaves */
+    cursor: pointer;
+    transition: color 0.2s ease-in-out, transform 0.1s;
+}
+
+/* CORREÇÃO VISUAL: Usa o ID e a classe 'liked' para máxima especificidade */
+#like-icon.liked {
+    color: var(--like-active-color) !important; /* !important garante que a cor ativa prevaleça sobre qualquer outra regra */
+    transform: scale(1.1);
+}
+
+/* Garante que o ícone de coração preenchido (fas) tenha o peso correto */
+#like-icon.fas {
+    font-weight: 900; 
+}
+/* --- FIM DA CORREÇÃO --- */
+
+/* --- Sinopse e Comentários --- */
+.book-section {
+    padding: 20px;
+    margin-top: 0; 
+    background-color: var(--background-color);
+}
+
+.section-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 15px;
+}
+
+.book-sinopse {
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: var(--secondary-text-color);
+    text-align: justify;
+}
+
+/* ⭐️ Estilos para Comentários (do código anterior, com ajustes de delete) ⭐️ */
+.comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.comment-item {
+    display: flex;
+    /* Altera para align-items: flex-start; para melhor alinhamento com a foto */
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 10px; /* */
+    border-bottom: 1px solid var(--border-color); /* */
+}
+
+.comment-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.comment-content-wrapper {
+    display: flex; /* Mantém o layout flex para o conteúdo */
+    flex-direction: column;
+    flex-grow: 1; /* */
+}
+
+.comment-user {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.comment-text {
+    display: block; /* */
+    font-size: 0.95em; /* */
+    line-height: 1.4;
+    color: var(--secondary-text-color);
+    margin-top: 2px; /* */
+}
+
+/* ⭐️ Container para tempo e botão de deletar */
+.comment-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+    margin-top: 5px;
+    font-size: 0.8em;
+}
+
+.comment-time {
+    color: var(--secondary-text-color);
+    opacity: 0.8;
+}
+
+/* ⭐️ Estilo para o ícone de exclusão */
+.delete-icon {
+    color: #dc3545; /* Cor vermelha para exclusão */
+    font-size: 1.1em;
+    cursor: pointer;
+    margin-left: auto; /* Empurra para a direita */
+    padding: 5px; 
+    transition: color 0.2s;
+}
+
+.delete-icon:hover {
+    color: #a71d2a;
+}
+
+
+/* --- Bottom Bar (Input de Comentário) --- */
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    background-color: var(--card-background);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    z-index: 1001;
+}
+
+.bottom-bar .search-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    margin-right: 10px;
+    font-size: 1em;
+}
+
+.bottom-bar .send-icon {
+    font-size: 1.4em;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 5px;
+    transition: opacity 0.2s;
+}
+
+.bottom-bar .send-icon:hover {
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .bottom-bar {
+        bottom: 50px;
+    }
+}

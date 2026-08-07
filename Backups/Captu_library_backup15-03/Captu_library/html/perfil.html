@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Poefo</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- O arquivo de estilo será gerado separadamente -->
+    <link rel="stylesheet" href="../style/style_perfil.css"> 
+    
+    <!-- Use as versões mais recentes do Firebase (v9+) se possível, mas mantendo a v8 por consistência com o código original -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+</head>
+<body>
+
+    <!-- MODAL CUSTOMIZADO (SUBSTITUTO DO ALERT) -->
+    <div id="custom-modal" class="custom-modal">
+        <div class="modal-content">
+            <p id="modal-message"></p>
+            <button id="modal-ok-btn" class="botao-acao">OK</button>
+        </div>
+    </div>
+
+    <div class="perfil-container">
+        
+        <header class="perfil-header">
+            <div class="foto-perfil-wrapper"> 
+                <div class="foto-perfil">
+                    <img id="profile-pic" src="../images/icon_logo.png" alt="Foto de Perfil do Usuário">
+                    <input type="file" id="foto-perfil-upload" accept="image/*" style="display: none;">
+                    <button id="btn-change-photo" class="botao-acao editar-foto-btn" title="Alterar Foto" style="display:none;"><i class="fas fa-camera"></i></button>
+                </div>
+            </div>
+            
+            <div class="info-principal">
+                <div class="nome-e-acao">
+                    <h1 class="username" id="display-username">@carregando...</h1>
+                    
+                    <div class="botoes-desktop">
+                        <button id="btn-editar-salvar" class="botao-acao">Editar Perfil</button>
+                        <button id="btn-logout" class="botao-acao secundario"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                    </div>
+                </div>
+                
+                <p class="nome-completo">
+                    <span id="display-nome-completo">Carregando Nome...</span>
+                    <input type="text" id="edit-nome-completo" class="edit-input" style="display:none;">
+                </p>
+                
+                <p class="bio">
+                    <span id="display-bio">Carregando Biografia...</span>
+                    <textarea id="edit-bio" class="edit-textarea" style="display:none;"></textarea>
+                </p>
+
+                <div class="estatisticas">
+                    <div class="stat-item">
+                        <span class="numero" id="stat-posts">0</span>
+                        <span class="label">posts</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="numero" id="stat-seguidores">0</span>
+                        <span class="label">seguidores</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="numero" id="stat-likes">0</span>
+                        <span class="label">likes</span>
+                    </div>
+                </div>
+
+                <div class="botoes-mobile">
+                    <button id="btn-editar-salvar-mobile" class="botao-acao">Editar Perfil</button>
+    
+                    <a id="btn-logout-mobile" href="./login.html" style="text-decoration: none;" class="botao-acao secundario"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                </div>
+                
+            </div>
+        </header>
+
+        <div class="separador"></div>
+        
+        <nav class="nav-posts">
+            <a href="#" class="nav-item ativo" data-tab="posts">
+                <i class="fas fa-grip"></i> Posts
+            </a>
+            <a href="#" class="nav-item" data-tab="salvos">
+                <i class="fas fa-bookmark"></i> Salvos
+            </a>
+            <a href="#" class="nav-item" data-tab="anexos">
+                <i class="fas fa-paperclip"></i> Anexos
+            </a>
+        </nav>
+        
+        <main class="grid-posts" id="grid-posts-container">
+            <!-- Conteúdo carregado via JS -->
+            <div class="post-item placeholder" id="posts-placeholder"><span>Nenhum Post Encontrado</span></div>
+        </main>
+
+    </div>
+    
+    <div class="nav-bar">
+        <a href="#" class="nav-item-bar">
+            <img src="../images/ic_game.png" alt="Game" class="nav-icon">
+            <span>Games</span>
+        </a>
+        <a href="./editor.html" class="nav-item-bar">
+            <img src="../images/ic_edition.png" alt="Edition" class="nav-icon">
+            <span>Criar</span>
+        </a>
+        <a href="#" class="nav-item-bar">
+            <img src="../images/ic_home.png" alt="Home" class="nav-icon">
+            <span>Inicio</span>
+        </a>
+        <a href="./feed.html" class="nav-item-bar">
+            <img src="../images/ic_cloud_off_white.png" alt="Feed" class="nav-icon">
+            <span>Feed</span>
+        </a>
+        <a href="./perfil.html" class="nav-item-bar nav-item-active">
+            <img src="../images/user_ic.png" alt="Perfil" class="nav-icon nav-icon-active">
+            <span>Conta</span>
+        </a>
+    </div>
+
+<script>
+    // URL estática para os posts
+    const POSTS_JSON_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Fposts.json?alt=media&token=e7b7b6fb-275a-45e3-9482-7830189c671f';
+
+    // === CONFIGURAÇÃO DO FIREBASE ===
+    const firebaseConfig = {
+        apiKey: "SEU_API_KEY_AQUI", 
+        authDomain: "captu-libraly.firebaseapp.com",
+        databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/",
+        projectId: "captu-libraly",
+        storageBucket: "captu-libraly.firebasestorage.app",
+        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+        appId: "SEU_APP_ID_AQUI",
+        measurementId: "SEU_MEASUREMENT_ID_AQUI"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const storage = firebase.storage();
+    const PROFILE_IMAGES_FOLDER = "captu-libraly/profile_images/";
+    const DEFAULT_PROFILE_PIC = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.appspot.com/o/default_profile.png?alt=media';
+
+    // === VARIÁVEIS DE ESTADO E REFERÊNCIAS ===
+    let isEditing = false;
+    // O userId deve ser o ID que você usa para identificar o criador de posts
+    let currentUserId = sessionStorage.getItem('currentUserId'); 
+    let allUserPosts = []; // Armazena todos os posts do usuário
+
+    // Elementos de Display
+    const displayUsername = document.getElementById('display-username');
+    const displayNomeCompleto = document.getElementById('display-nome-completo');
+    const displayBio = document.getElementById('display-bio');
+    const profilePic = document.getElementById('profile-pic');
+    
+    // Elementos de Edição
+    const editNomeCompleto = document.getElementById('edit-nome-completo');
+    const editBio = document.getElementById('edit-bio');
+    
+    // Botões
+    const btnEditarSalvar = document.getElementById('btn-editar-salvar');
+    const btnEditarSalvarMobile = document.getElementById('btn-editar-salvar-mobile');
+    const btnChangePhoto = document.getElementById('btn-change-photo');
+    const inputPhotoUpload = document.getElementById('foto-perfil-upload');
+    const btnLogout = document.getElementById('btn-logout');
+    const btnLogoutMobile = document.getElementById('btn-logout-mobile'); 
+
+    // Containers de Posts e Navegação
+    const gridPostsContainer = document.getElementById('grid-posts-container');
+    const navItems = document.querySelectorAll('.nav-posts .nav-item');
+    const postsPlaceholder = document.getElementById('posts-placeholder');
+    
+    // Estatísticas
+    const statPosts = document.getElementById('stat-posts');
+    const statLikes = document.getElementById('stat-likes');
+
+    // === FUNÇÕES DE UTILIDADE (MODAL) ===
+
+    /**
+     * Exibe um modal customizado no lugar de alert().
+     * @param {string} message A mensagem a ser exibida.
+     */
+    function showCustomMessage(message) {
+        const modal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalBtn = document.getElementById('modal-ok-btn');
+
+        modalMessage.textContent = message;
+        modal.classList.add('active');
+
+        // Fecha o modal ao clicar em OK
+        modalBtn.onclick = () => {
+            modal.classList.remove('active');
+        };
+
+        // Fecha o modal ao clicar fora
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
+    }
+
+    // === FUNÇÕES DE CARREGAMENTO DE DADOS ===
+    async function loadUserData() {
+        if (!currentUserId) {
+            showCustomMessage('Você não está logado. Redirecionando para o login...');
+            window.location.href = './login.html'; 
+            return;
+        }
+
+        try {
+            const userRef = database.ref(`usuarios/${currentUserId}`);
+            const snapshot = await userRef.once('value');
+            const userData = snapshot.val();
+
+            if (!userData) {
+                showCustomMessage('Dados do usuário não encontrados. Redirecionando para o login.');
+                sessionStorage.clear();
+                window.location.href = './login.html';
+                return;
+            }
+
+            // Exibir dados
+            displayUsername.textContent = `@${userData.nome_usuario || 'N/A'}`;
+            displayNomeCompleto.textContent = userData.nome_completo || 'Nome não definido';
+            displayBio.textContent = userData.bio && userData.bio.trim() !== '' ? userData.bio : 'Adicione uma biografia sobre você.';
+            profilePic.src = userData.foto_perfil || DEFAULT_PROFILE_PIC;
+            
+            // Preencher inputs de edição
+            editNomeCompleto.value = userData.nome_completo || '';
+            editBio.value = userData.bio || '';
+
+            // Carregar posts e exibir a aba padrão
+            await fetchUserPosts();
+            handleTabSwitch('posts'); 
+            
+        } catch (error) {
+            console.error("Erro ao carregar dados do usuário:", error);
+            showCustomMessage("Erro ao carregar seu perfil. Tente novamente.");
+        }
+    }
+
+    async function fetchUserPosts() {
+        if (!currentUserId) return;
+
+        try {
+            const response = await fetch(POSTS_JSON_URL);
+            if (!response.ok) {
+                throw new Error(`Erro ao buscar posts: ${response.statusText}`);
+            }
+            const postsData = await response.json();
+
+            // Filtra apenas os posts do usuário atual. Suporta vários formatos: userId, author.userId, autor.userId
+            allUserPosts = Object.values(postsData).filter(post => {
+                if (!post) return false;
+                if (post.userId && String(post.userId) === String(currentUserId)) return true;
+                if (post.author && post.author.userId && String(post.author.userId) === String(currentUserId)) return true;
+                if (post.autor && post.autor.userId && String(post.autor.userId) === String(currentUserId)) return true;
+                // alguns JSONs têm 'user' or nested shapes
+                if (post.user && String(post.user) === String(currentUserId)) return true;
+                return false;
+            });
+            
+            // Atualiza as estatísticas de posts e likes (Likes são somados de todos os posts)
+            statPosts.textContent = allUserPosts.length;
+            const totalLikes = allUserPosts.reduce((sum, post) => sum + (post.likes || 0), 0);
+            statLikes.textContent = totalLikes;
+
+        } catch (error) {
+            console.error("Erro ao carregar posts do usuário:", error);
+            showCustomMessage("Erro ao carregar postagens.");
+            allUserPosts = [];
+        }
+    }
+
+    /**
+     * Renderiza os posts filtrados na grade de posts.
+     * @param {Array} postsToRender O array de posts a ser exibido.
+     */
+    function renderPosts(postsToRender) {
+        gridPostsContainer.innerHTML = ''; // Limpa o container
+
+        if (postsToRender.length === 0) {
+            postsPlaceholder.style.display = 'flex';
+            gridPostsContainer.appendChild(postsPlaceholder);
+            postsPlaceholder.querySelector('span').textContent = 'Nenhum post encontrado.';
+            return;
+        }
+
+        postsPlaceholder.style.display = 'none'; // Esconde o placeholder
+
+        postsToRender.forEach(post => {
+            const postItem = document.createElement('div');
+            postItem.className = 'post-item has-content';
+
+            // Detecta imagens em várias chaves possíveis
+            const imgUrl = (post.anexo_url && post.anexo_url.startsWith('http') && post.anexo_url)
+                || (post.imagem_url && post.imagem_url.startsWith('http') && post.imagem_url)
+                || (post.attachment && post.attachment.url && post.attachment.url.startsWith('http') && post.attachment.url)
+                || (post.anexo && post.anexo.url && post.anexo.url.startsWith('http') && post.anexo.url)
+                || (post.imagem && post.imagem.startsWith && post.imagem.startsWith('http') && post.imagem)
+                || null;
+
+            let content;
+            if (imgUrl) {
+                content = `<img src="${imgUrl}" alt="Capa do Post" class="post-image-cover">`;
+            } else {
+                const text = post.content || post.conteudo || post.conteúdo || post.texto || post.titulo || '';
+                const snippet = (text || 'Post sem conteúdo.').substring(0, 100) + (text && text.length > 100 ? '...' : '');
+                content = `<div class="post-text-snippet">${snippet}</div>`;
+            }
+
+            const hasAttachment = imgUrl ? '<i class="fas fa-paperclip attachment-icon" title="Anexo"></i>' : '';
+
+            postItem.innerHTML = `${content}${hasAttachment}`;
+            postItem.title = (post.titulo || post.texto || post.content || '').substring(0, 80);
+            gridPostsContainer.appendChild(postItem);
+        });
+    }
+
+    /**
+     * Lógica para trocar de aba (Posts, Salvos, Anexos).
+     * @param {string} tabName O nome da aba ('posts', 'salvos', 'anexos').
+     */
+    function handleTabSwitch(tabName) {
+        // Atualiza a classe ativa na navegação
+        navItems.forEach(item => {
+            item.classList.remove('ativo');
+            if (item.getAttribute('data-tab') === tabName) {
+                item.classList.add('ativo');
+            }
+        });
+
+        let postsToRender = [];
+
+        if (tabName === 'posts') {
+            // Todos os posts do usuário
+            postsToRender = allUserPosts;
+        } else if (tabName === 'anexos') {
+            // Posts do usuário que possuem um anexo_url
+            postsToRender = allUserPosts.filter(post => post.anexo_url && post.anexo_url.startsWith('http'));
+        } else if (tabName === 'salvos') {
+            // Simulação: Apenas o placeholder
+            postsToRender = [];
+            postsPlaceholder.querySelector('span').textContent = 'Você não tem nenhum post salvo.';
+        }
+
+        renderPosts(postsToRender);
+    }
+
+
+    // === FUNÇÕES DE EDIÇÃO E SALVAMENTO ===
+    function toggleEditMode(isSaving = false) {
+        if (isSaving) {
+            isEditing = false; 
+            // Garante que o texto volte ao normal
+            btnEditarSalvar.textContent = 'Editar Perfil'; 
+            btnEditarSalvarMobile.textContent = 'Editar Perfil'; 
+            btnChangePhoto.style.display = 'none';
+            // Garante que o botão de Sair reapareça
+            btnLogout.style.display = 'inline-block';
+            btnLogoutMobile.style.display = 'inline-block';
+
+        } else {
+            isEditing = !isEditing;
+            
+            if (isEditing) {
+                // Entra no modo de edição
+                btnEditarSalvar.textContent = 'Salvar Alterações';
+                btnEditarSalvarMobile.textContent = 'Salvar Alterações';
+                btnChangePhoto.style.display = 'block';
+                btnLogout.style.display = 'none'; // Esconde o botão Sair
+                btnLogoutMobile.style.display = 'none'; // Esconde o botão Sair mobile
+
+                // Mostrar campos de edição, esconder campos de display
+                displayNomeCompleto.style.display = 'none';
+                editNomeCompleto.style.display = 'block';
+                displayBio.style.display = 'none';
+                editBio.style.display = 'block';
+
+            } else {
+                // Volta para o modo de visualização (se não for pelo clique em Salvar)
+                btnEditarSalvar.textContent = 'Editar Perfil';
+                btnEditarSalvarMobile.textContent = 'Editar Perfil';
+                btnChangePhoto.style.display = 'none';
+                btnLogout.style.display = 'inline-block';
+                btnLogoutMobile.style.display = 'inline-block';
+
+                // Mostrar campos de display, esconder campos de edição
+                displayNomeCompleto.style.display = 'block';
+                editNomeCompleto.style.display = 'none';
+                displayBio.style.display = 'block';
+                editBio.style.display = 'none';
+            }
+        }
+    }
+
+    async function saveProfileData() {
+        const novoNomeCompleto = editNomeCompleto.value.trim();
+        const novaBio = editBio.value.trim();
+
+        if (novoNomeCompleto === '') {
+             showCustomMessage('O Nome Completo não pode estar vazio.');
+             return;
+        }
+
+        try {
+            // Prepara o objeto de atualização
+            const updates = {
+                nome_completo: novoNomeCompleto,
+                bio: novaBio
+            };
+
+            await database.ref(`usuarios/${currentUserId}`).update(updates);
+
+            showCustomMessage('Perfil atualizado com sucesso!');
+            // Atualiza os elementos de display 
+            displayNomeCompleto.textContent = novoNomeCompleto;
+            displayBio.textContent = novaBio && novaBio.trim() !== '' ? novaBio : 'Adicione uma biografia sobre você.';
+            
+            toggleEditMode(true); // Sai do modo de edição
+            
+        } catch (error) {
+            console.error("Erro ao salvar dados do perfil:", error);
+            showCustomMessage("Erro ao salvar as alterações. Tente novamente.");
+        }
+    }
+
+    async function handlePhotoUpload(file) {
+        if (!file) return;
+        if (!currentUserId) {
+            showCustomMessage('Usuário não identificado para o upload.');
+            return;
+        }
+
+        try {
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${currentUserId}_${Date.now()}.${fileExtension}`;
+            // Ajuste no path para usar a variável PROFILE_IMAGES_FOLDER
+            const imageRef = storage.ref(`${PROFILE_IMAGES_FOLDER}${fileName}`); 
+
+            const uploadTask = imageRef.put(file);
+            
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    const progressText = `Upload: ${Math.round(progress)}%`;
+                    btnEditarSalvar.textContent = progressText;
+                    btnEditarSalvar.disabled = true;
+                    btnEditarSalvarMobile.textContent = progressText;
+                    btnEditarSalvarMobile.disabled = true;
+                }, 
+                (error) => {
+                    btnEditarSalvar.disabled = false;
+                    btnEditarSalvarMobile.disabled = false;
+                    showCustomMessage(`Erro no upload: ${error.message}`);
+                    throw new Error(error.message);
+                }, 
+                async () => {
+                    // Upload completo, obtém a URL
+                    const downloadURL = await imageRef.getDownloadURL();
+                    
+                    // Atualiza o RTDB com a nova URL
+                    await database.ref(`usuarios/${currentUserId}`).update({
+                        foto_perfil: downloadURL
+                    });
+
+                    // Atualiza a imagem na tela e restaura o botão
+                    profilePic.src = downloadURL;
+                    showCustomMessage('Foto de perfil atualizada com sucesso!');
+                    btnEditarSalvar.textContent = 'Salvar Alterações'; // Volta para o estado de Salvar
+                    btnEditarSalvar.disabled = false;
+                    btnEditarSalvarMobile.textContent = 'Salvar Alterações'; 
+                    btnEditarSalvarMobile.disabled = false;
+                }
+            );
+
+        } catch (error) {
+            console.error("Erro no upload da foto:", error);
+            showCustomMessage(`Erro ao carregar a foto: ${error.message}`);
+            // Restaura o botão em caso de erro
+            btnEditarSalvar.textContent = isEditing ? 'Salvar Alterações' : 'Editar Perfil'; 
+            btnEditarSalvar.disabled = false;
+            btnEditarSalvarMobile.textContent = isEditing ? 'Salvar Alterações' : 'Editar Perfil';
+            btnEditarSalvarMobile.disabled = false;
+        }
+    }
+    
+    // Simplifica a função de logout (sem confirm)
+    function handleLogout(e) {
+        e.preventDefault(); // Evita o redirecionamento imediato do <a> no mobile
+        sessionStorage.clear(); 
+        localStorage.removeItem('rememberedUsername'); 
+        window.location.href = './login.html';
+    }
+
+
+    // === LISTENERS ===
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUserData();
+        
+        // Listener principal para o botão Editar/Salvar (Desktop e Mobile)
+        [btnEditarSalvar, btnEditarSalvarMobile].forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isEditing) {
+                    saveProfileData();
+                } else {
+                    toggleEditMode();
+                }
+            });
+        });
+
+        // Listener para o botão de Alterar Foto
+        btnChangePhoto.addEventListener('click', () => {
+            inputPhotoUpload.click();
+        });
+
+        // Listener para o input file 
+        inputPhotoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handlePhotoUpload(file);
+            }
+        });
+
+        // Listeners para o Logout (Desktop e Mobile)
+        btnLogout.addEventListener('click', handleLogout);
+        btnLogoutMobile.addEventListener('click', handleLogout);
+
+        // Listeners para a navegação de Posts/Anexos
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleTabSwitch(item.getAttribute('data-tab'));
+            });
+        });
+    });
+
+</script>
+
+<!-- Script auxiliar: lista e permite apagar posts do usuário -->
+<script src="../scripts/script_perfil_actions.js"></script>
+
+</body>
+</html>

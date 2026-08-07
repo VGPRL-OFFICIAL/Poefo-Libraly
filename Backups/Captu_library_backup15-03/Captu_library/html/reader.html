@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de PDF</title>
+      <link rel="icon" href="../images/Logo_Poefo.png"  type="image/png">
+    <link rel="stylesheet" href="../style/style_reader.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="reader-header">
+        <div>
+            <button id="back-btn" class="btn"><i class="fas fa-arrow-left"></i> Voltar</button>
+        </div>
+        
+        <div>
+            <button id="collection-btn" class="btn collection-btn">
+                <img id="collection-icon" 
+                     src="..//images/ic_coletion.png" 
+                     alt="Adicionar à Coleção" 
+                     class="collection-icon">
+                
+            </button>
+        </div>
+    </div>
+    <iframe id="pdf-frame" class="reader-iframe" src="about:blank"></iframe>
+
+    <script src="../scripts/script_reader.js"></script>
+</body>
+</html>

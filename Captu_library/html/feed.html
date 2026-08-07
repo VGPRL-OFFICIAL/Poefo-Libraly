@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed Poefo</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+   
+     <link rel="stylesheet" href="../style/style_feed.css">
+      <link rel="stylesheet" href="../style/style_home.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="./home.html" class="nav-link">Início</a>
+                <a href="./games_menu.html" class="nav-link">Games</a>
+                <a href="./feed.html" class="nav-link active">Feed</a>
+                <a href="./editor.html" class="nav-link">Criar</a>
+                <a href="./perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-section">
+                    <div class="search-wrapper">
+                        <i class="fa-solid fa-magnifying-glass img_search"></i>
+                        <input type="text" id="search-input-mobile" placeholder="Buscar no Poefo">
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <a href="./perfil.html" class="profile-link-mobile">
+                        <img src="../images/user_ic.png" alt="Perfil" class="profile-pic-mobile" id="mobile-profile-pic">
+                    </a>
+                </div>
+            </header>
+
+            <div class="container">
+                <div class="feed">
+                  
+                    <div id="no-results-message" class="loading-message hidden">
+                        <i class="fa-solid fa-exclamation-circle mr-2"></i> Nenhum resultado encontrado.
+                    </div>
+
+                    <div id="feed-container">
+                        <div id="loading-message" class="loading-message">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Carregando Feed...
+                        </div>
+                        <div id="error-message" class="error-message hidden">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar o Feed.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-sidebar">
+                    <div class="search-bar-desktop">
+                        <div class="search-input" id="search-input-desktop-container">
+                            <i class="fa-solid fa-magnifying-glass img_search"></i>
+                            <input type="text" id="search-input-desktop" placeholder="Buscar no Poefo">
+                        </div>
+                    </div>
+                    <div class="trends-control">
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <input type="checkbox" id="follow-filter-checkbox"> Mostrar apenas seguidos
+                        </label>
+                    </div>
+                    <div class="trends-box">
+                        <h3>O que está acontecendo</h3>
+                        <div class="trend-item"><span class="trend-category">...</span>
+                            <p class="font-bold">carregando...</p><span class="trend-posts">0 curtidas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <a href="./publicador.html" class="fab" title="Criar Post">
+       
+        <img src="../images/ic_edition.png" class="fab_icon">
+    </a>
+
+    <nav class="mobile-nav">
+            <a href="./home.html" class="nav-item"><img src="../images/ic_home.png"></a>
+            <a href="./feed.html" class="nav-item active"><img src="../images/ic_cloud_off_white.png"></a>
+            <a href="./editor.html" class="nav-item"><img src="../images/ic_edition.png"></a>
+            <a href="./perfil.html" class="nav-item"><img src="../images/user_ic.png"></a>
+        </nav>
+
+    <div class="home-indicator"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2",
+            measurementId: "G-7NM9CC35CX"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const storage = firebase.storage();
+        const db = firebase.database();
+    </script>
+    <script src="../scripts/script_feed.js"></script>
+
+</body>
+
+</html>

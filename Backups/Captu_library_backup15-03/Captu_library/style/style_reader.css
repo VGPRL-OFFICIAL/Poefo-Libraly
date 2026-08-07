@@ -1,0 +1,64 @@
+/* style_reader.css */
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #111; 
+    font-family: -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.reader-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px; 
+    background: #222; 
+    color: #ddd; 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); 
+    height: 28px; 
+    box-sizing: border-box; 
+}
+
+.reader-iframe {
+    width: 100%;
+    height: calc(100vh - 36px); 
+    border: none;
+}
+
+.btn {
+    padding: 4px 8px; 
+    cursor: pointer;
+    background: none; 
+    color: #ddd; 
+    border: 1px solid #444; 
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px; 
+}
+
+.btn:hover {
+    background-color: #333; 
+    border-color: #666;
+}
+
+.btn i {
+    font-size: 14px;
+}
+
+/* NOVO ESTILO PARA O ÍCONE DA COLEÇÃO */
+.collection-icon {
+    width: 20px; /* Tamanho fixo para o ícone */
+    height: 20px;
+    /* Para garantir que a imagem não seja distorcida */
+    object-fit: contain; 
+}
+
+.collection-btn {
+    /* Ajuste fino se necessário para centralizar */
+    line-height: 1;
+}

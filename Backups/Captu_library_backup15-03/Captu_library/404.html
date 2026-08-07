@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Não Encontrada - 404</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #424242; /* Azul escuro */
+            --secondary-color: #424242; /* Azul claro */
+            --text-color: #ecf0f1; /* Cinza claro */
+            --background-color: #f8f8f8; /* Fundo bem claro */
+            --error-color: #e74c3c; /* Vermelho */
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--background-color);
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+       
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 8em; /* Grande para o 404 */
+            margin: 0;
+            color: var(--error-color);
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2em;
+            color: var(--primary-color);
+            margin-top: 10px;
+        }
+
+        p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #2980b9; /* Um tom mais escuro */
+        }
+
+        /* Responsividade básica */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 6em;
+            }
+            h2 {
+                font-size: 1.8em;
+            }
+            p {
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 4em;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+            .container {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <h3>Página Não Encontrada</h3>
+        <p>A página que você está procurando pode ter sido removida, ou estar temporariamente indisponível, verifique o endereço ou clique no botão abaixo para retornar à página inicial.</p>
+        <a href="/Captu_library/index.html" class="button">Ir para a Página Inicial</a>
+    </div>
+</body>
+</html>

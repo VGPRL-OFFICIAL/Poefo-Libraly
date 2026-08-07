@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat - Poefo</title>
+     <link rel="icon" href="../images/Logo_Poefo.png"  type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link rel="stylesheet" href="../style/style_chat.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="./home.html" class="nav-link">Início</a>
+                <a href="./games_menu.html" class="nav-link">Games</a>
+                <a href="./feed.html" class="nav-link">Feed</a>
+                <a href="./editor.html" class="nav-link">Criar</a>
+                <a href="./perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="chat-container">
+                <!-- Sidebar: Conversas -->
+        <div class="conversations-sidebar">
+            <div class="sidebar-header">
+                <h1>Mensagens</h1>
+                <div class="sidebar-actions">
+                    <button class="sidebar-btn" onclick="openNewGroupModal()" title="Nova conversa"><i class="fas fa-pen"></i></button>
+                </div>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="search-convs" placeholder="Buscar conversa...">
+            </div>
+            <div class="conversations-list" id="conversations-list">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+        </div>
+
+        <!-- Main Chat -->
+        <div class="chat-main">
+            <!-- Header -->
+            <div class="chat-header">
+                <div class="header-user" onclick="openSelectedUserProfile()">
+                    <div class="header-avatar" id="header-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="header-info">
+                        <h3 id="header-name">Selecione uma conversa</h3>
+                        <small id="header-status">Offline</small>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="showCallOptions()" title="Chamada"><i class="fas fa-phone"></i></button>
+                    <button class="header-btn" onclick="showChatInfo()" title="Info"><i class="fas fa-info-circle"></i></button>
+                </div>
+            </div>
+
+            <!-- Messages / Empty state -->
+            <div id="chat-content">
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
+                    <div class="empty-state-text">Selecione uma conversa</div>
+                </div>
+                <div id="messages-area" style="display:none;"></div>
+            </div>
+
+            <!-- Compose (fixed to bottom of chat-main) -->
+            <div id="compose-section" style="display:none;">
+                <div class="compose-input">
+                    <input type="text" id="message-input" placeholder="Aa" autocomplete="off">
+                    <button class="compose-icon-btn" onclick="attachImage()" title="Imagem"><i class="fas fa-image"></i></button>
+                    <button class="compose-icon-btn" onclick="toggleAudioRecorder()" title="Áudio"><i class="fas fa-microphone"></i></button>
+                    <button class="send-btn" id="send-btn" title="Enviar"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <input type="file" id="image-input" accept="image/*" style="display:none;">
+                <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+            </div>
+        </div>
+    </div>
+        </main>
+    </div>
+
+    <a href="./publicador.html" class="fab">
+        <img src="../images/ic_edition.png" alt="Criar Post">
+    </a>
+
+    <nav class="mobile-nav">
+        <a href="./home.html" class="nav-item"><img src="../images/ic_home.png"></a>
+        <a href="./feed.html" class="nav-item"><img src="../images/ic_cloud_off_white.png"></a>
+        <a href="./editor.html" class="nav-item"><img src="../images/ic_edition.png"></a>
+        <a href="./perfil.html" class="nav-item"><img src="../images/user_ic.png"></a>
+    </nav>
+
+    <div class="home-indicator"></div>
+
+    <!-- Modal: Novo Grupo -->
+    <div class="modal-overlay" id="new-group-modal">
+        <div class="modal-content">
+            <div class="modal-header">Criar novo grupo</div>
+            <div class="modal-search">
+                <input type="text" id="participant-search" placeholder="Buscar usuário...">
+            </div>
+            <div class="modal-body" id="participant-list"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeNewGroupModal()">Cancelar</button>
+                <button class="btn-primary" onclick="createNewGroup()">Criar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    </script>
+    <!-- Public VAPID key para FCM Web Push (defina a sua chave pública aqui) -->
+    <script>window.FCM_VAPID_KEY = window.FCM_VAPID_KEY || 'COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI';</script>
+    <script src="../scripts/script_chat.js"></script>
+</body>
+</html>

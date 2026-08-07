@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Publicação - Poefo Library</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link rel="stylesheet" href="../style/style_post.css"> 
+    <link rel="stylesheet" href="../style/style_publicador.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    
+</head>
+
+<body class="min-h-screen relative">
+
+    <div class="main-editor pb-20">
+
+        <div class="flex justify-between items-center p-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+            <a href="javascript:window.close();" class="text-gray-500 hover:text-gray-800 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </a>
+            <h1 class="text-lg font-semibold text-gray-800">Criar Publicação</h1>
+            <button id="post-button" class="px-4 py-1.5 text-sm font-bold rounded-full bg-blue-500 text-white opacity-50 cursor-not-allowed" disabled>
+                Publicar
+            </button>
+        </div>
+
+        <div class="flex p-4">
+            <img id="profile-pic" src="../images/user_ic.png" alt="Foto de Perfil" class="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0 mr-3 object-cover">
+            
+            <div class="flex-grow">
+                <p id="logged-username" class="text-sm font-semibold text-gray-700 mb-2">Carregando usuário...</p> 
+                
+                <textarea 
+                    id="post-text-area"
+                    placeholder="O que está acontecendo? Escreva aqui..."
+                    class="w-full text-lg text-gray-800 resize-none outline-none border-none focus:ring-0"
+                    rows="5"
+                    oninput="checkTextLength()">
+                </textarea>
+
+                <input 
+                    type="file" 
+                    id="image-file-upload" 
+                    accept="image/*" 
+                    class="hidden"
+                    onchange="handleImageSelection(event)"
+                >
+
+                <div id="attachment-area" class="mt-4 border border-dashed border-gray-300 rounded-xl p-4 text-center text-gray-500 hidden">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center p-4 border-t border-gray-100 fixed bottom-20 w-full bg-white z-10">
+            <div class="flex space-x-4">
+                <button onclick="selectAttachment('image')" class="text-blue-500 hover:text-blue-700 transition">
+                    <i data-lucide="image" class="w-6 h-6"></i>
+                </button>
+                <button onclick="openBookSearch()" class="text-blue-500 hover:text-blue-700 transition">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <span id="char-count" class="text-sm text-gray-500">0/280</span>
+        </div>
+
+    </div>
+    
+    <div id="book-modal" class="fixed inset-0 bg-white p-5 overflow-y-auto hidden z-50">
+        
+        <div class="flex justify-between items-center pb-4 border-b">
+            <button onclick="cancelBookEdit()" class="text-gray-500 hover:text-gray-800">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h2 id="modal-title" class="text-lg font-semibold">Anexar Livro</h2>
+            <button id="modal-attach-btn" onclick="saveBookDetails()" class="px-3 py-1 text-sm font-bold rounded-full bg-blue-500 text-white hidden">
+                Anexar
+            </button>
+        </div>
+
+        <div id="book-search-and-preview-container" class="mt-4 hidden">
+            
+            <button onclick="openDraftsSearch()" class="w-full py-3 text-sm font-bold bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition mb-2">
+                <i data-lucide="edit-3" class="w-4 h-4 inline mr-2"></i> Obter Livro do Editor
+            </button>
+            <button onclick="showNewBookForm()" class="w-full py-3 text-sm font-bold bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition mb-4">
+                <i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i> Publicar Novo Livro
+            </button>
+
+            <p class="text-sm font-semibold text-gray-700 mb-2">Buscar Existentes na Poefo</p>
+            <input 
+                type="text" 
+                id="search-book-input" 
+                placeholder="Filtrar por ID ou Título..." 
+                class="w-full p-3 border rounded-lg text-sm mb-4 focus:ring-blue-500 focus:border-blue-500"
+                oninput="filterBooks(this.value)"
+            >
+            <div id="book-search-results" class="max-h-96 overflow-y-auto border rounded-lg bg-gray-50 shadow-inner">
+                <div class="p-4 text-center text-gray-500" id="loading-books">Carregando biblioteca...</div>
+            </div>
+        </div>
+
+        <div id="draft-search-container" class="mt-4 space-y-4 hidden">
+            <p class="text-sm font-semibold text-gray-700">Rascunhos Salvos Localmente</p>
+            <div id="draft-search-results" class="max-h-96 overflow-y-auto border rounded-lg bg-yellow-50 shadow-inner">
+                <div class="p-4 text-center text-gray-500" id="loading-drafts">Carregando rascunhos...</div>
+            </div>
+            <button onclick="openBookSearch()" class="w-full py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100">
+                <i data-lucide="chevrons-left" class="w-4 h-4 inline mr-1"></i> Voltar à Publicação Geral
+            </button>
+        </div>
+
+
+        <div id="book-form-container" class="mt-4 space-y-4 hidden">
+
+            <div id="book-selection-status" class="p-3 rounded-lg border border-gray-200 text-sm">
+                <p id="status-text" class="font-bold"></p>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div id="book-cover-preview" class="w-32 h-48 bg-gray-200 rounded-lg shadow-md flex items-center justify-center text-gray-500 text-xs mb-2">
+                    Capa (Prévia)
+                </div>
+                
+                <div class="w-full">
+                    <label for="book-cover-upload" class="block text-sm font-medium text-gray-700 mb-1">Upload da Capa (JPG/PNG)</label>
+                    <input type="file" id="book-cover-upload" accept="image/jpeg, image/png" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100" onchange="updateCoverFileStatus(event)">
+                    <p id="cover-file-status" class="text-xs text-red-500 mt-1">Nenhuma capa selecionada.</p>
+                </div>
+                <input type="hidden" id="book-link_capa" value=""> </div>
+
+            <input type="text" id="book-titulo" placeholder="Título do Livro" class="w-full p-3 border rounded-lg">
+            <input type="text" id="book-autor" placeholder="Autor" class="w-full p-3 border rounded-lg">
+            <textarea id="book-sinopse" placeholder="Sinopse" class="w-full p-3 border rounded-lg resize-none" rows="3"></textarea>
+            <input type="text" id="book-genero" placeholder="Gênero (Samurais, Ação, Histórico...)" class="w-full p-3 border rounded-lg">
+            
+            <div class="flex space-x-2 items-center">
+                <input type="text" id="book-classificacao" placeholder="Classificação (Ex: 18)" class="w-1/3 p-3 border rounded-lg">
+                
+                <div class="w-2/3">
+                    <label for="book-file-upload" class="block text-sm font-medium text-gray-700 mb-1">Upload do Conteúdo (PDF)</label>
+                    <input type="file" id="book-file-upload" accept=".pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onchange="updateContentFileStatus(event)">
+                    <p id="file-status" class="text-xs text-red-500 mt-1">Nenhum arquivo de conteúdo selecionado.</p>
+                </div>
+            </div>
+            
+            <p class="text-xs text-blue-600 font-medium p-2 bg-blue-100 rounded-lg">
+                <i data-lucide="info" class="w-4 h-4 inline mr-1"></i> 
+                O arquivo e a capa serão enviados diretamente para o Firebase Storage.
+            </p>
+
+            <input type="hidden" id="book-id" value="LIV_AUTO_GEN_ID">
+            <input type="hidden" id="book-link_acesso" value=""> 
+            <input type="hidden" id="book-comentarios" value="URL_COMENTARIOS_PADRAO">
+            <input type="hidden" id="book-likes" value="0">
+            
+            <button id="back-to-search-btn" onclick="openBookSearch()" class="w-full py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100">
+                <i data-lucide="chevrons-left" class="w-4 h-4 inline mr-1"></i> Voltar à Busca de Livros
+            </button>
+        </div>
+    </div>
+
+
+    <div class="nav-bar">
+        <a href="./games.html" class="nav-item">
+            <img src="../images/ic_game.png" alt="Game" class="nav-icon">
+            <span>Games</span>
+        </a>
+        <a href="#" class="nav-item nav-item-active">
+            <img src="../images/ic_edition.png" alt="Edition" class="nav-icon nav-icon-active">
+            <span>Criar</span>
+        </a>
+        <a href="javascript:history.back()" class="nav-item">
+            <img src="../images/ic_home.png" alt="Home" class="nav-icon">
+            <span>Inicio</span>
+        </a>
+        <a href="./feed.html" class="nav-item">
+            <img src="../images/ic_cloud_off_white.png" alt="Feed" class="nav-icon">
+            <span>Feed</span>
+        </a>
+        <a href="./perfil.html" class="nav-item">
+            <img src="../images/user_ic.png" alt="Perfil" class="nav-icon">
+            <span>Conta</span>
+        </a>
+    </div>
+
+    <div class="home-indicator"></div>
+    <script src="../scripts/script_publicador.js"></script>
+</body>
+</html>

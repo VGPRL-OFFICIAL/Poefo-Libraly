@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Library</title>
+    <link rel="icon" href="../images/Logo_Poefo.png"  type="image/png">
+    <link rel="stylesheet" href="../style/style_home.css">
+</head>
+<body>
+    <div class="main-screen">
+        <div id="status"></div>
+
+        <div class="header-bar app-header">
+            <img src="../images/icon_logo.png" alt="Enviar" class="logo">
+            <span class="app-title">Poefo  Library</span>
+            <div>
+              
+            </div>
+        </div>
+        
+
+        <div class="search-bar">
+            <div class="search-input">
+                 <img src="../images/search.png" alt="search" class="img_geral">
+                <span>Pesquisar...</span>
+            </div>
+
+        </div>
+
+        
+        <div class="section-header">
+            <span class="section-title">Recomendados</span>
+        </div>
+        <div class="book-list scroll-list" id="recomendados-list"></div>
+
+        <div class="section-header">
+            <span class="section-title">Top 10 livros</span>
+            <a href="#" class="section-link">mais...</a>
+        </div>
+        <div class="book-list scroll-list" id="top-10-list">
+            </div>
+
+        <div class="section-header">
+            <span class="section-title">Lançamentos</span>
+        </div>
+        
+        <div class="carousel-container">
+            <div class="carousel-list" id="featured-card-container"> 
+                </div>
+        </div>
+        <div class="section-header">
+            <span class="section-title">Todos os livros</span>
+        </div>
+        <div class="grid-list-container" id="all-books-grid">
+            </div>
+
+        <a href="./publicador.html" class="fab">
+            <img src="../images/ic_edition.png" class="edit-icon">
+        </a>
+        
+    </div>
+
+    <div class="nav-bar">
+        <a href="#" class="nav-item">
+            <img src="../images/ic_game.png" alt="Game" class="nav-icon">
+            <span>Games</span>
+        </a>
+        <a href="./editor.html" class="nav-item">
+            <img src="../images/ic_edition.png" alt="Edition" class="nav-icon">
+            <span>Criar</span>
+        </a>
+        <a href="./home.html" class="nav-item nav-item-active">
+            <img src="../images/ic_home.png" alt="Home" class="nav-icon nav-icon-active">
+            <span>Inicio</span>
+        </a>
+        <a href="./feed.html" class="nav-item">
+            <img src="../images/ic_cloud_off_white.png" alt="Feed" class="nav-icon">
+            <span>Feed</span>
+        </a>
+        <a href="./perfil.html" class="nav-item">
+            <img src="../images/user_ic.png" alt="Perfil" class="nav-icon">
+            <span>Conta</span>
+        </a>
+    </div>
+
+    <div class="home-indicator"></div>
+    <script src="../scripts/script_login.js"></script>
+    <script src="../scripts/script_home.js"></script>
+    <script src="../scripts/script_recomendados.js"></script>
+</body>
+</html>

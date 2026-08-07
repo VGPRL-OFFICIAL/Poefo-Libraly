@@ -1,0 +1,613 @@
+/* Copiado de style_perfil.css para visualizador de perfil */
+/* Paleta de Cores: */
+/* Off-White/Claro: #FAFAFA (Snow) */
+/* Cinza Claro: #EEEEEE */
+/* Cinza Médio (Texto/Bordas): #A8A8A8 */
+/* Cinza Escuro (Fundo do body): #E5E5E5 */
+/* Cinza do Texto Principal: #333333 */
+
+body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg,#f6f7fb 0%, #eef2f8 100%);
+    margin: 0;
+    padding: 24px 0;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    box-sizing: border-box; 
+    color: #222;
+}
+
+.perfil-container {
+    width: 100%;
+    max-width: 980px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid rgba(16,24,40,0.06);
+    box-shadow: 0 6px 24px rgba(16,24,40,0.06);
+    box-sizing: border-box;
+}
+
+/* --- HEADER / INFORMAÇÕES DO PERFIL --- */
+.perfil-header {
+    display: flex;
+    padding: 30px 20px;
+    align-items: flex-start;
+    border-bottom: 1px solid #EEEEEE;
+}
+
+/* Wrapper para posicionamento da câmera de edição de foto */
+.foto-perfil-wrapper {
+    flex-basis: 30%;
+    display: flex;
+    justify-content: center;
+    padding-right: 40px;
+    position: relative; /* Essencial para o posicionamento absoluto do botão */
+    min-height: 150px; /* Garante que o container da foto tenha espaço */
+}
+
+.foto-perfil {
+    display: flex;
+    justify-content: center;
+}
+
+.foto-perfil img {
+    width: 140px;
+    height: 140px;
+    border-radius: 18px;
+    border: none;
+    object-fit: cover;
+    background-color: #f3f4f6;
+}
+
+.info-principal {
+    flex-basis: 70%;
+}
+
+/* Ajuste para o modo de edição: Alinha o username e os botões de ação */
+.nome-e-acao {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    justify-content: space-between; 
+}
+
+.username {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    margin-right: 20px;
+    white-space: nowrap;
+}
+
+/* Botões de Ação */
+.botao-acao {
+    background-color: #111827;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 14px;
+    transition: background-color 0.12s, transform 0.08s;
+}
+
+.botao-acao:hover:not(:disabled) {
+    background-color: #0b1220;
+    transform: translateY(-1px);
+}
+
+.botao-acao:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.botao-acao.secundario {
+    background-color: transparent;
+    border-color: #A8A8A8;
+}
+
+/* Esconde os botões mobile por padrão no desktop */
+.botoes-desktop, .botoes-mobile {
+    display: flex; /* Mantém a exibição flexível por padrão */
+}
+
+.botoes-mobile {
+    display: none; /* Esconde mobile no desktop */
+}
+.botoes-desktop {
+    display: flex; /* Mantém desktop visível */
+}
+
+
+/* --- ESTATÍSTICAS (Postagens, Seguidores, Likes) --- */
+.estatisticas {
+    display: flex;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    list-style: none;
+    padding: 0;
+    justify-content: space-between;
+    max-width: 350px;
+}
+
+.stat-item {
+    text-align: center;
+    color: #333333;
+    display: flex;
+    flex-direction: column;
+    margin-right: 20px; 
+}
+.stat-item:last-child {
+    margin-right: 0;
+}
+
+.numero {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.label {
+    font-weight: 400;
+    font-size: 14px;
+    color: #A8A8A8;
+}
+
+/* --- BIO / NOME COMPLETO --- */
+.nome-completo {
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 4px;
+    font-size: 16px;
+    color: #333333;
+}
+
+.bio {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333333;
+}
+
+/* --- NAVEGAÇÃO DE POSTS --- */
+.separador {
+    height: 10px;
+    background-color: #FAFAFA;
+    border-top: 1px solid #EEEEEE;
+}
+
+.nav-posts {
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid #A8A8A8;
+    padding: 0 20px;
+}
+
+.nav-item {
+    text-decoration: none;
+    color: #A8A8A8;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    padding: 15px 15px;
+    margin-right: 15px;
+    border-top: 1px solid transparent;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+.nav-item:last-child {
+    margin-right: 0;
+}
+
+.nav-item i {
+    margin-right: 6px; /* Espaço entre o ícone e o texto */
+}
+
+.nav-item:hover {
+    color: #333333;
+}
+
+.nav-item.ativo {
+    color: #333333;
+    border-top: 1px solid #333333;
+    margin-top: -1px;
+}
+
+/* --- GRID DE POSTAGENS --- */
+.grid-posts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 3px;
+    background-color: #FAFAFA;
+}
+
+.post-item {
+    aspect-ratio: 1 / 1;
+    background-color: #EEEEEE;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+}
+
+.post-item.placeholder {
+    grid-column: 1 / -1; /* Ocupa toda a largura */
+    aspect-ratio: auto;
+    height: 150px; 
+    font-size: 16px;
+    font-weight: 400;
+    color: #A8A8A8;
+    display: flex;
+}
+.post-item.has-content {
+    background-color: #FAFAFA;
+}
+.post-item.has-content:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+}
+
+.post-image-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-text-snippet {
+    padding: 15px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #333333;
+    text-align: left;
+    background-color: #EEEEEE;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    overflow: hidden;
+}
+
+.attachment-icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #FAFAFA;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    pointer-events: none;
+}
+
+
+/* ------------------------------------------- */
+/* --- BARRA DE NAVEGAÇÃO FIXA (nav-bar) --- */
+/* ------------------------------------------- */
+.nav-bar {
+    display: none; /* Escondida por padrão em telas grandes (Desktop) */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    background-color: #FAFAFA; /* Off-White */
+    border-top: 1px solid #EEEEEE; /* Cinza Claro */
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.nav-item-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #A8A8A8; /* Cinza Médio */
+    font-size: 10px;
+    font-weight: 500;
+    flex-grow: 1;
+    height: 100%;
+    transition: color 0.2s;
+}
+
+.nav-item-bar:hover {
+    color: #333333; /* Cinza Escuro */
+}
+
+.nav-item-bar.nav-item-active {
+    color: #333333; /* Item Ativo em Cinza Escuro */
+    font-weight: 600;
+    
+}
+
+.nav-icon {
+    font-size: 20px;
+    margin-bottom: 3px;
+    /* Filtros para converter as imagens padrão para cinza */
+    filter: brightness(0) invert(0.65) sepia(0) saturate(100%) hue-rotate(0deg); 
+    width: 15px;
+    height: 15px;
+}
+
+.nav-icon-active {
+    /* Filtro para converter a imagem ativa para o cinza escuro */
+    filter: brightness(0) invert(0.2); 
+}
+
+
+/* ------------------------------------------- */
+/* --- ESTILOS PARA O MODO DE EDIÇÃO (NOVOS) --- */
+/* ------------------------------------------- */
+
+/* Estilos para os elementos de edição (input e textarea) */
+.edit-input, .edit-textarea {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #A8A8A8; 
+    border-radius: 4px;
+    font-size: 16px;
+    margin-top: 5px;
+    box-sizing: border-box; 
+    font-family: inherit;
+    color: #333333;
+    background-color: #EEEEEE;
+}
+
+.edit-input {
+    font-weight: 600;
+}
+
+/* O textarea para a bio deve ter altura maior */
+.edit-textarea {
+    resize: vertical; 
+    min-height: 70px; 
+    font-size: 14px;
+    font-weight: 400; 
+}
+
+/* Estilo e Posição do Botão de Alterar Foto */
+.editar-foto-btn {
+    position: absolute;
+    bottom: 0;
+    right: 35px; 
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    background-color: #333333; 
+    color: #FAFAFA;
+    border: 2px solid #FAFAFA; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.editar-foto-btn i {
+    color: #FAFAFA; 
+}
+
+.editar-foto-btn:hover {
+    background-color: #555555;
+}
+
+/* --- MODAL DE MENSAGENS CUSTOMIZADO --- */
+.custom-modal {
+    display: none; /* Escondido por padrão */
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    justify-content: center;
+    align-items: center;
+}
+
+.custom-modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background-color: #FAFAFA;
+    margin: auto;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #A8A8A8;
+    width: 80%;
+    max-width: 400px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    text-align: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+#modal-message {
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 20px;
+}
+
+#modal-ok-btn {
+    background-color: #333333;
+    color: #FAFAFA;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#modal-ok-btn:hover {
+    background-color: #555555;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+
+/* ----------------------------------- */
+/* --- RESPONSIVIDADE (MOBILE) --- */
+/* ----------------------------------- */
+@media (max-width: 768px) {
+    body {
+        padding: 0; 
+        padding-bottom: 50px; 
+    }
+
+    .perfil-container {
+        border: none; 
+        max-width: 100%; 
+    }
+
+    .perfil-header {
+        flex-direction: column; 
+        align-items: center; 
+        padding: 20px 15px; 
+        text-align: center;
+    }
+
+    .foto-perfil-wrapper {
+        padding-right: 0;
+        margin-bottom: 20px; 
+        min-height: 100px;
+    }
+
+    .foto-perfil img {
+        width: 100px; 
+        height: 100px;
+    }
+
+    /* Posição do botão de câmera em mobile */
+    .editar-foto-btn {
+        right: 15px; 
+        bottom: 15px;
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+
+    .info-principal {
+        flex-basis: auto; 
+        width: 100%; 
+    }
+
+    .nome-e-acao {
+        flex-direction: column; 
+        margin-bottom: 10px;
+        /* Altera o alinhamento para o mobile, já que os botões desktop somem */
+        justify-content: center; 
+    }
+
+    .username {
+        font-size: 22px; 
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    /* Esconde os botões de desktop e mostra os de mobile */
+    .botoes-desktop {
+        display: none !important;
+    }
+
+    .botoes-mobile {
+        display: flex !important; /* Exibe os botões mobile */
+        justify-content: center;
+        width: 100%;
+        margin-top: 15px; 
+    }
+    .botoes-mobile .botao-acao {
+        flex-grow: 1; 
+        margin: 0 5px; 
+        padding: 8px 0; 
+    }
+    .botoes-mobile .botao-acao:last-child {
+        margin-right: 0;
+    }
+
+
+    .estatisticas {
+        justify-content: space-around; 
+        margin-top: 15px;
+        margin-bottom: 15px;
+        max-width: none; 
+    }
+    .stat-item {
+        margin-right: 0; 
+        flex: 1; 
+    }
+
+
+    .nome-completo, .bio, .edit-input, .edit-textarea {
+        text-align: center; 
+        padding: 0 15px; 
+    }
+
+    .nav-posts {
+        justify-content: space-around; 
+        padding: 0;
+        border-top: none; 
+    }
+
+    .nav-item {
+        margin-right: 0; 
+        padding: 15px 5px; 
+        font-size: 10px; 
+        flex: 1; 
+    }
+    .nav-item.ativo {
+        border-top: 2px solid #333333; 
+    }
+    .nav-item i {
+        display: block;
+        margin: 0 auto 3px;
+    }
+
+    .grid-posts {
+        gap: 2px; 
+        padding: 2px;
+    }
+    .post-item.placeholder span {
+        display: block; /* Garante que o texto placeholder apareça no mobile */
+    }
+    
+    /* Exibe a barra de navegação fixa em telas menores */
+    .nav-bar {
+        display: flex;
+    }
+}
+
+/* Exemplo de media query para telas muito pequenas (ex: 480px de largura) */
+@media (max-width: 480px) {
+    .nav-item {
+        padding: 10px 2px;
+        font-size: 9px;
+    }
+    .botoes-mobile .botao-acao {
+        font-size: 12px;
+    }
+}

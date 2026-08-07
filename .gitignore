@@ -1,0 +1,38 @@
+# Node
+node_modules/
+npm-debug.log*
+/yarn-error.log
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Env files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor configs
+.vscode/
+.idea/
+
+# Build outputs
+dist/
+build/
+
+# Backups
+Backups/
+
+# Logs
+logs/
+*.log
+
+# Ignore local sensitive files
+*.key
+*.pem
+
+# Allow other files to be added explicitly
+!/.gitignore

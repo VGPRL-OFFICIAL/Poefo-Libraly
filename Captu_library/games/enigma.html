@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scribe - Termo & Gartic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #f9f6f0;
+            --accent-soft: #b8ced2;
+            --text-main: #3d3d3d; 
+            --card-white: #ffffff;
+            --correct: #6aaa64;
+            --present: #c9b458;
+            --absent: #787c7e;
+            --border-tile: #d3d6da;
+            --error-red: #e67e73;
+            --gold: #d4af37;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .reader-container {
+            background-color: var(--card-white);
+            width: 100%; 
+            max-width: 480px; 
+            padding: 1.5rem; 
+            border-radius: 25px;
+            border: 1px solid var(--accent-soft);
+            box-shadow: 0 10px 30px rgba(184, 206, 210, 0.2);
+            text-align: center; 
+            position: relative; 
+            overflow: hidden;
+        }
+
+        .header-nav {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 1.5rem; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .status-info { text-align: left; line-height: 1.2; }
+        .status-label { font-size: 0.6rem; font-weight: 800; color: var(--accent-soft); text-transform: uppercase; }
+        .status-value { font-size: 1rem; font-family: 'Playfair Display'; font-weight: 700; color: var(--text-main); }
+
+        .help-trigger {
+            width: 35px; height: 35px; border-radius: 50%;
+            border: 1.5px solid var(--accent-soft); background: white;
+            color: var(--accent-soft); cursor: pointer; font-family: 'Playfair Display';
+            font-weight: bold; font-size: 1.1rem;
+        }
+
+        .modal-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98); z-index: 100;
+            flex-direction: column; align-items: center; justify-content: center; 
+            padding: 1.5rem; border-radius: 25px;
+        }
+
+        .rules-card {
+            text-align: left; background: #fafaf8; padding: 1.2rem; border-radius: 12px;
+            border-left: 5px solid var(--accent-soft); margin: 15px 0;
+            width: 100%;
+        }
+
+        .wheel {
+            width: 140px; height: 140px; 
+            border: 8px solid var(--accent-soft);
+            border-radius: 50%; margin: 20px; border-style: double;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Playfair Display'; font-size: 1.5rem;
+            background: #fff;
+        }
+        .spinning { animation: spin 1s infinite linear; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .grid { display: grid; gap: 5px; margin-bottom: 15px; justify-content: center; }
+        .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .tile {
+            width: clamp(40px, 12vw, 55px);
+            height: clamp(40px, 12vw, 55px);
+            border: 2px solid var(--border-tile);
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(1rem, 4vw, 1.5rem); 
+            font-weight: bold; border-radius: 8px; text-transform: uppercase;
+        }
+        .tile[data-state="correct"] { background: var(--correct); border-color: var(--correct); color: white; }
+        .tile[data-state="present"] { background: var(--present); border-color: var(--present); color: white; }
+        .tile[data-state="absent"] { background: var(--absent); border-color: var(--absent); color: white; }
+
+        input {
+            width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 10px;
+            text-align: center; font-size: 1.1rem; outline: none; margin-bottom: 10px;
+            text-transform: uppercase; font-family: 'Inter';
+        }
+
+        .btn {
+            background-color: var(--accent-soft); color: white; border: none;
+            padding: 14px; border-radius: 10px; font-weight: 600;
+            cursor: pointer; width: 100%; font-family: 'Inter'; font-size: 0.9rem;
+        }
+
+        .btn-stop { background: white; color: #888; border: 1.5px solid #ddd; margin-top: 8px; }
+        
+        .btn-quit-link {
+            display: inline-block; margin-top: 15px; color: var(--error-red);
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            cursor: pointer; letter-spacing: 1px;
+        }
+
+        .gartic-canvas {
+            background: #fdfdfb; border: 1px dashed var(--accent-soft); padding: 12px;
+            border-radius: 12px; font-style: italic; font-size: 0.85rem; margin-bottom: 10px;
+            min-height: 50px; display: flex; align-items: center; justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            .reader-container { padding: 2.5rem; }
+            .tile { width: 60px; height: 60px; font-size: 1.6rem; }
+            .status-value { font-size: 1.3rem; }
+            .wheel { width: 180px; height: 180px; font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reader-container">
+        
+        <div class="header-nav">
+            <div class="status-info">
+                <span class="status-label">Capítulo</span><br>
+                <span class="status-value" id="level-ui">1</span>
+            </div>
+            <div class="status-info" style="text-align: center;">
+                <span class="status-label">Score</span><br>
+                <span class="status-value" id="score-ui">0</span>
+            </div>
+            <button class="help-trigger" onclick="toggleModal('rules-modal', true)">?</button>
+        </div>
+
+        <div id="rules-modal" class="modal-overlay">
+            <h2 style="font-family: 'Playfair Display'">Manual Scribe</h2>
+            <div class="rules-card">
+                <p style="font-size: 0.8rem; line-height: 1.5;">
+                    • <b>Termo:</b> 6 chances para 5 letras.<br>
+                    • <b>Gartic:</b> Use a dica acima para decifrar.<br>
+                    • <b>Roleta:</b> Chance de pista extra a cada capítulo.<br>
+                    • <b>Derrota:</b> Perder ou Desistir zera o score.
+                </p>
+            </div>
+            <button class="btn" onclick="toggleModal('rules-modal', false)">Fechar</button>
+        </div>
+
+        <div id="fail-modal" class="modal-overlay">
+            <h2 class="failure-title" style="color: var(--error-red); font-family: 'Playfair Display';">Obra Interrompida</h2>
+            <p style="font-size: 0.8rem; color: #888;">A palavra era:</p>
+            <h2 id="fail-word-display" style="letter-spacing: 5px; background: #eee; padding: 10px; border-radius: 8px;">-----</h2>
+            <p style="margin: 20px 0; color: var(--error-red); font-weight: bold;">SCORE ZERADO</p>
+            <button class="btn" onclick="resetFullGame()">Tentar Novamente</button>
+        </div>
+
+        <div id="roulette-modal" class="modal-overlay">
+            <h2 style="font-family: 'Playfair Display'">Inspiração</h2>
+            <div class="wheel" id="wheel-element">?</div>
+            <button class="btn" onclick="spinWheel()">Girar (Enter)</button>
+        </div>
+
+        <div class="gartic-canvas" id="desc-ui">...</div>
+        <div id="hint-ui" style="font-size: 0.7rem; color: var(--present); font-weight: bold; margin-bottom: 10px; min-height: 15px;"></div>
+
+        <div class="grid" id="grid"></div>
+
+        <input type="text" id="guess-input" maxlength="5" autocomplete="off" placeholder="Sua aposta...">
+        
+        <div id="btn-area">
+            <button class="btn" onclick="makeGuess()">Confirmar (Enter)</button>
+        </div>
+
+        <div id="quit-area">
+            <span class="btn-quit-link" onclick="handleDefeat(true)">Desistir</span>
+        </div>
+
+        <p id="msg-ui" style="font-size: 0.8rem; font-weight: bold; margin-top: 10px;"></p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const words = [
+            {w:"LIVRO", d:"Folhas presas por uma capa.", e:"Latim: 'Liber'"},
+            {w:"POETA", d:"Brinca com rimas e versos.", e:"Grego: 'Poietes'"},
+            {w:"FRASE", d:"Sentido completo em palavras.", e:"Grego: 'Phrasis'"},
+            {w:"TEXTO", d:"Teia narrativa tecida.", e:"Latim: 'Textus'"},
+            {w:"TRAMA", d:"O enredo de um romance.", e:"Fios entrelaçados"},
+            {w:"VERSO", d:"Linha rítmica de um poema.", e:"Latim: 'Versus'"},
+            {w:"PROSA", d:"Escrita livre de métricas.", e:"Latim: 'Prorsa'"}
+        ];
+
+        let game = { score: 0, level: 1, currentTry: 0, target: {}, active: false, roulette: false };
+
+        function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+
+        function init() {
+            game.target = words[Math.floor(Math.random() * words.length)];
+            game.currentTry = 0; game.active = true;
+            document.getElementById('desc-ui').innerText = `"${game.target.d}"`;
+            document.getElementById('hint-ui').innerText = "";
+            document.getElementById('msg-ui').innerText = "";
+            document.getElementById('guess-input').value = "";
+            document.getElementById('btn-area').innerHTML = `<button class="btn" onclick="makeGuess()">Confirmar (Enter)</button>`;
+            document.getElementById('quit-area').style.display = "block";
+            createGrid();
+            game.roulette = true;
+            toggleModal('roulette-modal', true);
+            toggleModal('fail-modal', false);
+        }
+
+        function createGrid() {
+            const grid = document.getElementById('grid'); grid.innerHTML = "";
+            for(let i=0; i<6; i++) {
+                const row = document.createElement('div'); row.className = "row";
+                for(let j=0; j<5; j++) {
+                    const tile = document.createElement('div'); tile.className = "tile"; tile.id = `t-${i}-${j}`;
+                    row.appendChild(tile);
+                }
+                grid.appendChild(row);
+            }
+        }
+
+        function spinWheel() {
+            if(!game.roulette) return;
+            const wheel = document.getElementById('wheel-element');
+            wheel.classList.add('spinning');
+            setTimeout(() => {
+                wheel.classList.remove('spinning');
+                const win = Math.random() > 0.5;
+                wheel.innerText = win ? "DICA+" : "NADA";
+                setTimeout(() => {
+                    toggleModal('roulette-modal', false);
+                    game.roulette = false;
+                    if(win) document.getElementById('hint-ui').innerText = "PISTA: " + game.target.e;
+                    document.getElementById('guess-input').focus();
+                }, 1000);
+            }, 1200);
+        }
+
+        function makeGuess() {
+            if(!game.active || game.roulette) return;
+            const val = document.getElementById('guess-input').value.toUpperCase();
+            if(val.length !== 5) return;
+
+            const tArr = game.target.w.split('');
+            const gArr = val.split('');
+            const res = Array(5).fill('absent');
+
+            gArr.forEach((l, i) => { if(l === tArr[i]) { res[i] = 'correct'; tArr[i] = null; } });
+            gArr.forEach((l, i) => { if(res[i] !== 'correct' && tArr.includes(l)) { res[i] = 'present'; tArr[tArr.indexOf(l)] = null; } });
+
+            res.forEach((s, i) => {
+                const tile = document.getElementById(`t-${game.currentTry}-${i}`);
+                tile.innerText = gArr[i]; tile.setAttribute('data-state', s);
+            });
+
+            game.currentTry++;
+            document.getElementById('guess-input').value = "";
+
+            if(val === game.target.w) {
+                const p = 110 - (game.currentTry * 10);
+                game.score += p; game.level++; game.active = false;
+                document.getElementById('score-ui').innerText = game.score;
+                document.getElementById('level-ui').innerText = game.level;
+                document.getElementById('msg-ui').innerText = `ACERTOU! (+${p} pts)`;
+                document.getElementById('quit-area').style.display = "none";
+                document.getElementById('btn-area').innerHTML = `
+                    <button class="btn" onclick="init()">Próximo Capítulo (Enter)</button>
+                    <button class="btn btn-stop" onclick="finishGame()">Salvar e Sair</button>
+                `;
+            } else if (game.currentTry >= 6) { handleDefeat(false); }
+        }
+
+        function handleDefeat(isManual) {
+            game.active = false; game.score = 0;
+            document.getElementById('score-ui').innerText = "0";
+            document.getElementById('fail-word-display').innerText = game.target.w;
+            toggleModal('fail-modal', true);
+        }
+
+        function resetFullGame() {
+            game.score = 0; game.level = 1;
+            document.getElementById('score-ui').innerText = "0";
+            document.getElementById('level-ui').innerText = "1";
+            init();
+        }
+
+        async function finishGame() {
+            // Implementação do envio de pontuação (salvando o recorde)
+            let record = parseInt(localStorage.getItem('poefo_enigma')) || 0;
+            if (game.score > record) {
+                localStorage.setItem('poefo_enigma', game.score);
+                alert("Novo Recorde! Score: " + game.score);
+            } else {
+                alert("Score final: " + game.score);
+            }
+            if (typeof incrementUserScore === 'function') {
+                await incrementUserScore(game.score).catch(() => saveUserProgressLocalFallback(game.score, 0));
+            } else {
+                saveUserProgressLocalFallback(game.score, 0);
+            }
+            window.location.href = 'index.html'; // Retorna ao Hub
+        }
+
+        window.onkeydown = (e) => {
+            if(e.key === 'Enter') {
+                if(game.roulette) spinWheel();
+                else if(!game.active && document.getElementById('fail-modal').style.display !== 'flex') init();
+                else if(document.getElementById('fail-modal').style.display === 'flex') resetFullGame();
+                else makeGuess();
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>

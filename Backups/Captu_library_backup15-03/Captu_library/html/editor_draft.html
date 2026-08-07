@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="editor-title">Editor de Livro</title>
+     <link rel="icon" href="../images/Logo_Poefo.png"  type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> 
+    <style>
+        /* Estilos customizados */
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .editor-container {
+            min-height: calc(100vh - 56px);
+            display: flex;
+        }
+
+        #content-editor {
+            min-height: 500px;
+        }
+
+        #content-editor:focus {
+            outline: none;
+        }
+
+        /* Estilo para a barra lateral de páginas */
+        #page-sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            padding-top: 16px;
+
+            /* MOBILE: Torna a sidebar um modal lateral fixo */
+            position: fixed;
+            top: 56px;
+            left: 0;
+            height: calc(100vh - 56px);
+            z-index: 40;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Desktop: Reseta a posição e mostra a sidebar */
+        @media (min-width: 768px) {
+            #page-sidebar {
+                position: static;
+                transform: translateX(0);
+                z-index: 1;
+            }
+        }
+
+        .page-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: background-color 0.15s;
+        }
+
+        .page-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .page-item.active {
+            background-color: #e6f7ff;
+            border-left-color: #1DA1F2;
+            font-weight: bold;
+        }
+
+        /* Classe para mostrar a sidebar no mobile */
+        .sidebar-visible {
+            transform: translateX(0) !important;
+        }
+
+        /* Overlay para o modo mobile */
+        #mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 35;
+            display: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Estilos do Dropdown de Opções */
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 220px;
+            /* Aumentado para acomodar o botão Excluir */
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 50;
+            transform-origin: top right;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .dropdown-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+
+    <div id="mobile-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="flex justify-between items-center p-3 border-b bg-white sticky top-0 z-40 shadow-md h-14">
+
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-800 transition md:hidden">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <button onclick="saveAndGoBack()" class="text-gray-500 hover:text-gray-800 transition flex items-center">
+                <i data-lucide="chevron-left" class="w-5 h-5 mr-1 hidden md:block"></i>
+                <span class="text-sm font-medium">Voltar</span>
+            </button>
+        </div>
+
+        <span class="text-base font-semibold text-gray-800 truncate max-w-[40%]" id="current-draft-name">Rascunho</span>
+
+        <div class="relative">
+            <button id="options-button" onclick="toggleOptionsDropdown()"
+                class="w-8 h-8 flex items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 transition">
+                <i data-lucide="more-vertical" class="w-5 h-5"></i>
+            </button>
+
+            <div id="options-dropdown" class="dropdown-menu">
+                <div class="p-2 space-y-1">
+                    <button onclick="exportPoefoProject(); toggleOptionsDropdown()"
+                        class="w-full text-left flex items-center p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition">
+                        <i data-lucide="archive-export" class="w-4 h-4 mr-2 text-green-500"></i> Exportar Projeto (.poefo)
+                    </button>
+                    <hr class="border-gray-100">
+                    <button onclick="document.getElementById('file-input').click(); toggleOptionsDropdown()"
+                        class="w-full text-left flex items-center p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition">
+                        <i data-lucide="archive-import" class="w-4 h-4 mr-2 text-blue-500"></i> Importar Projeto (.poefo)
+                    </button>
+                    <input type="file" id="file-input" accept=".poefo" onchange="importPoefoProject(event)"
+                        style="display: none;">
+                    <hr class="border-gray-100">
+                    <button onclick="exportDraftFromEditor(); toggleOptionsDropdown()"
+                        class="w-full text-left flex items-center p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition">
+                        <i data-lucide="file-text" class="w-4 h-4 mr-2 text-purple-500"></i> Exportar Livro (PDF)
+                    </button>
+                    <hr class="border-gray-100">
+                    <button onclick="deleteDraft(); toggleOptionsDropdown()"
+                        class="w-full text-left flex items-center p-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Excluir Rascunho
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+
+        <div id="page-sidebar" class="md:static md:translate-x-0">
+            <h3 class="text-sm font-semibold text-gray-600 px-4 mb-2">Páginas/Capítulos</h3>
+
+            <div id="page-list"
+                class="divide-y divide-gray-100 overflow-y-auto max-h-[calc(100vh-160px)] hide-scrollbar">
+            </div>
+
+            <button onclick="addNewPage()"
+                class="w-full mt-4 p-3 flex items-center justify-center text-sm font-medium text-blue-500 hover:bg-gray-100 transition">
+                <i data-lucide="plus" class="w-4 h-4 mr-1"></i>
+                Adicionar Página
+            </button>
+        </div>
+
+        <div class="flex-grow p-4 md:p-6 overflow-y-auto">
+            <div
+                class="flex space-x-4 p-3 mb-4 border rounded-lg bg-white shadow-sm hide-scrollbar overflow-x-scroll">
+                <button onclick="formatText('bold')" class="text-gray-600 hover:text-blue-500"><i
+                        data-lucide="bold" class="w-5 h-5"></i></button>
+                <button onclick="formatText('italic')" class="text-gray-600 hover:text-blue-500"><i
+                        data-lucide="italic" class="w-5 h-5"></i></button>
+                <button onclick="formatText('underline')" class="text-gray-600 hover:text-blue-500"><i
+                        data-lucide="underline" class="w-5 h-5"></i></button>
+                <button onclick="formatText('h3')"
+                    class="text-gray-600 hover:text-blue-500 text-sm font-bold">H3</button>
+                <button onclick="formatText('link')" class="text-gray-600 hover:text-blue-500"><i
+                        data-lucide="link" class="w-5 h-5"></i></button>
+            </div>
+
+            <input type="text" id="title-editor" placeholder="Título do Livro/Rascunho"
+                class="w-full text-2xl font-bold p-2 mb-4 border-b focus:border-blue-500 focus:ring-0 bg-transparent"
+                oninput="handleDraftInput()">
+
+            <input type="text" id="page-title-editor" placeholder="Título da Página/Capítulo"
+                class="w-full text-xl font-semibold p-2 mb-4 border-b border-gray-100 focus:border-blue-500 focus:ring-0 bg-white rounded-t-lg"
+                oninput="handlePageInput('title')">
+
+            <div id="content-editor" contenteditable="true"
+                class="w-full text-lg leading-relaxed text-gray-800 min-h-[500px] p-4 bg-white rounded-b-lg shadow-inner focus:shadow-md transition duration-150"
+                placeholder="Comece a escrever o corpo do seu livro aqui..." oninput="handlePageInput('content')">
+            </div>
+
+            <p class="mt-4 text-xs text-gray-500 text-center">Salvo automaticamente</p>
+        </div>
+    </div>
+
+    <script>
+        const DRAFT_ID_KEY = 'currentDraftId';
+        const draftId = new URLSearchParams(window.location.search).get('id');
+        let currentDraft = null;
+        let activePageIndex = 0;
+
+        const sidebar = document.getElementById('page-sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        const optionsDropdown = document.getElementById('options-dropdown');
+
+        // --- Funções de UI Responsiva e Dropdown ---
+
+        function toggleSidebar() {
+            if (window.innerWidth >= 768) return;
+
+            const isVisible = sidebar.classList.toggle('sidebar-visible');
+            overlay.style.display = isVisible ? 'block' : 'none';
+        }
+
+        function toggleOptionsDropdown() {
+            optionsDropdown.classList.toggle('dropdown-visible');
+        }
+
+        function changePage(newIndex) {
+            if (newIndex === activePageIndex) {
+                toggleSidebar();
+                return;
+            }
+
+            saveActivePage();
+            activePageIndex = newIndex;
+            renderPageList();
+            loadPageContent(activePageIndex);
+
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
+        // --- Funções de Inicialização e Carregamento ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            if (!draftId) {
+                alert("Erro: ID do rascunho não encontrado.");
+                window.location.href = 'editor.html';
+                return;
+            }
+
+            loadDraft();
+            localStorage.setItem(DRAFT_ID_KEY, draftId);
+
+            setInterval(saveDraft, 2000);
+        });
+
+        function loadDraft() {
+            const draftsJson = localStorage.getItem('bookDrafts');
+            const drafts = draftsJson ? JSON.parse(draftsJson) : {};
+            currentDraft = drafts[draftId];
+
+            if (currentDraft) {
+                if (!currentDraft.pages || currentDraft.pages.length === 0) {
+                    currentDraft.pages = [{
+                        pageId: 'page-1',
+                        pageTitle: 'Capítulo 1: O Início',
+                        content: '<h2>Capítulo 1: O Início</h2><p>Comece sua história aqui...</p>'
+                    }];
+                }
+
+                document.getElementById('editor-title').textContent = `Editando: ${currentDraft.title}`;
+                document.getElementById('current-draft-name').textContent = currentDraft.title;
+                document.getElementById('title-editor').value = currentDraft.title;
+
+                renderPageList();
+                loadPageContent(activePageIndex);
+            } else {
+                alert("Rascunho não encontrado. Redirecionando.");
+                window.location.href = 'editor.html';
+            }
+        }
+
+        // --- Lógica de Páginas ---
+
+        function renderPageList() {
+            const list = document.getElementById('page-list');
+            list.innerHTML = '';
+
+            currentDraft.pages.forEach((page, index) => {
+                const item = document.createElement('div');
+                item.classList.add('page-item', 'text-sm', 'text-gray-700', 'truncate');
+                if (index === activePageIndex) {
+                    item.classList.add('active');
+                }
+                item.textContent = `${index + 1}. ${page.pageTitle}`;
+                item.onclick = () => changePage(index);
+                list.appendChild(item);
+            });
+        }
+
+        function addNewPage() {
+            const newIndex = currentDraft.pages.length;
+            const newPage = {
+                pageId: `page-${newIndex + 1}-${Date.now().toString().slice(-4)}`,
+                pageTitle: `Novo Capítulo ${newIndex + 1}`,
+                content: `<p>Escreva o conteúdo desta nova seção aqui.</p>`
+            };
+
+            currentDraft.pages.push(newPage);
+
+            saveDraft();
+
+            activePageIndex = newIndex;
+            renderPageList();
+            loadPageContent(activePageIndex);
+            alert(`Página "${newPage.pageTitle}" adicionada!`);
+        }
+
+        function loadPageContent(index) {
+            const page = currentDraft.pages[index];
+            document.getElementById('page-title-editor').value = page.pageTitle;
+            document.getElementById('content-editor').innerHTML = page.content;
+        }
+
+        function saveActivePage() {
+            const titleInput = document.getElementById('page-title-editor');
+            const contentEditor = document.getElementById('content-editor');
+
+            if (currentDraft && currentDraft.pages[activePageIndex]) {
+                const currentPage = currentDraft.pages[activePageIndex];
+
+                currentPage.pageTitle = titleInput.value.trim() || `Capítulo ${activePageIndex + 1}`;
+                currentPage.content = contentEditor.innerHTML;
+
+                renderPageList();
+            }
+        }
+
+        // --- Função de Salvar Rascunho (Autosave principal) ---
+
+        function saveDraft() {
+            saveActivePage();
+
+            const bookTitle = document.getElementById('title-editor').value.trim() || "Rascunho sem Título";
+            currentDraft.title = bookTitle;
+            currentDraft.timestamp = Date.now();
+
+            // Pega o preview do primeiro capítulo
+            currentDraft.preview = currentDraft.pages[0].content.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...';
+
+            const draftsJson = localStorage.getItem('bookDrafts');
+            let drafts = draftsJson ? JSON.parse(draftsJson) : {};
+            drafts[draftId] = currentDraft;
+            localStorage.setItem('bookDrafts', JSON.stringify(drafts));
+
+            document.getElementById('current-draft-name').textContent = bookTitle;
+        }
+
+        // --- FUNÇÕES DE EXPORTAÇÃO ATUALIZADAS (PDF REAL E POEFO COM FILE PICKER) ---
+
+        /**
+         * NOVO: Converte o conteúdo do rascunho em um arquivo PDF estruturado (usando jsPDF).
+         */
+        function exportDraftFromEditor() {
+            saveDraft();
+            const bookTitle = currentDraft.title;
+
+            if (currentDraft.pages.length === 0) {
+                alert("O livro está vazio. Adicione pelo menos um capítulo antes de exportar.");
+                return;
+            }
+
+            // Usando a biblioteca jsPDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4'); 
+
+            // Configurações de design básicas
+            const margin = 20;
+            let y = margin;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const lineHeight = 7;
+            const maxTextWidth = pageWidth - 2 * margin;
+
+            // --- TELA DE CAPA SIMPLES ---
+            doc.setFontSize(28);
+            doc.text(bookTitle, pageWidth / 2, y + 50, { align: 'center' });
+            doc.setFontSize(14);
+            doc.text("Exportado via Poefo Library", pageWidth / 2, y + 65, { align: 'center' });
+            doc.addPage(); // Adiciona a primeira página de conteúdo
+
+            // --- CONTEÚDO CAPÍTULO POR CAPÍTULO ---
+            y = margin;
+
+            currentDraft.pages.forEach((page, index) => {
+                // Título do Capítulo (H1 - H2)
+                doc.setFontSize(20);
+                doc.setFont(undefined, 'bold');
+                const chapterTitle = page.pageTitle || `Capítulo ${index + 1}`;
+                doc.text(chapterTitle, margin, y);
+                y += lineHeight * 2;
+                doc.setFont(undefined, 'normal'); // Volta ao normal
+
+                // Processa o Conteúdo da Página
+                let rawContent = page.content ? page.content.replace(/<[^>]*>?/gm, '') : '';
+                
+                const splitText = doc.splitTextToSize(rawContent, maxTextWidth);
+
+                // Renderiza cada linha, verificando se a página acabou
+                splitText.forEach(line => {
+                    if (y + lineHeight > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage();
+                        y = margin; // Reinicia o Y no topo da nova página
+                    }
+                    doc.setFontSize(12);
+                    doc.text(line, margin, y);
+                    y += lineHeight;
+                });
+
+                // Adiciona um espaço extra entre capítulos
+                if (index < currentDraft.pages.length - 1) {
+                    y += lineHeight;
+                    
+                    // Se o espaço restante for muito pequeno, inicia o próximo capítulo em uma nova página
+                    if (y + lineHeight * 3 > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                }
+            });
+
+            // Salva o arquivo
+            const fileName = `${bookTitle.replace(/[^a-z0-9]/gi, '_')}-Livro.pdf`;
+            doc.save(fileName);
+            alert(`Livro "${bookTitle}" gerado com sucesso em PDF!`);
+        }
+
+        /**
+         * Exporta o projeto completo do livro para um arquivo JSON (.poefo), 
+         * usando o File System Access API para permitir a seleção de pasta.
+         */
+        async function exportPoefoProject() {
+            saveDraft();
+
+            const authorName = prompt("Por favor, digite o seu nome/pseudônimo para o arquivo de exportação:", "Autor Desconhecido");
+            if (!authorName) {
+                alert("Exportação cancelada.");
+                return;
+            }
+
+            // 1. Estrutura de dados para exportação
+            const exportData = {
+                bookTitle: currentDraft.title,
+                authorName: authorName,
+                draftId: currentDraft.id,
+                exportTimestamp: Date.now(),
+                version: "1.0.0",
+                format: "poefo_draft",
+                pages: currentDraft.pages.map(page => ({
+                    pageTitle: page.pageTitle,
+                    content: page.content
+                }))
+            };
+
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const fileName = `${currentDraft.title.replace(/[^a-z0-9]/gi, '_')}.poefo`;
+            const blob = new Blob([jsonString], { type: 'application/json' });
+
+
+            // --- LÓGICA ATUALIZADA PARA SELEÇÃO DE PASTA (showSaveFilePicker) ---
+
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const options = {
+                        suggestedName: fileName,
+                        types: [{
+                            description: 'Projeto Poefo',
+                            accept: {
+                                'application/json': ['.poefo', '.json'],
+                            },
+                        }],
+                    };
+
+                    const fileHandle = await window.showSaveFilePicker(options);
+                    const writableStream = await fileHandle.createWritable();
+                    await writableStream.write(blob);
+                    await writableStream.close();
+
+                    alert(`Projeto "${exportData.bookTitle}" exportado com sucesso para a pasta selecionada!`);
+                    return;
+
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error("Erro ao usar showSaveFilePicker:", err);
+                        alert("Erro ao exportar. O navegador irá tentar o método de download padrão.");
+                    } else {
+                        return; // Usuário cancelou
+                    }
+                }
+            }
+
+            // --- FALLBACK: Método de download padrão ---
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert(`Projeto "${exportData.bookTitle}" exportado com sucesso (salvo na sua pasta de Downloads padrão).`);
+        }
+
+        // --- Função de Importação .poefo (Não alterada) ---
+
+        function importPoefoProject(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    if (importedData.format !== "poefo_draft" || !importedData.bookTitle || !Array.isArray(importedData.pages)) {
+                        alert("Erro: O arquivo não parece ser um projeto .poefo válido.");
+                        return;
+                    }
+
+                    const newDraftId = 'DRAFT-' + Date.now().toString().slice(-8) + '-IMPORTED';
+
+                    const newDraft = {
+                        id: newDraftId,
+                        title: `[IMPORTADO] ${importedData.bookTitle}`,
+                        content: importedData.pages[0].content,
+                        preview: importedData.pages[0].content.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...',
+                        timestamp: Date.now(),
+                        pages: importedData.pages.map((page, index) => ({
+                            pageId: `page-imp-${index + 1}`,
+                            pageTitle: page.pageTitle,
+                            content: page.content
+                        }))
+                    };
+
+                    const draftsJson = localStorage.getItem('bookDrafts');
+                    let drafts = draftsJson ? JSON.parse(draftsJson) : {};
+                    drafts[newDraftId] = newDraft;
+                    localStorage.setItem('bookDrafts', JSON.stringify(drafts));
+
+                    alert(`Projeto "${importedData.bookTitle}" importado com sucesso! Abrindo editor...`);
+
+                    window.location.href = `./editor_draft.html?id=${newDraftId}`;
+
+                } catch (error) {
+                    alert("Erro ao ler o arquivo: Formato JSON inválido.");
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- NOVO: Função para Excluir o Rascunho ---
+        function deleteDraft() {
+            const bookTitle = currentDraft.title;
+            const confirmDelete = confirm(`ATENÇÃO: Você realmente deseja EXCLUIR permanentemente o rascunho "${bookTitle}"? Esta ação não pode ser desfeita.`);
+
+            if (confirmDelete) {
+                const draftsJson = localStorage.getItem('bookDrafts');
+                let drafts = draftsJson ? JSON.parse(draftsJson) : {};
+
+                if (drafts[draftId]) {
+                    delete drafts[draftId];
+                    localStorage.setItem('bookDrafts', JSON.stringify(drafts));
+
+                    alert(`O rascunho "${bookTitle}" foi excluído com sucesso.`);
+                    localStorage.removeItem(DRAFT_ID_KEY);
+                    window.location.href = 'editor.html'; // Redireciona para a lista de rascunhos
+                } else {
+                    alert("Erro: Rascunho não encontrado para exclusão.");
+                }
+            }
+        }
+
+        // --- Funções de UI (Formatação e Navegação) ---
+
+        function formatText(command) {
+            if (command === 'h3') {
+                document.execCommand('formatBlock', false, '<h3>');
+            } else if (command === 'link') {
+                const url = prompt("Insira o URL:");
+                if (url) {
+                    document.execCommand('createLink', false, url);
+                }
+            } else {
+                document.execCommand(command, false, null);
+            }
+            document.getElementById('content-editor').focus();
+        }
+
+        function handleDraftInput() {
+            const newTitle = document.getElementById('title-editor').value.trim() || "Rascunho";
+            document.getElementById('current-draft-name').textContent = newTitle;
+            document.getElementById('editor-title').textContent = `Editando: ${newTitle}`;
+        }
+
+        function handlePageInput(type) {
+            // O input é capturado pelo setInterval
+        }
+
+        function saveAndGoBack() {
+            saveDraft();
+            localStorage.removeItem(DRAFT_ID_KEY);
+            window.location.href = 'editor.html';
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('sidebar-visible');
+                overlay.style.display = 'none';
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Poefo Libraly chat notifications",
+  "scripts": {
+    "deploy": "firebase deploy --only functions",
+    "start": "firebase emulators:start --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "debug": "^4.3.4",
+    "firebase-admin": "^11.11.1",
+    "firebase-functions": "^5.1.1",
+    "iconv-lite": "^0.7.2"
+  }
+}

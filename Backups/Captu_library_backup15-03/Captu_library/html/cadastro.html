@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Poefo</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../style/login_cadastro.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+    <div class="Cadastro-container">
+        
+        <div class="icon-area">
+            <div class="icon-circle">
+                <img src="../images/Logo_Poefo.png" alt="Logo Poefo" class="logo">
+            </div>
+        </div>
+        
+        <h1>Criar</h1>
+
+        <form id="cadastroForm">
+            
+            <div class="input-group">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="email" placeholder="Email" required>
+            </div>
+
+            <div class="input-group">
+                <i class="fa-solid fa-id-card"></i>
+                <input type="text" id="nome_completo" placeholder="Nome Completo" required>
+            </div>
+
+            <div class="input-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="nome_usuario" placeholder="Nome de Usuário" required>
+            </div>
+
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="senha" placeholder="Senha" required>
+            </div>
+            
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="confirmar_senha" placeholder="Confirmar Senha" required>
+            </div>
+
+            <div class="input-group foto-perfil-upload">
+                <i class="fa-solid fa-camera"></i>
+                <label for="foto_perfil" id="file-label" class="file-label-text">Selecionar Foto de Perfil (Opcional)</label>
+                <input type="file" id="foto_perfil" accept="image/*"> 
+            </div>
+            
+            <p id="feedback" style="color: var(--secondary-color); text-align: center; margin-bottom: 15px; font-weight: 600;"></p>
+            
+            <button type="submit" class="btn-criar btn-primary">Cadastrar</button>
+            <a href="javascript:history.back()" class="criaracont">Já possui login ?/ Entrar</a> <i class="fa-solid fa-square-code watermark-icon"></i>
+        </form>
+
+        <i class="fa-solid fa-square-code watermark-icon"></i>
+    </div>
+    
+    <script>
+        // Configuração do Firebase - PREENCHA COM OS SEUS DADOS
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0", // Ex: "AIzaSy..."
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/", // O URL que você forneceu
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2",
+            measurementId: "SEU_MEASUREMENT_ID_AQUI"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        
+        // Inicializa o Storage (para a foto de perfil)
+        const storage = firebase.storage();
+        const storageRef = storage.ref();
+        
+        // NOVO: Inicializa o Realtime Database
+        const database = firebase.database();
+
+        // Caminhos
+        const PROFILE_IMAGES_FOLDER = "captu-libraly/profile_images/";
+        // URL de imagem padrão
+        const DEFAULT_PROFILE_PIC = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.appspot.com/o/default_profile.png?alt=media'; // Use sua URL de imagem padrão
+
+        
+        const form = document.getElementById('cadastroForm');
+        const feedback = document.getElementById('feedback');
+        const inputFoto = document.getElementById('foto_perfil');
+        const labelFoto = document.getElementById('file-label');
+
+        // Adiciona funcionalidade de clique à label do campo de arquivo
+        labelFoto.addEventListener('click', () => {
+             inputFoto.click();
+        });
+
+
+        // Listener para atualizar o label do input file ao selecionar uma imagem
+        inputFoto.addEventListener('change', () => {
+            if (inputFoto.files.length > 0) {
+                // Remove o texto "Opcional" e exibe o nome do arquivo
+                labelFoto.textContent = `Selecionado: ${inputFoto.files[0].name}`;
+                labelFoto.style.color = 'var(--primary-color)';
+            } else {
+                labelFoto.textContent = 'Selecionar Foto de Perfil (Opcional)';
+                labelFoto.style.color = 'var(--text-medium)';
+            }
+        });
+
+        /**
+         * Realiza o upload da imagem para o Firebase Storage.
+         */
+        async function uploadImage(file, userName) {
+            // Cria um nome de arquivo único usando timestamp e nome de usuário
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${userName}_${Date.now()}.${fileExtension}`;
+            // Adaptação: Usamos o nome do bucket do config
+            const imageRef = storage.ref(`${PROFILE_IMAGES_FOLDER}${fileName}`);
+
+            feedback.textContent = `Fazendo upload da foto de perfil: ${file.name}...`;
+            
+            const snapshot = await imageRef.put(file);
+            const downloadURL = await snapshot.ref.getDownloadURL();
+            
+            return downloadURL;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Desativa o botão para evitar cliques múltiplos
+            const btnCadastro = form.querySelector('.btn-criar[type="submit"]');
+            btnCadastro.disabled = true;
+            feedback.textContent = 'Iniciando cadastro...';
+            
+            const file = inputFoto.files[0];
+            const email = document.getElementById('email').value.trim();
+            const nome_completo = document.getElementById('nome_completo').value.trim();
+            // Normaliza o nome de usuário para minúsculas para uma verificação de duplicidade mais robusta
+            const nome_usuario = document.getElementById('nome_usuario').value.trim().toLowerCase(); 
+            const senha = document.getElementById('senha').value;
+            const confirmar_senha = document.getElementById('confirmar_senha').value;
+            let foto_url = DEFAULT_PROFILE_PIC;
+            
+            if (senha !== confirmar_senha) {
+                feedback.textContent = '❌ Erro: A senha e a confirmação de senha não coincidem!';
+                btnCadastro.disabled = false;
+                return;
+            }
+
+            try {
+                // 1. VERIFICAÇÃO DE DUPLICIDADE NO RTDB
+                feedback.textContent = 'Verificando duplicidade de Nome de Usuário...';
+                
+                // Consulta no RTDB: Busca um usuário com o 'nome_usuario' fornecido.
+                // Esta consulta é case-insensitive, desde que salvemos em minúsculas
+                const userSnapshot = await database.ref('usuarios')
+                    .orderByChild('nome_usuario')
+                    .equalTo(nome_usuario)
+                    .once('value'); // Usa 'once' para obter os dados uma vez
+                
+                if (userSnapshot.exists()) {
+                    feedback.textContent = '⚠️ Erro: Já existe um perfil com este Nome de Usuário.';
+                    btnCadastro.disabled = false;
+                    return;
+                }
+
+                // 2. UPLOAD DA IMAGEM (SE HOUVER)
+                if (file) {
+                    foto_url = await uploadImage(file, nome_usuario);
+                }
+
+                // 3. ADICIONAR NOVO PERFIL AO RTDB
+                feedback.textContent = '💾 Salvando novo usuário no banco de dados...';
+                
+                // .push() cria um nó com uma chave única (ID) no nó 'usuarios'
+                const novoUsuarioRef = database.ref('usuarios').push(); 
+                
+                const novoUsuario = {
+                    // ID do usuário será a chave gerada automaticamente
+                    email: email,
+                    nome_completo: nome_completo,
+                    // Salva em minúsculas para facilitar futuras pesquisas
+                    nome_usuario: nome_usuario, 
+                    senha: senha, 
+                    foto_perfil: foto_url,
+                    criadoEm: firebase.database.ServerValue.TIMESTAMP // Adiciona timestamp do servidor
+                };
+
+                // Salva os dados
+                await novoUsuarioRef.set(novoUsuario);
+                
+                // Sucesso
+                feedback.textContent = `✅ Sucesso! Perfil ${nome_usuario} criado. Redirecionando...`;
+                // Reabilita o botão (caso o redirecionamento falhe)
+                btnCadastro.disabled = false;
+                
+                setTimeout(() => {
+                    // Redirecione para a página de splash/login/home
+                    // window.location.href = './splash.html'; 
+                }, 1500);
+
+            } catch (error) {
+                console.error("Erro no cadastro:", error);
+                feedback.textContent = `❌ Erro ao processar o cadastro: ${error.message}.`;
+                btnCadastro.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

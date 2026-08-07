@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed Poefo</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="../style/style_feed.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="main-wrapper">
+        <header class="top-bar-mobile">
+            <a href="./perfil.html" class="profile-link-mobile">
+                <img src="../images/user_ic.png" alt="Perfil" class="profile-pic-mobile" id="mobile-profile-pic">
+            </a>
+            <div class="search-input-wrapper">
+                <div class="search-input" id="search-input-mobile-container">
+                    <i class="fa-solid fa-magnifying-glass img_search"></i>
+                    <input type="text" id="search-input-mobile" placeholder="Buscar no Poefo">
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="feed">
+                <header class="feed-header">
+                    <img src="../images/Logo_Poefo.png" alt="Logo Poefo" class="poefo-logo-header">
+                    <h2>Feed Poefo</h2>
+                </header>
+
+                <div id="no-results-message" class="loading-message hidden">
+                    <i class="fa-solid fa-exclamation-circle mr-2"></i> Nenhum resultado encontrado.
+                </div>
+
+                <div id="feed-container">
+                    <div id="loading-message" class="loading-message">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Carregando Feed...
+                    </div>
+                    <div id="error-message" class="error-message hidden">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar o Feed.
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-sidebar">
+                <div class="search-bar-desktop">
+                    <div class="search-input" id="search-input-desktop-container">
+                        <i class="fa-solid fa-magnifying-glass img_search"></i>
+                        <input type="text" id="search-input-desktop" placeholder="Buscar no Poefo">
+                    </div>
+                </div>
+                <div class="trends-control">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                        <input type="checkbox" id="follow-filter-checkbox"> Mostrar apenas seguidos
+                    </label>
+                </div>
+                <div class="trends-box">
+                    <h3>O que está acontecendo</h3>
+                    <div class="trend-item"><span class="trend-category">...</span>
+                        <p class="font-bold">carregando...</p><span class="trend-posts">0 curtidas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="./publicador.html" class="fab" title="Criar Post">
+       
+        <img src="../images/ic_edition.png" class="fab_icon">
+    </a>
+
+    <div class="nav-bar">
+        <a href="./games.html" class="nav-item">
+            <img src="../images/ic_game.png" alt="Game" class="nav-icon">
+            <span>Games</span>
+        </a>
+        <a href="./editor.html" class="nav-item">
+            <img src="../images/ic_edition.png" alt="Edition" class="nav-icon">
+            <span>Criar</span>
+        </a>
+        <a href="javascript:history.back()" class="nav-item">
+            <img src="../images/ic_home.png" alt="Home" class="nav-icon">
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item nav-item-active">
+            <img src="../images/ic_cloud_off_white.png" alt="Feed" class="nav-icon nav-icon-active">
+            <span>Feed</span>
+        </a>
+        <a href="./perfil.html" class="nav-item">
+            <img src="../images/user_ic.png" alt="Perfil" class="nav-icon">
+            <span>Conta</span>
+        </a>
+    </div>
+
+    <div class="home-indicator"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2",
+            measurementId: "G-7NM9CC35CX"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const storage = firebase.storage();
+        const db = firebase.database();
+    </script>
+    <script src="../scripts/script_feed.js"></script>
+
+</body>
+
+</html>

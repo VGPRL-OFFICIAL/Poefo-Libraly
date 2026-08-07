@@ -1,0 +1,161 @@
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../style/login_cadastro.css"> 
+   
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+    <div class="login-container">
+        
+        <div class="icon-area">
+            <div class="icon-circle">
+                <img src="../images/Logo_Poefo.png" alt="Logo Poefo" class="logo">
+            </div>
+        </div>
+          
+        <h1>Login</h1>
+
+        <form id="loginForm"> 
+            <div class="input-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" placeholder="Usuário" id="usuario" required>
+            </div>
+
+            <div class="input-group password-group"> <i class="fa-solid fa-lock"></i>
+                <input type="password" placeholder="Senha" id="senha" required>
+                <button type="button" class="toggle-password" id="togglePassword">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+
+            <div class="remember-me-group">
+                <input type="checkbox" id="remember-me">
+                <label for="remember-me">Lembrar Login</label>
+            </div>
+            
+            <p id="feedback" style="color: var(--secondary-color); text-align: center; margin-bottom: 15px; font-weight: 600;"></p>
+
+            <button type="submit" id="btn-entrar" class="btn-primary">Entrar</button>
+        </form>
+        
+        <a href="./cadastro.html" class="criaracont">Não possui login ?/ Criar Conta</a> <i class="fa-solid fa-square-code watermark-icon"></i>
+    </div>
+
+<script>
+    // ⚠️ ATENÇÃO: Substitua os placeholders do Firebase Config com seus dados reais.
+    const firebaseConfig = {
+        apiKey: "SEU_API_KEY_AQUI", // Ex: "AIzaSy..."
+        authDomain: "captu-libraly.firebaseapp.com",
+        databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/", // Seu URL RTDB
+        projectId: "captu-libraly",
+        storageBucket: "captu-libraly.firebasestorage.app",
+        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+        appId: "SEU_APP_ID_AQUI",
+        measurementId: "SEU_MEASUREMENT_ID_AQUI"
+    };
+    
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('loginForm');
+        const usuarioInput = document.getElementById('usuario');
+        const senhaInput = document.getElementById('senha');
+        const rememberMeCheckbox = document.getElementById('remember-me');
+        const feedback = document.getElementById('feedback');
+        const btnEntrar = document.getElementById('btn-entrar'); 
+
+        // NOVO: Lógica do botão de visualizar senha
+        const togglePasswordButton = document.getElementById('togglePassword');
+        togglePasswordButton.addEventListener('click', () => {
+            const type = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            senhaInput.setAttribute('type', type);
+            // Altera o ícone do olho
+            togglePasswordButton.querySelector('i').classList.toggle('fa-eye');
+            togglePasswordButton.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+        
+        function loadSavedLogin() {
+            const savedUsername = localStorage.getItem('rememberedUsername');
+            if (savedUsername) {
+                usuarioInput.value = savedUsername;
+                rememberMeCheckbox.checked = true;
+                senhaInput.focus();
+            }
+        }
+        
+        loadSavedLogin();
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            btnEntrar.disabled = true; 
+            feedback.textContent = 'Verificando credenciais...';
+            
+            const enteredUsername = usuarioInput.value.trim().toLowerCase();
+            const enteredPassword = senhaInput.value;
+            
+            if (!enteredUsername || !enteredPassword) {
+                feedback.textContent = '❌ Por favor, preencha todos os campos.';
+                btnEntrar.disabled = false;
+                return;
+            }
+
+            try {
+                const userSnapshot = await database.ref('usuarios')
+                    .orderByChild('nome_usuario')
+                    .equalTo(enteredUsername)
+                    .once('value');
+
+                if (userSnapshot.exists()) {
+                    const userKey = Object.keys(userSnapshot.val())[0];
+                    const userData = userSnapshot.val()[userKey];
+                    
+                    if (userData.senha === enteredPassword) {
+                        
+                        feedback.textContent = ` Login efetuado como ${userData.nome_usuario}! Redirecionando...`;
+                        
+                        // 🟢 LÓGICA CHAVE: SALVAR DADOS NA SESSION STORAGE
+                        sessionStorage.setItem('currentUserId', userKey);
+                        sessionStorage.setItem('currentUserName', userData.nome_usuario);
+                        
+                        // Lógica de Lembrar Login
+                        if (rememberMeCheckbox.checked) {
+                            localStorage.setItem('rememberedUsername', userData.nome_usuario);
+                        } else {
+                            localStorage.removeItem('rememberedUsername');
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.href = './splash.html';
+                        }, 1000);
+                        
+                    } else {
+                        feedback.textContent = '❌ Erro: Senha incorreta.';
+                    }
+                } else {
+                    feedback.textContent = '❌ Erro: Usuário não encontrado.';
+                }
+                
+            } catch (error) {
+                console.error("Erro no Login:", error);
+                feedback.textContent = `❌ Erro ao tentar logar: ${error.message}.`;
+            }
+            
+            if (feedback.textContent.indexOf('Redirecionando') === -1) {
+                btnEntrar.disabled = false;
+            }
+        });
+    });
+</script>
+</body>
+</html>

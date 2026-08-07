@@ -1,0 +1,502 @@
+/* Off-White/Claro: #FAFAFA (Fundo do Card) */
+/* Cinza Claro: #EEEEEE (Fundo da Página/Elementos Secundários) */
+/* Cinza Médio (Bordas/Ícones Inativos): #A8A8A8 */
+/* Cinza do Texto Principal: #333333 */
+/* COR DE DESTAQUE (Like Ativo/Ação): #FF4141 (Vermelho/Rosa) */
+/* COR DE ÊNFASE (Seguir): #0095f6 (Azul Instagram-like) */
+
+/* ----------------------------------- */
+/* --- ESTILO BASE E BACKGROUND --- */
+/* ----------------------------------- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #E5E5E5; /* Fundo Cinza Suave */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box; 
+}
+
+.perfil-container {
+    width: 100%;
+    max-width: 935px;
+    background-color: #FAFAFA; /* Fundo do "Card" Principal Off-White */
+    border: 1px solid #EEEEEE;
+    border-radius: 8px; /* Cantos levemente arredondados para modernidade */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Sombra mais visível e suave */
+    box-sizing: border-box;
+    flex-grow: 1; 
+    margin-bottom: 20px; /* Espaço na parte inferior em desktop */
+}
+
+/* ----------------------------------- */
+/* --- BARRA SUPERIOR E BOTÃO VOLTAR --- */
+/* ----------------------------------- */
+.top-bar {
+    width: 100%;
+    max-width: 935px;
+    background-color: #FAFAFA;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-top-left-radius: 8px; /* Mantém o canto arredondado do container */
+    border-top-right-radius: 8px;
+    border-bottom: 1px solid #EEEEEE; /* Adicionado para separar o topo */
+}
+
+.botao-voltar {
+    background: none;
+    border: none;
+    color: #333333;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 16px;
+    transition: color 0.2s, opacity 0.2s;
+}
+
+.botao-voltar:hover {
+    color: #000000;
+}
+
+.botao-voltar i {
+    margin-right: 8px;
+}
+
+/* ----------------------------------- */
+/* --- HEADER / INFORMAÇÕES DO PERFIL --- */
+/* ----------------------------------- */
+.perfil-header {
+    display: flex;
+    padding: 40px 20px 30px; 
+    align-items: center; /* Alinha no meio em desktop */
+    border-bottom: 1px solid #EEEEEE;
+}
+
+.foto-perfil-wrapper {
+    flex-basis: 35%; /* Aumenta um pouco o espaço da foto */
+    display: flex;
+    justify-content: center;
+    padding-right: 40px;
+    position: relative;
+}
+
+/* Imagem de perfil / Avatar */
+.foto-perfil {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid #EEEEEE; 
+    box-shadow: 0 0 0 2px #FAFAFA, 0 4px 10px rgba(0, 0, 0, 0.15); 
+    object-fit: cover;
+    transition: transform 0.3s ease-in-out;
+    background-color: #ccc; /* Cor de fundo para placeholders */
+}
+.foto-perfil:hover {
+    transform: scale(1.02); 
+}
+
+/* Avatar com imagem de fundo no JS */
+.foto-perfil.has-image {
+    background-size: cover;
+    background-position: center;
+}
+
+
+.info-principal {
+    flex-basis: 65%;
+}
+
+.nome-e-acao {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px; 
+    justify-content: space-between; 
+}
+
+.username {
+    font-size: 36px; 
+    font-weight: 200; 
+    color: #333333;
+    margin: 0;
+    margin-right: 20px;
+    letter-spacing: -0.5px; 
+}
+.handle {
+    color: #A8A8A8;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+
+/* --- BOTÕES DE AÇÃO --- */
+.botao-acao {
+    background-color: #EEEEEE;
+    color: #333333;
+    border: 1px solid #A8A8A8;
+    border-radius: 20px; 
+    padding: 8px 20px; 
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 14px;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+/* Botão Padrão Hover */
+.botao-acao:hover:not(:disabled) {
+    background-color: #D8D8D8;
+}
+
+/* Botão Seguir (Ênfase) */
+#btn-seguir:not(.secundario), #btn-seguir-mobile:not(.secundario) {
+    background-color: #0095f6;
+    color: #FAFAFA;
+    border-color: #0095f6;
+    box-shadow: 0 2px 4px rgba(0, 149, 246, 0.3);
+}
+#btn-seguir:not(.secundario):hover, #btn-seguir-mobile:not(.secundario):hover {
+    background-color: #007bb6;
+}
+
+/* Botão Seguindo (Secundário/Parar de Seguir) */
+.botao-acao.secundario {
+    background-color: transparent;
+    border-color: #A8A8A8;
+    color: #333333;
+}
+.botao-acao.secundario:hover {
+    background-color: #F0F0F0;
+}
+
+/* Botão Like (Coração) */
+.like-perfil-btn {
+    width: 40px; 
+    padding: 8px 0;
+    text-align: center;
+    border-color: #A8A8A8;
+}
+
+.like-perfil-btn i {
+    color: #A8A8A8; 
+    font-size: 18px;
+}
+
+.like-perfil-btn.active i {
+    color: #FF4141; 
+    font-weight: 900; 
+}
+.like-perfil-btn.active {
+    border-color: #FF4141;
+}
+
+
+/* Esconde os botões mobile por padrão no desktop */
+.botoes-mobile {
+    display: none;
+}
+
+/* --- ESTATÍSTICAS --- */
+.estatisticas {
+    display: flex;
+    margin-top: 25px;
+    margin-bottom: 20px;
+    padding: 0;
+    justify-content: space-between;
+    max-width: 450px; 
+}
+
+.stat-item {
+    text-align: center;
+    color: #333333;
+    display: flex;
+    flex-direction: column;
+    margin-right: 40px; 
+}
+.stat-item:last-child {
+    margin-right: 0;
+}
+
+.numero {
+    font-weight: 700;
+    font-size: 20px; 
+    margin-bottom: 2px;
+}
+
+.label {
+    font-weight: 400;
+    font-size: 14px;
+    color: #A8A8A8;
+    text-transform: capitalize; 
+}
+
+/* --- BIO / NOME COMPLETO --- */
+.nome-completo {
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 18px; 
+    color: #333333;
+}
+
+.bio {
+    margin: 0;
+    font-size: 15px; 
+    line-height: 1.5;
+    color: #333333;
+}
+
+/* --- NAVEGAÇÃO DE POSTS --- */
+.separador {
+    height: 10px;
+    background-color: #FAFAFA;
+    border-top: 1px solid #EEEEEE;
+}
+
+.nav-posts {
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid #EEEEEE; /* Mudança sutil de cor */
+    padding: 0 20px;
+}
+
+.nav-item {
+    text-decoration: none;
+    color: #A8A8A8;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    padding: 15px 30px; 
+    border-top: 1px solid transparent;
+    transition: color 0.2s, border-top 0.2s;
+    white-space: nowrap;
+}
+
+.nav-item i {
+    margin-right: 6px; 
+}
+
+.nav-item:hover {
+    color: #333333;
+}
+
+.nav-item.ativo {
+    color: #333333;
+    border-top: 2px solid #333333; 
+    margin-top: -1px;
+}
+
+/* --- GRID DE POSTAGENS / LISTA DE PREVIEW (Para o JS) --- */
+/* O HTML está gerando uma lista, não um grid, vamos estilizar a lista de preview
+   para ter uma aparência moderna e limpa. */
+.post-list-container {
+    padding: 20px;
+}
+
+.profile-post-preview {
+    background-color: #FAFAFA;
+    border: 1px solid #EEEEEE;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.profile-post-preview:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.profile-post-preview p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    line-height: 1.4;
+    color: #333333;
+}
+
+.profile-post-preview small {
+    display: block;
+    color: #A8A8A8;
+    font-size: 12px;
+}
+.profile-post-preview small i {
+    margin-right: 4px;
+    margin-left: 10px;
+}
+.profile-post-preview small i:first-child {
+    margin-left: 0;
+}
+.profile-post-preview small .fa-heart {
+    color: #FF4141;
+}
+
+/* --- ESTILOS DE CARREGAMENTO/ERRO --- */
+.profile-loading, .profile-error {
+    text-align: center;
+    padding: 50px 20px;
+}
+.profile-loading h2 {
+    color: #333333;
+    font-weight: 400;
+}
+.profile-details-skeleton {
+    height: 18px;
+    background-color: #EEEEEE;
+    border-radius: 4px;
+    margin: 10px auto;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+.profile-details-skeleton:nth-child(2) { width: 60%; }
+.profile-details-skeleton:nth-child(3) { width: 40%; }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+
+/* ----------------------------------- */
+/* --- RESPONSIVIDADE (MOBILE) --- */
+/* ----------------------------------- */
+@media (max-width: 768px) {
+    /* Ajustes Gerais */
+    .perfil-container {
+        border: none; 
+        box-shadow: none; 
+        border-radius: 0;
+        margin-bottom: 0;
+    }
+    .top-bar {
+        border: none; 
+        border-radius: 0;
+        max-width: 100%;
+        padding: 10px 15px;
+    }
+
+    /* Header e Info */
+    .perfil-header {
+        flex-direction: column; 
+        align-items: center; 
+        padding: 20px 15px; 
+        text-align: center;
+    }
+
+    .foto-perfil-wrapper {
+        padding-right: 0;
+        margin-bottom: 20px; 
+    }
+
+    .foto-perfil {
+        width: 100px; 
+        height: 100px;
+        box-shadow: 0 0 0 2px #FAFAFA, 0 2px 5px rgba(0, 0, 0, 0.1); 
+    }
+    
+    .username {
+        font-size: 28px; 
+        font-weight: 300;
+        margin-bottom: 15px;
+    }
+
+    /* Botões Mobile */
+    .nome-e-acao {
+        /* Desativa o desktop flex para mobile */
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+    }
+    .botoes-desktop {
+        display: none;
+    }
+    .botoes-mobile {
+        display: flex; 
+        justify-content: center;
+        width: 100%;
+        margin-top: 15px; 
+    }
+    .botoes-mobile .botao-acao {
+        flex-grow: 1; 
+        margin: 0 4px; 
+        padding: 8px 0; 
+        font-size: 12px;
+        border-radius: 6px;
+    }
+    
+    .botoes-mobile .like-perfil-btn {
+        flex-grow: 0.2; 
+        width: 38px;
+        padding: 8px 0;
+    }
+    .like-perfil-btn i {
+        font-size: 16px;
+    }
+    
+
+    /* Estatísticas Mobile */
+    .estatisticas {
+        justify-content: space-around; 
+        margin-top: 15px;
+        margin-bottom: 15px;
+        max-width: none; 
+        width: 100%;
+    }
+    .stat-item {
+        margin-right: 0; 
+        flex: 1; 
+    }
+    .numero {
+        font-size: 16px; 
+    }
+
+    /* Bio Mobile */
+    .nome-completo, .bio {
+        text-align: center; 
+        padding: 0 15px; 
+    }
+
+    /* Navegação de Posts Mobile (Sem Grid - Usaremos Lista) */
+    .nav-posts {
+        justify-content: space-around; 
+        padding: 0;
+        border-top: 1px solid #EEEEEE; 
+    }
+    .nav-item {
+        padding: 15px 5px; 
+        font-size: 10px; 
+        flex: 1; 
+    }
+    .nav-item i {
+        display: block;
+        margin: 0 auto 3px;
+    }
+
+    /* Lista de Posts Mobile */
+    .post-list-container {
+        padding: 10px;
+    }
+    .profile-post-preview {
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+}
+
+/* Ajustes para telas muito pequenas */
+@media (max-width: 480px) {
+    .username {
+        font-size: 24px;
+    }
+    .botoes-mobile .botao-acao {
+        font-size: 10px;
+        padding: 6px 0;
+    }
+    .botoes-mobile .like-perfil-btn {
+        width: 30px;
+    }
+}

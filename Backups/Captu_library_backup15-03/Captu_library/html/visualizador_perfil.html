@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Perfil</title>
+    <!--  -->
+    <link rel="stylesheet" href="../style/style_profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <div class="top-bar">
+        <button onclick="history.back()" class="botao-voltar"><i class="fas fa-arrow-left"></i> Voltar</button>
+    </div>
+
+    <!-- Container Principal do Perfil -->
+    <div class="perfil-container" id="profile-main">
+        <div class="profile-loading">
+            <h2 id="profile-username">Carregando Perfil...</h2>
+            <div class="profile-details-skeleton" style="width: 50%;"></div>
+            <div class="profile-details-skeleton" style="width: 70%;"></div>
+        </div>
+    </div>
+
+    <!-- Use Realtime Database (RTDB) para compatibilidade com o restante do projeto -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2",
+            measurementId: "G-7NM9CC35CX"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const ALL_POSTS_DATA_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Fposts.json?alt=media&token=e7b7b6fb-275a-45e3-9482-7830189c671f';
+
+        // Helper: leitura segura do RTDB que captura permission_denied e retorna null como fallback
+        async function safeReadRef(path) {
+            try {
+                const snap = await db.ref(path).once('value');
+                return snap.exists() ? snap.val() : null;
+            } catch (err) {
+                // Evita quebrar a página quando regras do RTDB negarem acesso
+                if (err && (err.code === 'PERMISSION_DENIED' || (err.message && err.message.toLowerCase().includes('permission')))) {
+                    console.warn('Permissão negada ao ler', path);
+                    return null;
+                }
+                console.error('Erro ao ler RTDB:', path, err);
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let targetUid = urlParams.get('uid');
+            if (!targetUid) targetUid = sessionStorage.getItem('viewUserId') || null;
+            const profileMain = document.getElementById('profile-main');
+
+            if (!targetUid || targetUid === 'USER_ANONIMO') {
+                profileMain.innerHTML = `<div class="profile-error"><h2>Erro: Perfil não encontrado.</h2><p>O ID do usuário não foi fornecido ou é inválido.</p></div>`;
+                return;
+            }
+
+            profileMain.innerHTML = `<div class="profile-loading"><h2>Carregando...</h2></div>`;
+
+            try {
+                const userVal = await safeReadRef(`usuarios/${targetUid}`);
+                const data = userVal || null;
+                if (!data) {
+                    profileMain.innerHTML = `<div class="profile-error"><h2>Perfil não encontrado.</h2><p>Usuário ausente no Realtime Database.</p></div>`;
+                    return;
+                }
+
+                const viewerUid = sessionStorage.getItem('currentUserId') || null;
+                const isOwnProfile = viewerUid && viewerUid === String(targetUid);
+
+                const totalFollowersVal = await safeReadRef(`followers_count/${targetUid}`);
+                const totalFollowingVal = await safeReadRef(`following_count/${targetUid}`);
+                const totalFollowers = (typeof totalFollowersVal === 'number') ? totalFollowersVal : 0;
+                const totalFollowing = (typeof totalFollowingVal === 'number') ? totalFollowingVal : 0;
+
+                // Check if viewer follows target (RTDB path follows/viewerUid/targetUid)
+                let isFollowing = false;
+                if (viewerUid) {
+                    const fVal = await safeReadRef(`follows/${viewerUid}/${targetUid}`);
+                    isFollowing = fVal === true;
+                }
+
+                const followBtnText = isFollowing ? 'Seguindo' : 'Seguir';
+                const followBtnClass = isFollowing ? 'botao-acao secundario' : 'botao-acao';
+
+                const profileHtml = `
+                    <div class="perfil-header">
+                        <div class="foto-perfil-wrapper">
+                            <div class="foto-perfil"><img src="${data.foto_perfil || '../images/user_ic.png'}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"/></div>
+                        </div>
+                        <div class="info-principal">
+                            <div class="nome-e-acao">
+                                <h1 class="username">${data.nome_usuario || targetUid}</h1>
+                                <div class="botoes-desktop">
+                                    ${isOwnProfile ? '<button id="btn-editar" class="botao-acao">Editar Perfil</button>' : `<button id="btn-seguir" class="${followBtnClass}">${followBtnText}</button><button id="btn-mensagem" class="botao-acao" style="margin-left:8px">Mensagem</button>`}
+                                </div>
+                            </div>
+                            <p class="nome-completo">${data.nome_completo || ''}</p>
+                            <div class="estatisticas">
+                                <div class="stat-item"><span class="numero" id="stat-posts">0</span><span class="label">Publicações</span></div>
+                                <div class="stat-item"><span class="numero" id="stat-likes">0</span><span class="label">Curtidas</span></div>
+                                <div class="stat-item"><span class="numero">${totalFollowers}</span><span class="label">Seguidores</span></div>
+                                <div class="stat-item"><span class="numero">${totalFollowing}</span><span class="label">Seguindo</span></div>
+                            </div>
+                            <p class="bio">${data.bio || ''}</p>
+                        </div>
+                    </div>
+                    <div class="separador"></div>
+                    <main class="grid-posts" id="public-posts-grid">
+                        <div class="post-item placeholder"><span>Carregando publicações...</span></div>
+                    </main>
+                `;
+
+                profileMain.innerHTML = profileHtml;
+
+                // Follow toggle handler (RTDB)
+                if (!isOwnProfile && viewerUid) {
+                    const btn = document.getElementById('btn-seguir');
+                    btn && btn.addEventListener('click', async () => {
+                        try {
+                            btn.disabled = true;
+                            const currently = (await safeReadRef(`follows/${viewerUid}/${targetUid}`)) === true;
+                            if (currently) {
+                                await db.ref(`follows/${viewerUid}/${targetUid}`).remove();
+                                await db.ref(`followers/${targetUid}/${viewerUid}`).remove();
+                                await db.ref(`followers_count/${targetUid}`).transaction(curr=> (typeof curr==='number' && curr>0)? curr-1 : 0);
+                                await db.ref(`following_count/${viewerUid}`).transaction(curr=> (typeof curr==='number' && curr>0)? curr-1 : 0);
+                                btn.textContent = 'Seguir'; btn.className = 'botao-acao';
+                            } else {
+                                await db.ref(`follows/${viewerUid}/${targetUid}`).set(true);
+                                await db.ref(`followers/${targetUid}/${viewerUid}`).set(true);
+                                await db.ref(`followers_count/${targetUid}`).transaction(curr=> (typeof curr==='number')? curr+1 : 1);
+                                await db.ref(`following_count/${viewerUid}`).transaction(curr=> (typeof curr==='number')? curr+1 : 1);
+                                btn.textContent = 'Seguindo'; btn.className = 'botao-acao secundario';
+                            }
+                        } catch (err) {
+                            console.error('Erro toggle follow:', err);
+                            alert('Não foi possível atualizar seguimento. Verifique conexão/permissões.');
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
+
+                    const msgBtn = document.getElementById('btn-mensagem');
+                    msgBtn && msgBtn.addEventListener('click', () => {
+                        sessionStorage.setItem('chatWithUserId', targetUid);
+                        sessionStorage.setItem('chatWithUserName', data.nome_usuario || data.nome_completo || data.handle || targetUid);
+                        window.location.href = './chat.html';
+                    });
+                }
+
+                // Load posts from static posts.json and filter by author
+                const postsResp = await fetch(ALL_POSTS_DATA_URL);
+                const posts = postsResp.ok ? await postsResp.json().catch(()=>[]) : [];
+                const userPosts = posts.filter(p => {
+                    if (!p) return false;
+                    if (p.userId && String(p.userId) === String(targetUid)) return true;
+                    if (p.author && p.author.userId && String(p.author.userId) === String(targetUid)) return true;
+                    if (p.autor && p.autor.userId && String(p.autor.userId) === String(targetUid)) return true;
+                    return false;
+                });
+
+                const grid = document.getElementById('public-posts-grid');
+                grid.innerHTML = '';
+                // Atualiza contador de posts
+                const statPostsEl = document.getElementById('stat-posts');
+                statPostsEl && (statPostsEl.textContent = userPosts.length);
+
+                // Soma de likes nas publicações do usuário (filtros por chave variadas)
+                let totalLikes = 0;
+                userPosts.forEach(pp=>{
+                    const l = pp.likes || pp.Curtidas || pp.likesCount || pp.likes_count || pp.likes_total || 0;
+                    totalLikes += (typeof l === 'number') ? l : (parseInt(l)||0);
+                });
+                // Se quisermos mostrar likes, poderíamos adicionar outro stat-item com id stat-likes
+                const likesEl = document.getElementById('stat-likes');
+                if (likesEl) likesEl.textContent = totalLikes;
+
+                if (userPosts.length === 0) {
+                    grid.innerHTML = '<div class="post-item placeholder"><span>Sem publicações.</span></div>';
+                } else {
+                    userPosts.sort((a,b)=> (b.timestamp||0) - (a.timestamp||0)).forEach(p => {
+                        const el = document.createElement('div');
+                        el.className = 'post-item has-content';
+                        const img = (p.attachment && p.attachment.url) ? `<img src="${p.attachment.url}" class="post-image-cover">` : (p.anexo_url?`<img src="${p.anexo_url}" class="post-image-cover">`:'');
+                        const text = p.content || p.conteudo || p.conteúdo || p.texto || p.titulo || '';
+                        el.innerHTML = `${img}<div class="post-text-snippet">${(text||'').substring(0,120)}</div>`;
+                        grid.appendChild(el);
+                    });
+                }
+
+            } catch (err) {
+                console.error('Erro ao carregar perfil (RTDB):', err);
+                profileMain.innerHTML = `<div class="profile-error"><h2>Erro ao carregar perfil.</h2><p>${err.message}</p></div>`;
+            }
+        });
+    </script>
+</body>
+
+</html>

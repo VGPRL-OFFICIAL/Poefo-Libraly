@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Livro</title>
+    <link rel="stylesheet" href="../style/style_livro.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> 
+</head>
+<body>
+    <div class="main-screen">
+        <div class="top-header-actions">
+            <span class="action-icon-top" onclick="history.back()"><i class="fas fa-arrow-left"></i></span>
+            <div style="width: 20px;"></div> 
+        </div>
+        
+        <div id="book-details-container">
+            </div>
+    </div>
+
+    <div class="bottom-bar">
+        <input type="text" class="search-input" placeholder="Comentar..."> 
+        <span class="send-icon"><i class="fas fa-paper-plane"></i></span>
+    </div>
+    
+   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "34110440088" 
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        // Inicializa o objeto DB globalmente
+        window.db = firebase.database(); 
+    </script>
+    
+    <script src="../scripts/script_livro.js"></script>
+</body>
+</html>

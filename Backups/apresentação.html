@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Evoluiu - Apresentação Premium</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        body {
+            background-color: #080710;
+            color: #f4f4f7;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .slide {
+            width: 297mm;
+            height: 210mm;
+            box-sizing: border-box;
+            padding: 20mm 18mm;
+            position: relative;
+            page-break-after: always;
+            background: radial-gradient(circle at 90% 10%, rgba(0, 242, 254, 0.08) 0%, transparent 60%),
+                        radial-gradient(circle at 10% 90%, rgba(127, 0, 255, 0.08) 0%, transparent 60%),
+                        #0a0915;
+            overflow: hidden;
+        }
+
+        /* Slide 1: Capa */
+        .slide-cover {
+            display: table;
+            width: 100%;
+            height: 100%;
+        }
+
+        .cover-cell {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
+            padding-bottom: 20mm;
+        }
+
+        .badge-new {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(127, 0, 255, 0.15));
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            color: #00f2fe;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 11pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10mm;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+
+        h1.main-title {
+            font-size: 38pt;
+            font-weight: 900;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            margin-bottom: 6mm;
+            background: linear-gradient(135deg, #ffffff 40%, #00f2fe 80%, #7f00ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            font-size: 15pt;
+            color: #94a3b8;
+            max-width: 200mm;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* Estrutura Geral de Slides de Conteúdo */
+        .slide-header {
+            margin-bottom: 12mm;
+            border-left: 4px solid #00f2fe;
+            padding-left: 6mm;
+        }
+
+        .slide-header h2 {
+            font-size: 22pt;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+
+        .slide-header p {
+            font-size: 11pt;
+            color: #64748b;
+            margin-top: 1mm;
+        }
+
+        /* Layout de Duas Colunas usando Table */
+        .grid-2col {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 8mm 0;
+        }
+
+        .col {
+            display: table-cell;
+            vertical-align: top;
+        }
+
+        /* Interface Mocks e Elementos Visuais */
+        .panel {
+            background: rgba(15, 13, 35, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 6mm;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .panel-title {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #00f2fe;
+            margin-bottom: 5mm;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+        }
+
+        /* Cards de Jogos */
+        .game-card {
+            background: linear-gradient(145deg, rgba(20, 18, 45, 0.9), rgba(10, 8, 25, 0.9));
+            border: 1px solid rgba(0, 242, 254, 0.1);
+            border-radius: 12px;
+            padding: 5mm;
+            margin-bottom: 4mm;
+            position: relative;
+        }
+
+        .game-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, #00f2fe, #7f00ff) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            opacity: 0.3;
+        }
+
+        .game-header {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1mm;
+        }
+
+        .game-meta {
+            font-size: 9pt;
+            color: #7f00ff;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 3mm;
+        }
+
+        /* Ranking / Tabela */
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .ranking-table th {
+            text-align: left;
+            padding: 3mm 2mm;
+            font-size: 9pt;
+            color: #64748b;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .ranking-table td {
+            padding: 4mm 2mm;
+            font-size: 11pt;
+            color: #e2e8f0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .ranking-row-top {
+            background: rgba(0, 242, 254, 0.03);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 10pt;
+            font-weight: 700;
+        }
+
+        .rank-1 { background: #ffd700; color: #000; }
+        .rank-2 { background: #c0c0c0; color: #000; }
+        .rank-3 { background: #cd7f32; color: #000; }
+
+        /* Botões e Ações */
+        .btn-box {
+            margin-top: 4mm;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 3.5mm 6mm;
+            border-radius: 8px;
+            font-size: 10.5pt;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            margin-right: 3mm;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #050510;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.25);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Chat UI */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 80mm;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 3.5mm 4.5mm;
+            border-radius: 12px;
+            margin-bottom: 3mm;
+            font-size: 10.5pt;
+            line-height: 1.4;
+        }
+
+        .chat-left {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            align-self: flex-start;
+            border-top-left-radius: 2px;
+        }
+
+        .chat-right {
+            background: rgba(127, 0, 255, 0.2);
+            border: 1px solid rgba(127, 0, 255, 0.3);
+            color: #f1f5f9;
+            align-self: flex-end;
+            border-top-right-radius: 2px;
+        }
+
+        /* Perfil e Progresso */
+        .profile-header {
+            display: table;
+            width: 100%;
+            margin-bottom: 5mm;
+        }
+
+        .avatar-box {
+            display: table-cell;
+            width: 50px;
+            vertical-align: middle;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7f00ff, #00f2fe);
+            border: 2px solid #00f2fe;
+        }
+
+        .profile-info {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 4mm;
+        }
+
+        .profile-name {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .profile-title {
+            font-size: 9.5pt;
+            color: #00f2fe;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            margin-top: 4mm;
+            margin-bottom: 5mm;
+        }
+
+        .progress-label {
+            font-size: 9.5pt;
+            color: #94a3b8;
+            margin-bottom: 2mm;
+            display: block;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.05);
+            height: 8px;
+            border-radius: 4px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #7f00ff, #00f2fe);
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        /* Lista de Conquistas (Badges) */
+        .badge-grid {
+            margin-top: 4mm;
+        }
+
+        .mini-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 2mm 3.5mm;
+            border-radius: 8px;
+            font-size: 9pt;
+            color: #e2e8f0;
+            margin-right: 2mm;
+            margin-bottom: 2mm;
+        }
+
+        .mini-badge span {
+            color: #ffd700;
+            margin-right: 1mm;
+        }
+
+        /* Lista Bullet Personalizada */
+        .features-list {
+            list-style: none;
+            margin-top: 4mm;
+        }
+
+        .features-list li {
+            position: relative;
+            padding-left: 6mm;
+            margin-bottom: 5mm;
+            font-size: 11.5pt;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .features-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #00f2fe;
+            font-weight: bold;
+        }
+
+        /* Rodapé Fixo do Slide */
+        .slide-footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 18mm;
+            right: 18mm;
+            display: table;
+            width: calc(100% - 36mm);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 4mm;
+        }
+
+        .footer-brand {
+            display: table-cell;
+            font-size: 10pt;
+            font-weight: 800;
+            color: #00f2fe;
+            letter-spacing: 1px;
+        }
+
+        .footer-page {
+            display: table-cell;
+            text-align: right;
+            font-size: 9.5pt;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SLIDE 1: CAPA -->
+    <div class="slide">
+        <div class="slide-cover">
+            <div class="cover-cell">
+                <div class="badge-new">Nova Era Poefo</div>
+                <h1 class="main-title">Poefo evoluiu:<br>games, ranking e conexão social</h1>
+                <p class="subtitle">Novas experiências para transformar a plataforma em um ambiente mais imersivo, competitivo e interativo.</p>
+            </div>
+        </div>
+        <div class="slide-footer">
+            <div class="footer-brand">POEFO NEXT</div>
+            <div class="footer-page">01</div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2: GAMIFICAÇÃO & MENU DE JOGOS -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Universo Gamificado</h2>
+            <p>Menu interativo expandido com novas mecânicas e cards de jogos proprietários.</p>
+        </div>
+        
+        <div class="grid-2col">
+            <div class="col" style="width: 55%;">
+                <div class="panel">
+                    <span class="panel-title">🎮 Explorar Novos Games</span>
+                    
+                    <div class="game-card">
+                        <div class="game-header">Poefo Arena: Battle Royale</div>
+                        <div class="game-meta">Ação • Multiplayer</div>
+                        <p style="font-size: 10pt; color: #94a3b8;">Desafie múltiplos contatos em tempo real em arenas dinâmicas baseadas em conhecimento.</p>
+                    </div>
+
+                    <div class="game-card">
+                        <div class="game-header">Speed Run Mental</div>
+                        <div class="game-meta">Estratégia • Solo / PvP</div>
+                        <p style="font-size: 10pt; color: #94a3b8;">Resolução rápida de enigmas matemáticos e lógicos. Cada segundo conta para o score global.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col" style="width: 45%;">
+                <div style="padding-top: 4mm;">
+                    <h3 style="font-size: 14pt; color: #ffffff; margin-bottom: 4mm;">A Retenção Através do Jogo</h3>
+                    <ul class="features-list">
+                        <li><strong>Cards Imersivos:</strong> Interfaces limpas com foco em artes modernas e tags rápidas de categoria.</li>
+                        <li><strong>Recompensas Instantâneas:</strong> Pontuações calculadas instantaneamente com feedbacks visuais de alto impacto.</li>
+                        <li><strong>Variedade Estrutural:</strong> Modos de jogo adaptados tanto para sessões rápidas de 2 minutos quanto para competições de longa duração.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide-footer">
+            <div class="footer-brand">POEFO NEXT</div>
+            <div class="footer-page">02</div>
+        </div>
+    </div>
+
+    <!-- SLIDE 3: COMPETIÇÃO & RANKINGS -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Competição de Alto Nível</h2>
+            <p>Painel de pontuação global e placares dinâmicos em tempo real para incentivar a evolução.</p>
+        </div>
+
+        <div class="grid-2col">
+            <div class="col" style="width: 50%;">
+                <div class="panel">
+                    <span class="panel-title">🏆 Leaderboard Semanal</span>
+                    <table class="ranking-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Pos</th>
+                                <th style="width: 55%;">Usuário</th>
+                                <th style="width: 30%; text-align: right;">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="ranking-row-top">
+                                <td><span class="rank-badge rank-1">1</span></td>
+                                <td><strong>@lucas_cyber</strong></td>
+                                <td style="text-align: right; color: #00f2fe; font-weight: bold;">15.420 pts</td>
+                            </tr>
+                            <tr class="ranking-row-top">
+                                <td><span class="rank-badge rank-2">2</span></td>
+                                <td><strong>@mari_dev</strong></td>
+                                <td style="text-align: right; color: #00f2fe; font-weight: bold;">14.890 pts</td>
+                            </tr>
+                            <tr>
+                                <td><span class="rank-badge rank-3">3</span></td>
+                                <td>@pedro_pixel</td>
+                                <td style="text-align: right; color: #a5b4fc;">13.110 pts</td>
+                            </tr>
+                            <tr>
+                                <td><span class="rank-badge" style="color: #64748b;">4</span></td>
+                                <td>@ana_tech</td>
+                                <td style="text-align: right; color: #a5b4fc;">11.950 pts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col" style="width: 50%;">
+                <div class="panel" style="background: rgba(127, 0, 255, 0.03); border-color: rgba(127, 0, 255, 0.2);">
+                    <span class="panel-title" style="color: #a5b4fc;">⚡ Suas Ações Rápidas</span>
+                    <p style="font-size: 10.5pt; color: #cbd5e1; margin-bottom: 5mm; line-height: 1.5;">
+                        Interaja diretamente com o ecossistema competitivo utilizando os novos gatilhos sociais da plataforma.
+                    </p>
+                    <div class="btn-box">
+                        <button class="btn btn-primary">⚔ Desafiar Contato</button>
+                        <button class="btn btn-secondary">🔗 Compartilhar Score</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 5mm; padding-left: 2mm;">
+                    <p style="font-size: 10pt; color: #64748b; line-height: 1.5;">
+                        *Os scores são atualizados a cada partida finalizada. O top 3 semanal recebe badges exclusivas e multiplicadores de experiência para o perfil no próximo ciclo.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide-footer">
+            <div class="footer-brand">POEFO NEXT</div>
+            <div class="footer-page">03</div>
+        </div>
+    </div>
+
+    <!-- SLIDE 4: INTEGRAÇÃO SOCIAL & CHAT -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Conexão Social Ativa</h2>
+            <p>Integração nativa de chat em tempo real transformando interações simples em desafios competitivos.</p>
+        </div>
+
+        <div class="grid-2col">
+            <div class="col" style="width: 45%;">
+                <div style="padding-top: 2mm;">
+                    <h3 style="font-size: 14pt; color: #ffffff; margin-bottom: 4mm;">Comunidade em Primeiro Lugar</h3>
+                    <ul class="features-list">
+                        <li><strong>Desafios Diretos via Chat:</strong> Envie um convite de duelo instantâneo diretamente na janela de conversa ativa de qualquer amigo.</li>
+                        <li><strong>Matchmaking Facilitado:</strong> Compartilhe salas, scores e conquistas em chats de grupo com apenas um clique.</li>
+                        <li><strong>Socialização Saudável:</strong> Espaço dinâmico para conversas pós-jogo, piadas e criação de rivalidades amigáveis.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col" style="width: 55%;">
+                <div class="panel chat-container">
+                    <span class="panel-title">💬 Chat de Desafio: Arena #412</span>
+                    
+                    <div class="chat-bubble chat-left">
+                        <strong>@mari_dev:</strong> Vi que você subiu no ranking hoje... Mas duvido ganhar de mim no Speed Run Mental! 😜
+                    </div>
+
+                    <div class="chat-bubble chat-right">
+                        <strong>Você:</strong> Aceito o desafio! Manda o link da sala.
+                    </div>
+
+                    <div class="chat-bubble chat-left" style="background: rgba(0, 242, 254, 0.1); border: 1px solid rgba(0, 242, 254, 0.2); text-align: center; max-width: 100%; align-self: center; border-radius: 8px;">
+                        ⚔️ <strong>@mari_dev desafiou você!</strong><br>
+                        <span style="font-size: 9pt; color: #00f2fe; display:block; margin-top:1mm;">VALENDO: 500 PTS DE RANKING</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide-footer">
+            <div class="footer-brand">POEFO NEXT</div>
+            <div class="footer-page">04</div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5: PERFIL DO USUÁRIO & PROGRESSO -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Identidade & Evolução</h2>
+            <p>A nova tela de perfil destaca a jornada do jogador, suas grandes conquistas e o nível de progresso.</p>
+        </div>
+
+        <div class="grid-2col">
+            <div class="col" style="width: 50%;">
+                <div class="panel">
+                    <div class="profile-header">
+                        <div class="avatar-box">
+                            <div class="avatar"></div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">Alex M. "Shadow"</div>
+                            <div class="profile-title">Mestre de Estratégias • Nível 42</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-container">
+                        <span class="progress-label">Progresso do Nível Atual (75%) <span style="float: right; color: #00f2fe;">3.000 / 4.000 XP</span></span>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: 75%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="badge-grid">
+                        <span class="panel-title" style="font-size: 10pt; margin-bottom: 2mm;">🏅 Conquistas Recentes</span>
+                        <div class="mini-badge"><span>🏆</span> Invencível (10 vitórias seguidas)</div>
+                        <div class="mini-badge"><span>⚡</span> Mente Brilhante</div>
+                        <div class="mini-badge"><span>🤝</span> Socializador</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col" style="width: 50%;">
+                <div style="padding-top: 2mm; padding-left: 4mm;">
+                    <h3 style="font-size: 14pt; color: #ffffff; margin-bottom: 4mm;">Foco na Personalização</h3>
+                    <p style="font-size: 11pt; color: #cbd5e1; line-height: 1.6; margin-bottom: 4mm;">
+                        A nova área de perfil funciona como o RG digital do usuário dentro do ecossistema do Poefo. Cada conquista desbloqueia recompensas estéticas e títulos customizados.
+                    </p>
+                    <p style="font-size: 11pt; color: #cbd5e1; line-height: 1.6;">
+                        Ao dar visibilidade para a **evolução e o crescimento pessoal**, a plataforma ativa gatilhos de motivação intrínseca, transformando tarefas comuns em marcos de sucesso celebrados pela comunidade.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide-footer">
+            <div class="footer-brand">POEFO NEXT</div>
+            <div class="footer-page">05</div>
+        </div>
+    </div>
+
+</body>
+</html>

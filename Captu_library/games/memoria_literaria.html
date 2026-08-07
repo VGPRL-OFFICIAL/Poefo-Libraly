@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Memória Literária</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .game-container { max-width: 900px; margin: 0 auto; background: white; border: 1px solid #ececec; border-radius: 28px; padding: 32px; box-shadow: var(--shadow-soft); }
+        .game-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #f0f0f0; padding-bottom: 16px; }
+        .meta-indicators { display: flex; gap: 12px; }
+        .badge-indicator { background: #f4f7fb; padding: 10px 20px; border-radius: 999px; font-weight: 700; color: #1a1a1a; font-size: 0.95rem; }
+        .memory-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .memory-card { aspect-ratio: 1; border: 1px solid #e2e8f0; border-radius: 16px; background: linear-gradient(135deg, #111827 0%, #1f2937 100%); color: white; display: grid; place-items: center; font-weight: 700; cursor: pointer; font-size: 0.95rem; }
+        .memory-card.matched { background: linear-gradient(135deg, #16a34a 0%, #4ade80 100%); }
+        .memory-card.revealed { background: white; color: #111827; border-color: #3b82f6; }
+        .btn-voltar { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #444; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: 600; }
+        @media (max-width: 768px) { .memory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="../html/home.html" class="nav-link">Início</a>
+                <a href="../html/games_menu.html" class="nav-link active">Games</a>
+                <a href="../html/feed.html" class="nav-link">Feed</a>
+                <a href="../html/editor.html" class="nav-link">Criar</a>
+                <a href="../html/perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <button onclick="history.back()" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao Menu</button>
+
+            <div class="game-container">
+                <div class="game-header">
+                    <div>
+                        <h2>Scribe - Memória Literária</h2>
+                        <p style="margin:4px 0 0; color:#666;">Encontre os pares de temas literários e some pontos.</p>
+                    </div>
+                    <div class="meta-indicators">
+                        <div class="badge-indicator">Pontos: <span id="game-score">0</span></div>
+                    </div>
+                </div>
+
+                <div class="memory-grid" id="memory-grid"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        const terms = ['POESIA', 'ROMANCE', 'CONTO', 'DRAMA', 'FABULA', 'BIOGRAFIA'];
+        const cards = [...terms, ...terms];
+        let openedCards = [];
+        let matchedPairs = 0;
+        let gameScore = 0;
+        let lockBoard = false;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function renderBoard() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            shuffle(cards).forEach((term, index) => {
+                const card = document.createElement('button');
+                card.className = 'memory-card';
+                card.dataset.term = term;
+                card.dataset.index = index;
+                card.textContent = '?';
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+            });
+        }
+
+        function flipCard(card) {
+            if (lockBoard || card.classList.contains('revealed') || card.classList.contains('matched')) return;
+            card.classList.add('revealed');
+            card.textContent = card.dataset.term;
+            openedCards.push(card);
+
+            if (openedCards.length === 2) {
+                lockBoard = true;
+                const [first, second] = openedCards;
+                if (first.dataset.term === second.dataset.term) {
+                    first.classList.add('matched');
+                    second.classList.add('matched');
+                    matchedPairs += 1;
+                    gameScore += 25;
+                    document.getElementById('game-score').textContent = gameScore;
+                    syncGameScore(25);
+                    openedCards = [];
+                    lockBoard = false;
+                    if (matchedPairs === terms.length) {
+                        setTimeout(() => alert('🎉 Você completou a memória literária!'), 300);
+                    }
+                } else {
+                    setTimeout(() => {
+                        first.classList.remove('revealed');
+                        second.classList.remove('revealed');
+                        first.textContent = '?';
+                        second.textContent = '?';
+                        openedCards = [];
+                        lockBoard = false;
+                    }, 900);
+                }
+            }
+        }
+
+        async function syncGameScore(points) {
+            try {
+                await incrementUserScore(points);
+            } catch (error) {
+                console.error('Erro ao salvar pontuação da memória:', error);
+            }
+            saveUserProgressLocalFallback(points, 0);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserProgressSummary().catch(() => loadUserProgressFallback());
+            renderBoard();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "likes": "243",
+    "link_acesso": "https://www.dominiopublico.gov.br/download/texto/bv00180a.pdf",
+    "classificacao": "16",
+    "comentarios": "https://firebasestorage.googleapis.com/v0/b/zion-mega-store.appspot.com/o/r.s.poefo%2Flivros%2Fcomentarios_livros%2Fcomentario_num_8647534658797587?alt=media&token=f275bcb8-a55c-4d79-9dc5-6a4225fe5470",
+    "genero": "Romance, Clássico Brasileiro.",
+    "autor": "Machado de Assis",
+    "titulo": "Dom Casmurro",
+    "link_capa": "https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/captu-libraly%2Fstyle%2Fcapas_livros%2Fdom_cas_murro.jpg?alt=media&token=44266f8c-6646-4db2-ba81-685b7d5373a0",
+    "sinopse": "O romance é narrado por Bento Santiago, o próprio Dom Casmurro, que, já na velhice e amargurado, decide escrever suas memórias. Ele relata sua infância, o amor por sua vizinha Capitu (Capitolina) na juventude, e o casamento. A trama se concentra na crescente e obsessiva desconfiança de Bentinho de que Capitu o teria traído com seu melhor amigo, Escobar, e de que o filho do casal, Ezequiel, não seria seu. A obra é marcada pela ambiguidade dos fatos, deixando a dúvida sobre a traição de Capitu em aberto para o leitor. É uma profunda análise do ciúme, da subjetividade da memória e da destruição de um amor."
+  },
+  {
+    "id": 2,
+    "genero": "Samurais, Ação, Histórico, Drama, Seinen",
+    "classificacao": "18",
+    "sinopse": "Musashi Miyamoto segue seu caminho para se tornar o maior samurai. Sua jornada o leva a um confronto com o formidável Mestre Seijuro Yoshioka.",
+    "comentarios": "https://firebasestorage.googleapis.com/v0/b/zion-mega-store.appspot.com/o/r.s.poefo%2Flivros%2Fcomentarios_livros%2Fcomentario_num_8647534658797587?alt=media&token=f275bcb8-a55c-4d79-9dc5-6a4225fe5470",
+    "titulo": "VAGABOND vol.2",
+    "link_capa": "https://firebasestorage.googleapis.com/v0/b/zion-mega-store.appspot.com/o/r.s.poefo%2Flivros%2FCapas%2FScreenshot_20250828_204958_Samsung%20Notes.jpg?alt=media&token=f6926d3d-9cfa-4b99-ba42-dabc9a89d5cc",
+    "autor": "Takehiko Inoue",
+    "link_acesso": "https://drive.google.com/file/d/1bTDMJUjClnym_f4z4SpHAXke92Nl9hzS/view?usp=drivesdk",
+    "likes": "120"
+  },
+  {
+    "id": 3,
+    "comentarios": "link_comentarios_vol3",
+    "genero": "Samurais, Ação, Histórico",
+    "likes": "95",
+    "autor": "Takehiko Inoue",
+    "sinopse": "A busca de Musashi pelo caminho da espada o coloca contra novos desafios e inimigos inesperados, forçando-o a questionar suas habilidades.",
+    "titulo": "VAGABOND vol.3",
+    "classificacao": "18",
+    "link_acesso": "link_acesso_vol3",
+    "link_capa": "https://firebasestorage.googleapis.com/v0/b/zion-mega-store.appspot.com/o/r.s.poefo%2Flivros%2FCapas%2FScreenshot_20250829_060542_Drive.jpg?alt=media&token=e2d64772-f329-4145-84d3-06ac7d4c34a8"
+  }
+]

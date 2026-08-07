@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poefo Reader Pro</title>
+    <link rel="stylesheet" href="../style/style_reader.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <header class="reader-toolbar">
+        <button class="nav-icon-btn" onclick="window.history.back()"><i class="fas fa-arrow-left"></i></button>
+        
+        <div class="toolbar-center">
+            <button id="prev-page" class="page-nav-btn"><i class="fas fa-chevron-left"></i></button>
+            <span class="page-indicator"><span id="page-num">1</span> / <span id="page-count">-</span></span>
+            <button id="next-page" class="page-nav-btn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="toolbar-right">
+            <button id="pencil-tool" class="tool-btn"><i class="fas fa-pen"></i></button>
+            <button id="filter-btn" class="tool-btn"><i class="fas fa-palette"></i></button>
+        </div>
+    </header>
+
+    <div class="reader-status">
+        <span>Horas lidas:</span>
+        <strong id="reader-time-value">0h 0m</strong>
+    </div>
+
+    <div id="filter-bar">
+        <div class="filter-dot dot-none" onclick="applyFilter('none')" title="Original"></div>
+        <div class="filter-dot dot-sepia" onclick="applyFilter('sepia')" title="Sépia"></div>
+        <div class="filter-dot dot-dark" onclick="applyFilter('dark')" title="Noturno"></div>
+        <div class="filter-dot dot-warm" onclick="applyFilter('warm')" title="Leitura Quente"></div>
+    </div>
+
+    <main class="book-container" id="zoom-container">
+        <div id="pdf-book"></div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script src="../scripts/script_reader.js"></script>
+</body>
+</html>

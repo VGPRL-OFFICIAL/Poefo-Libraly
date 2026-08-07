@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espaço do Criador - Poefo Library</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../style/style_home.css">
+    <style>
+        /* Estilos customizados para cores específicas e rolagem */
+        :root {
+            --color-light-bg: #f5f5f5;
+            /* Fundo claro da lista */
+            --color-text-secondary: #6b7280;
+        }
+
+        body {
+            background-color: var(--color-light-bg);
+            font-family: 'Inter', sans-serif;
+            padding-bottom: 70px;
+            /* Espaço para o Nav Bar */
+        }
+
+        /* Esconde a barra de rolagem horizontal, mas mantém a funcionalidade */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        /* Floating Action Button (Botão flutuante para Nova Publicação) */
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            /* Acima do Nav Bar */
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            background-color: #1DA1F2;
+            /* Azul primário */
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            z-index: 20;
+        }
+
+        .fab:hover {
+            background-color: #1a8cd8;
+            transform: scale(1.05);
+        }
+       
+        .home-indicator {
+            position: fixed;
+            bottom: 0;
+            left: 31%;
+            /* Centraliza */
+            transform: translateX(-50%);
+            width: 100px;
+            height: 5px;
+            background-color: black;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            z-index: 101;
+        }
+
+        /* Estilo para o Dropdown de Ações por item */
+        .dropdown-menu-draft {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 220px;
+            /* Mais largo para texto de exportação */
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+        }
+
+        .dropdown-visible {
+            opacity: 1;
+            visibility: visible;
+
+        }
+        .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px 5px 20px;
+    color: #5d5d5d;
+    font-size: 14px;
+}
+
+
+        
+    </style>
+</head>
+
+<body class="min-h-screen">
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="./home.html" class="nav-link">Início</a>
+                <a href="./games_menu.html" class="nav-link">Games</a>
+                <a href="./feed.html" class="nav-link">Feed</a>
+                <a href="./editor.html" class="nav-link active">Criar</a>
+                <a href="./perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-bar app-header bg-white shadow-sm sticky top-0 z-10">
+                <img src="../images/icon_logo.png" alt="Logo" class="logo">
+                <span class="app-title">Espaço do Criador</span>
+                <div>
+                   
+                </div>
+            </div>
+
+            <div class="px-4 py-3 bg-white border-b border-gray-100">
+                <div class="relative">
+                    <input type="text" placeholder="Pesquisar rascunhos ou ideias..."
+                        class="w-full py-2 pl-10 pr-4 text-sm bg-gray-100 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        oninput="searchDrafts(this.value)">
+                    <i data-lucide="search"
+                        class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+
+            <section class="p-4 bg-white border-b border-gray-100">
+                <h2 class="text-base font-bold text-gray-800 mb-3">Seus Livros em Progresso</h2>
+
+                <div class="flex space-x-3 overflow-x-scroll pb-2 hide-scrollbar" id="main-draft-carousel">
+
+                    <div class="flex-shrink-0 w-32 h-20 bg-white rounded-xl shadow-md p-3 flex flex-col justify-center items-center text-center border border-gray-300 border-dashed hover:bg-gray-50 cursor-pointer"
+                        onclick="addNewBookDraft()">
+                        <i data-lucide="book-open" class="w-5 h-5 text-gray-400 mb-1"></i>
+                        <span class="text-xs font-medium text-gray-400">Novo Livro</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="flex justify-between items-center p-4">
+                <h2 class="text-base font-semibold text-gray-800">Todos os Rascunhos Offline</h2>
+                <div class="flex space-x-2 text-gray-600">
+                    <button class="p-1 rounded-full hover:bg-gray-100 transition" onclick="addNewBookDraft()">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <main id="draft-list" class="divide-y divide-gray-100 pb-20">
+            </main>
+            <a href="./publicador.html" class="fab">
+                <img src="../images/ic_edition.png" class="edit-icon">
+            </a>
+
+            <nav class="mobile-nav">
+                <a href="./home.html" class="nav-item"><img src="../images/ic_home.png"></a>
+                <a href="./feed.html" class="nav-item"><img src="../images/ic_cloud_off_white.png"></a>
+                <a href="./editor.html" class="nav-item active"><img src="../images/ic_edition.png"></a>
+                <a href="./perfil.html" class="nav-item"><img src="../images/user_ic.png"></a>
+            </nav>
+
+            <div class="home-indicator"></div>
+        </main>
+    </div>
+
+    <script>
+        // Mapeamento de cores para os ícones
+        const colorMap = [
+            'bg-teal-100 text-teal-600',
+            'bg-gray-200 text-gray-600',
+            'bg-pink-100 text-pink-600',
+            'bg-yellow-100 text-yellow-600',
+        ];
+
+        const draftListElement = document.getElementById('draft-list');
+        const carouselElement = document.getElementById('main-draft-carousel');
+
+        // Referência global ao objeto jsPDF
+        const {
+            jsPDF
+        } = window.jspdf;
+
+
+        /**
+         * Cria e injeta um novo item de rascunho na lista principal.
+         * @param {Object} draft O objeto rascunho.
+         */
+        function createListItem(draft) {
+            const index = draft.id.charCodeAt(draft.id.length - 1) % colorMap.length;
+            const colorClasses = colorMap[index];
+            const status = "Livro Rascunho";
+            const lockIcon = 'book-open';
+
+            const newItem = document.createElement('div');
+            newItem.id = `draft-item-${draft.id}`;
+            newItem.className = "flex items-start p-4 hover:bg-gray-50 transition";
+
+            // Limpa tags HTML do preview e garante que ele não seja undefined
+            const contentPreview = draft.preview ?
+                draft.preview.replace(/<[^>]*>?/gm, '') :
+                (draft.content ? draft.content.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : 'Sem conteúdo.');
+
+
+            newItem.innerHTML = `
+                <div class="flex-grow flex items-start cursor-pointer" onclick="openDraftEditor('${draft.id}')">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full ${colorClasses} flex items-center justify-center mr-3 mt-1">
+                        <i data-lucide="${lockIcon}" class="w-5 h-5"></i>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 leading-snug">${draft.title}</h3>
+                        <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${contentPreview}</p>
+                        <span class="text-xs font-medium text-blue-500 mt-1 block">${status}</span>
+                    </div>
+                </div>
+
+                <div class="relative flex-shrink-0 ml-2 mt-1">
+                    <button 
+                        class="draft-actions-button text-gray-500 hover:text-gray-800 p-1.5 rounded-full hover:bg-gray-200"
+                        onclick="event.stopPropagation(); toggleDraftActionsDropdown('${draft.id}')"
+                    >
+                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <div id="actions-dropdown-${draft.id}" class="dropdown-menu-draft absolute right-0 top-full hidden">
+                        <div class="p-1 space-y-1">
+                            <button onclick="event.stopPropagation(); exportDraftPDF('${draft.id}', '${draft.title}')" class="w-full text-left flex items-center p-2 text-sm text-purple-600 hover:bg-purple-50 rounded-md transition">
+                                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i> Exportar Livro (PDF)
+                            </button>
+                            <hr class="border-gray-100">
+                            <button onclick="event.stopPropagation(); exportDraftProject('${draft.id}', '${draft.title}')" class="w-full text-left flex items-center p-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition">
+                                <img src="../images/Logo_Poefo.png" alt="Poefo Logo" class="w-4 h-4 mr-2"> Exportar Projeto (.poefo)
+                            </button>
+                            <hr class="border-gray-100">
+                            <button onclick="event.stopPropagation(); deleteDraftProject('${draft.id}', '${draft.title}')" class="w-full text-left flex items-center p-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition">
+                                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Excluir Rascunho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            draftListElement.appendChild(newItem);
+        }
+
+        /** Carrega todos os rascunhos salvos no localStorage. */
+        function loadAllDrafts() {
+            draftListElement.innerHTML = ''; // Limpa a lista
+            const draftsJson = localStorage.getItem('bookDrafts');
+            const drafts = draftsJson ? JSON.parse(draftsJson) : {};
+
+            // Converte para array, ordena pelo mais recente (timestamp)
+            const draftArray = Object.values(drafts).sort((a, b) => b.timestamp - a.timestamp);
+
+            if (draftArray.length === 0) {
+                displayEmptyState();
+            } else {
+                draftArray.forEach(draft => createListItem(draft));
+            }
+
+            loadLatestDraftCard(draftArray);
+            lucide.createIcons(); // Garante que os ícones do Lucide sejam renderizados
+        }
+
+        /** Carrega o rascunho mais recente no carrossel "Seus Livros em Progresso" */
+        function loadLatestDraftCard(draftArray) {
+            // Guarda o card "Novo Livro"
+            const newBookCard = carouselElement.lastElementChild.cloneNode(true);
+            carouselElement.innerHTML = ''; // Limpa o carrossel
+
+            if (draftArray && draftArray.length > 0) {
+                const latestDraft = draftArray[0];
+                // Garante que a contagem de páginas funcione mesmo se 'pages' for undefined
+                const pageCount = latestDraft.pages ? latestDraft.pages.length : 1;
+
+                const latestCard = document.createElement('div');
+                latestCard.className = "flex-shrink-0 w-32 h-20 bg-blue-500 rounded-xl shadow-lg p-3 flex flex-col justify-center text-center cursor-pointer hover:bg-blue-600 transition";
+                latestCard.onclick = () => openDraftEditor(latestDraft.id);
+                latestCard.innerHTML = `
+                    <span class="text-sm font-bold text-white truncate">${latestDraft.title}</span>
+                    <span class="text-xs text-blue-200 mt-0.5">${pageCount} Capítulos</span>
+                `;
+                carouselElement.appendChild(latestCard);
+            } else {
+                // Adiciona um placeholder se não houver rascunhos
+                const placeholderCard = document.createElement('div');
+                placeholderCard.className = "flex-shrink-0 w-32 h-20 bg-gray-100 rounded-xl shadow-md p-3 flex flex-col justify-center items-center text-center border border-gray-200";
+                placeholderCard.innerHTML = `<span class="text-xs font-medium text-gray-500">Nenhum livro ativo.</span>`;
+                carouselElement.appendChild(placeholderCard);
+            }
+
+            // Adiciona o card "Novo Livro" de volta (agora já tem o onclick correto)
+            carouselElement.appendChild(newBookCard);
+        }
+
+
+        /** Exibe o estado vazio da lista. */
+        function displayEmptyState() {
+            draftListElement.innerHTML = `
+                <div id="empty-state" class="p-4 text-center text-gray-500">
+                    <i data-lucide="folder-open" class="w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                    <p class="text-sm">Sua área de rascunhos está vazia. Crie um novo texto ou livro.</p>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        /** Adiciona um novo rascunho de Livro (e o abre no editor) */
+        function addNewBookDraft() {
+            const newId = 'DRAFT-' + Date.now().toString().slice(-8); // Gera um ID único
+            const title = "Novo Rascunho de Livro";
+
+            const draftsJson = localStorage.getItem('bookDrafts');
+            let drafts = draftsJson ? JSON.parse(draftsJson) : {};
+
+            drafts[newId] = {
+                id: newId,
+                title: title,
+                content: "<h2>Capítulo 1: O Início</h2><p>Comece sua história aqui...</p>",
+                preview: "Comece sua história aqui...",
+                timestamp: Date.now(),
+                pages: [{
+                    pageId: 'page-1',
+                    pageTitle: 'Capítulo 1: O Início',
+                    content: '<h2>Capítulo 1: O Início</h2><p>Comece sua história aqui...</p>'
+                }]
+            };
+
+            localStorage.setItem('bookDrafts', JSON.stringify(drafts));
+
+            openDraftEditor(newId);
+        }
+
+        /** Abre o editor de rascunhos em uma nova página com o ID correto */
+        function openDraftEditor(draftId) {
+            window.location.href = `./editor_draft.html?id=${draftId}`;
+        }
+
+        // --- FUNÇÕES DE GERENCIAMENTO DE RASCUNHO ---
+
+        /** Gerencia a visibilidade do dropdown de ações para um item de rascunho específico. */
+        function toggleDraftActionsDropdown(draftId) {
+            const dropdown = document.getElementById(`actions-dropdown-${draftId}`);
+
+            // Fecha todos os outros dropdowns
+            document.querySelectorAll('.dropdown-menu-draft').forEach(menu => {
+                if (menu.id !== dropdown.id) {
+                    menu.classList.remove('dropdown-visible');
+                    menu.classList.add('hidden');
+                }
+            });
+
+            // Alterna o estado do dropdown clicado
+            dropdown.classList.toggle('hidden');
+            dropdown.classList.toggle('dropdown-visible');
+        }
+
+        /** Exporta o conteúdo completo do livro (usando jsPDF). */
+        async function exportDraftPDF(draftId, draftTitle) {
+            toggleDraftActionsDropdown(draftId); // Fecha o dropdown
+
+            const draftsJson = localStorage.getItem('bookDrafts');
+            const drafts = draftsJson ? JSON.parse(draftsJson) : {};
+            const draft = drafts[draftId];
+
+            if (!draft) {
+                alert("Erro: Rascunho não encontrado para exportação.");
+                return;
+            }
+
+            if (!confirm(`Confirmar exportação de "${draftTitle}" (Total de ${draft.pages.length} páginas) para PDF?`)) {
+                return;
+            }
+
+            try {
+                // Inicializa jsPDF
+                const doc = new jsPDF('p', 'mm', 'a4');
+                let y = 10; // Posição Y inicial
+                const lineHeight = 7;
+                const margin = 15;
+                const maxWidth = 210 - 2 * margin; // Largura A4 - 2 * Margem
+
+                doc.setFont("helvetica"); // Define a fonte
+
+                // Adiciona o Título do Livro na Capa (simulada)
+                doc.setFontSize(24);
+                doc.text(draftTitle, 105, 50, { align: 'center' });
+                doc.setFontSize(14);
+                doc.text("Exportado via Poefo Library", 105, 60, { align: 'center' });
+                doc.addPage();
+                y = margin; // Reinicia Y na nova página
+
+                doc.setFontSize(10);
+
+                // Itera sobre as páginas (capítulos) do rascunho
+                draft.pages.forEach((page, index) => {
+                    // Título do Capítulo
+                    doc.setFontSize(16);
+                    doc.setFont(undefined, 'bold');
+                    const chapterTitle = `Capítulo ${index + 1}: ${page.pageTitle.replace(/<[^>]*>?/gm, '').trim()}`;
+                    doc.text(chapterTitle, margin, y);
+                    y += lineHeight * 1.5;
+
+                    // Conteúdo (remove HTML e usa text-to-lines para quebrar linhas)
+                    doc.setFontSize(12);
+                    doc.setFont(undefined, 'normal');
+                    const cleanContent = page.content.replace(/<[^>]*>?/gm, '\n').trim();
+
+                    // Quebra o texto em linhas que cabem no PDF
+                    const lines = doc.splitTextToSize(cleanContent, maxWidth);
+
+                    lines.forEach(line => {
+                        if (y + lineHeight > 297 - margin) { // 297 é a altura A4
+                            doc.addPage();
+                            y = margin;
+                        }
+                        doc.text(line, margin, y);
+                        y += lineHeight;
+                    });
+
+                    // Adiciona um espaço extra entre capítulos
+                    y += lineHeight;
+
+                    if (y + lineHeight > 297 - margin && index < draft.pages.length - 1) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                });
+
+                // Salva o PDF
+                const fileName = `${draftTitle.replace(/[^a-z0-9]/gi, '_')}-Livro.pdf`;
+                doc.save(fileName);
+
+                alert(`Exportação do PDF concluída para o rascunho "${draftTitle}"!`);
+
+            } catch (error) {
+                console.error("Erro ao exportar PDF:", error);
+                alert("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
+            }
+        }
+
+
+        /** Exporta um rascunho específico para JSON (.poefo). */
+        function exportDraftProject(draftId, draftTitle) {
+            toggleDraftActionsDropdown(draftId); // Fecha o dropdown
+
+            const draftsJson = localStorage.getItem('bookDrafts');
+            const drafts = draftsJson ? JSON.parse(draftsJson) : {};
+            const draft = drafts[draftId];
+
+            if (!draft) {
+                alert("Erro: Rascunho não encontrado para exportação.");
+                return;
+            }
+
+            const exportData = {
+                bookTitle: draft.title,
+                draftId: draftId,
+                exportTimestamp: Date.now(),
+                pages: draft.pages || [], // Inclui a estrutura de páginas
+                format: "poefo_draft_backup",
+            };
+
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const fileName = `${draftTitle.replace(/[^a-z0-9]/gi, '_')}.poefo`;
+            const blob = new Blob([jsonString], {
+                type: 'application/json'
+            });
+
+            // Simula o download
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert(`Projeto "${draftTitle}" exportado com sucesso (.poefo) para Downloads!`);
+        }
+
+        /** Exclui um rascunho específico do LocalStorage. */
+        function deleteDraftProject(draftId, draftTitle) {
+            toggleDraftActionsDropdown(draftId); // Fecha o dropdown
+
+            const confirmDelete = confirm(`ATENÇÃO: Você realmente deseja EXCLUIR permanentemente o rascunho "${draftTitle}"?`);
+
+            if (confirmDelete) {
+                const draftsJson = localStorage.getItem('bookDrafts');
+                let drafts = draftsJson ? JSON.parse(draftsJson) : {};
+
+                if (drafts[draftId]) {
+                    delete drafts[draftId];
+                    localStorage.setItem('bookDrafts', JSON.stringify(drafts));
+
+                    alert(`O rascunho "${draftTitle}" foi excluído com sucesso.`);
+
+                    // Re-renderiza a lista para atualizar a UI
+                    loadAllDrafts();
+                } else {
+                    alert("Erro: Rascunho não encontrado para exclusão.");
+                }
+            }
+        }
+
+        // Fecha o dropdown se o usuário clicar fora dele
+        document.addEventListener('click', function (event) {
+            // Verifica se o clique não foi em um botão de ações
+            if (!event.target.closest('.draft-actions-button')) {
+                document.querySelectorAll('.dropdown-menu-draft').forEach(menu => {
+                    menu.classList.remove('dropdown-visible');
+                    menu.classList.add('hidden');
+                });
+            }
+        });
+
+
+        /** Filtragem de rascunhos */
+        function searchDrafts(query) {
+            const normalizedQuery = query.toLowerCase().trim();
+            const allDrafts = document.querySelectorAll('#draft-list > div');
+
+            allDrafts.forEach(item => {
+                const title = item.querySelector('h3').textContent.toLowerCase();
+                const content = item.querySelector('p').textContent.toLowerCase();
+
+                if (title.includes(normalizedQuery) || content.includes(normalizedQuery)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadAllDrafts(); // Carrega rascunhos e o card mais recente
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Anagrama Literário</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .game-container { max-width: 900px; margin: 0 auto; background: white; border: 1px solid #ececec; border-radius: 28px; padding: 32px; box-shadow: var(--shadow-soft); }
+        .game-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #f0f0f0; padding-bottom: 16px; }
+        .meta-indicators { display: flex; gap: 12px; }
+        .badge-indicator { background: #f4f7fb; padding: 10px 20px; border-radius: 999px; font-weight: 700; color: #1a1a1a; font-size: 0.95rem; }
+        .question-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 24px; padding: 24px; }
+        .question-box h3 { margin: 0 0 12px; font-size: 1.2rem; }
+        .answer-input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid #e2e8f0; margin-bottom: 12px; font-size: 1rem; }
+        .btn-submit { padding: 12px 18px; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; }
+        .btn-voltar { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #444; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: 600; }
+        .feedback { margin-top: 12px; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="../html/home.html" class="nav-link">Início</a>
+                <a href="../html/games_menu.html" class="nav-link active">Games</a>
+                <a href="../html/feed.html" class="nav-link">Feed</a>
+                <a href="../html/editor.html" class="nav-link">Criar</a>
+                <a href="../html/perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <button onclick="history.back()" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao Menu</button>
+
+            <div class="game-container">
+                <div class="game-header">
+                    <div>
+                        <h2>Scribe - Anagrama Literário</h2>
+                        <p style="margin:4px 0 0; color:#666;">Desembaralhe a palavra e encontre o termo certo.</p>
+                    </div>
+                    <div class="meta-indicators">
+                        <div class="badge-indicator">Pontos: <span id="game-score">0</span></div>
+                        <div class="badge-indicator">Palavra: <span id="word-counter">1/5</span></div>
+                    </div>
+                </div>
+
+                <div class="question-box">
+                    <h3 id="scrambled-word"></h3>
+                    <input id="answer-input" class="answer-input" placeholder="Digite a palavra em português" />
+                    <button id="submit-btn" class="btn-submit">Enviar resposta</button>
+                    <div id="feedback" class="feedback"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        const words = ['POESIA', 'ROMANCE', 'DRAMA', 'ENSAIO', 'CRONICA', 'FICCAO'];
+        let currentIndex = 0;
+        let gameScore = 0;
+
+        function scramble(word) {
+            return word.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        function renderWord() {
+            const word = words[currentIndex];
+            document.getElementById('scrambled-word').textContent = `Desembaralhe: ${scramble(word)}`;
+            document.getElementById('word-counter').textContent = `${currentIndex + 1}/${words.length}`;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('feedback').textContent = '';
+        }
+
+        async function submitAnswer() {
+            const input = document.getElementById('answer-input').value.trim().toUpperCase();
+            const correct = words[currentIndex];
+            if (input === correct) {
+                gameScore += 30;
+                document.getElementById('game-score').textContent = gameScore;
+                document.getElementById('feedback').textContent = '✅ Correto!';
+                await syncGameScore(30);
+            } else {
+                document.getElementById('feedback').textContent = `❌ Quase! A resposta era ${correct}.`;
+            }
+
+            if (currentIndex < words.length - 1) {
+                currentIndex += 1;
+                setTimeout(renderWord, 800);
+            } else {
+                document.getElementById('feedback').textContent += ' Jogo concluído!';
+            }
+        }
+
+        async function syncGameScore(points) {
+            try {
+                await incrementUserScore(points);
+            } catch (error) {
+                console.error('Erro ao salvar pontuação do anagrama:', error);
+            }
+            saveUserProgressLocalFallback(points, 0);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserProgressSummary().catch(() => loadUserProgressFallback());
+            document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+            renderWord();
+        });
+    </script>
+</body>
+</html>

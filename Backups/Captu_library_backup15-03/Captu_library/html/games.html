@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Arena de Leitura (Light Mode)</title>
+    <link rel="stylesheet" href="..//style/style_games.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <audio id="background-music" loop>
+        <source src="background-music.mp3" type="audio/mpeg">
+        Seu navegador não suporta o elemento de áudio.
+    </audio>
+    <audio id="click-sound">
+        <source src="click-sound.mp3" type="audio/mpeg">
+    </audio>
+    
+    <div id="immersive-gradient"></div>
+
+    <header class="main-header">
+        <div class="logo-poefo">
+            <svg viewBox="0 0 100 100" class="logo-icon"><circle cx="50" cy="50" r="40" fill="#fff" opacity="0.1"/><path d="M50 20 L80 50 L50 80 L20 50 Z" fill="#9C27B0"/></svg>
+            <span class="logo-text">Poefo Games</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="Buscar jogos, temas..." class="search-input">
+            <button class="search-button">🔍</button>
+        </div>
+       
+    </header>
+
+    <main class="profile-page">
+
+        <section class="hero-banner">
+            <div class="hero-content">
+                <h1 class="hero-title">Literatura</h1>
+                <h2 class="hero-subtitle">Quest de Leitura Nível 1</h2>
+            </div>
+        </section>
+
+        <section class="fixed-menu-bar">
+            <div class="menu-tabs">
+                <a href="#" class="menu-tab active">Jogos Sugeridos</a>
+                
+            </div>
+            <div class="menu-actions">
+                <span id="score-container" class="followers-count">💎 EXP: <span id="score">0</span></span>
+                <button class="join-button">Girar</button>
+            </div>
+        </section>
+
+        <div class="content-grid">
+            
+            <div class="suggested-games-column">
+                
+                <div class="game-card suggested-card" data-game="context">
+                    <div class="card-image-wrapper" style="background-image: url('https://via.placeholder.com/150x80/28284d/ffffff?text=GAME+1');">
+                        <img src="https://via.placeholder.com/50x50/388E3C/ffffff?text=📝" alt="Icone Lacunas" class="card-thumb">
+                    </div>
+                    <div class="card-text">
+                        <h3>1. Lacunas (Fill-in)</h3>
+                        <p>Preencha a lacuna corretamente. Missão: Coerência Textual.</p>
+                        <span class="game-tag single-player">MISTÉRIO</span>
+                    </div>
+                </div>
+
+                <div class="game-card suggested-card" data-game="quiz">
+                    <div class="card-image-wrapper" style="background-image: url('https://via.placeholder.com/150x80/28284d/ffffff?text=GAME+2');">
+                        <img src="https://via.placeholder.com/50x50/1976D2/ffffff?text=❓" alt="Icone Quiz" class="card-thumb">
+                    </div>
+                    <div class="card-text">
+                        <h3>2. Quiz (Compreensão)</h3>
+                        <p>Responda à questão de inferência. O Teste de Sabedoria.</p>
+                        <span class="game-tag multi-player">DUELO</span>
+                    </div>
+                </div>
+
+                <div class="game-card suggested-card" data-game="wordsearch">
+                    <div class="card-image-wrapper" style="background-image: url('https://via.placeholder.com/150x80/28284d/ffffff?text=GAME+3');">
+                        <img src="https://via.placeholder.com/50x50/FFB300/ffffff?text=🔎" alt="Icone Caça-Palavras" class="card-thumb">
+                    </div>
+                    <div class="card-text">
+                        <h3>3. Caça-Palavras (Search)</h3>
+                        <p>Encontre os itens escondidos no mapa. Agilidade é chave.</p>
+                        <span class="game-tag single-player">AGILIDADE</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="main-content-column">
+                
+                <div class="intro-block game-card">
+                    <div class="video-placeholder">
+                        <div class="play-button-large">▶️</div>
+                    </div>
+                    <div class="intro-text">
+                        <h3 class="intro-title">Introdução Poefo</h3>
+                        <p>Explore as últimas publicaçõe e prepare-se para os desafios que levam ao próximo futuro como leitor.</p>
+                        <button class="about-button">SOBRE O PROJETO</button>
+                    </div>
+                </div>
+
+                <div class="filter-menu">
+                    <span class="filter-item active">Gramática</span>
+                    <span class="filter-item">Arte</span>
+                    <span class="filter-item">Inferência</span>
+                    <div class="sort-dropdown">
+                        <select class="sort-select">
+                            <option>Ordenar por: Mais Recente</option>
+                            <option>Ordenar por: Maior EXP</option>
+                        </select>
+                        <span class="dropdown-arrow"></span>
+                    </div>
+                </div>
+
+                <div class="asset-card game-card" data-game="match">
+                    <div class="asset-icon" style="background-color: #7B1FA2;">🧩</div>
+                    <div class="asset-info">
+                        <h4>4. Combine Pares (Match)</h4>
+                        <span class="asset-date">09/2025</span>
+                    </div>
+                    <div class="asset-meta">
+                        <span class="author">Autor: PoefoDev</span>
+                    </div>
+                </div>
+
+                <div class="asset-card game-card" data-game="sequence">
+                    <div class="asset-icon" style="background-color: #D32F2F;">🔄</div>
+                    <div class="asset-info">
+                        <h4>5. Ordem (Sequence)</h4>
+                        <span class="asset-date">10/2025</span>
+                    </div>
+                    <div class="asset-meta">
+                        <span class="author">Autor: PoefoDev</span>
+                    </div>
+                </div>
+
+                <div class="asset-card game-card" data-game="truefalse">
+                    <div class="asset-icon" style="background-color: #00838F;">⚖️</div>
+                    <div class="asset-info">
+                        <h4>6. V ou F (Judge)</h4>
+                        <span class="asset-date">10/2025</span>
+                    </div>
+                    <div class="asset-meta">
+                        <span class="author">Autor: PoefoDev</span>
+                    </div>
+                </div>
+
+                <div class="asset-card game-card" data-game="vertical">
+                    <div class="asset-icon" style="background-color: #FBC02D;">🗼</div>
+                    <div class="asset-info">
+                        <h4>7. Sopa Vertical (Tower)</h4>
+                        <span class="asset-date">11/2025</span>
+                    </div>
+                    <div class="asset-meta">
+                        <span class="author">Autor: PoefoDev</span>
+                    </div>
+                </div>
+                
+                </div>
+            
+        </div>
+        
+    
+
+    </main>
+
+    <script src="..//scripts/script_games.js"></script>
+</body>
+</html>

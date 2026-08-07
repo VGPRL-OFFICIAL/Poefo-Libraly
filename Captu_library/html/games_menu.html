@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Seletor de Jogos</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .hero-card {
+            display: grid;
+            grid-template-columns: 1.4fr 0.9fr;
+            gap: 28px;
+            background: #f7fafc;
+            border-radius: 28px;
+            padding: 32px;
+            margin-bottom: 32px;
+            border: 1px solid #ececec;
+        }
+        .hero-card h1 {
+            margin: 0 0 16px;
+            font-size: 42px;
+            line-height: 1.05;
+        }
+        .hero-card p {
+            margin: 0 0 24px;
+            color: #666;
+            max-width: 520px;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        .hero-cover {
+            border-radius: 24px;
+            background: linear-gradient(135deg, #b8ced2 0%, #ffffff 100%);
+            min-height: 280px;
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+        }
+        .game-grid {
+            display: grid;
+            gap: 22px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+        .game-card {
+            display: block;
+            background: white;
+            border: 1px solid #ececec;
+            border-radius: 24px;
+            padding: 26px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .game-card:hover {
+            transform: translateY(-4px);
+            border-color: #d4d4d8;
+        }
+        .card-top {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: #f4f7fb;
+            font-size: 24px;
+        }
+        .game-card h3 {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+        .game-card p {
+            margin: 0;
+            color: #666;
+            line-height: 1.6;
+        }
+        .game-badge {
+            display: inline-flex;
+            margin-top: 18px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: #f3f4f6;
+            color: #444;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .hero-desc { margin: 0; color: #666; }
+        .section-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .score-panel {
+            display: flex; justify-content: space-between; align-items: center; gap: 16px;
+            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+            color: white; border-radius: 24px; padding: 22px 24px; margin-bottom: 24px;
+            box-shadow: var(--shadow-soft);
+        }
+        .action-row {
+            display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
+        }
+        .action-btn {
+            border: none; border-radius: 999px; padding: 12px 16px; font-weight: 700; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .action-btn--primary { background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); color: white; }
+        .action-btn--secondary { background: #f3f4f6; color: #111827; }
+        .leaderboard-card {
+            background: white; border: 1px solid #ececec; border-radius: 24px; padding: 20px;
+            box-shadow: var(--shadow-soft);
+        }
+        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+        .leaderboard-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 12px 14px; border-radius: 16px; background: #f8fafc; border: 1px solid #e2e8f0;
+        }
+        .leaderboard-rank { font-weight: 800; color: #1d4ed8; }
+        .leaderboard-user { font-weight: 700; }
+        .leaderboard-score { font-weight: 800; color: #111827; }
+        .challenge-modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000;
+        }
+        .challenge-modal {
+            width: min(560px, 100%); background: white; border-radius: 24px; padding: 24px; box-shadow: var(--shadow-soft);
+        }
+        .challenge-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .challenge-modal-body { display: flex; flex-direction: column; gap: 12px; }
+        .contact-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
+        .contact-item { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer; text-align: left; }
+        .contact-item.active { border-color: #2563eb; background: #eff6ff; }
+        .contact-meta { display: flex; flex-direction: column; gap: 4px; }
+        .contact-badge { font-size: 12px; color: #64748b; }
+        .modal-input { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0; }
+        .challenge-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+        .score-panel h3 { margin: 0 0 6px; font-size: 1.2rem; }
+        .score-panel p { margin: 0; color: rgba(255,255,255,0.82); }
+        .score-pill {
+            display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
+            border-radius: 999px; background: rgba(255,255,255,0.16); font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .hero-card { grid-template-columns: 1fr; text-align: center; }
+            .hero-cover { min-height: 220px; }
+            .score-panel { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="./home.html" class="nav-link">Início</a>
+                <a href="./games_menu.html" class="nav-link active">Games</a>
+                <a href="./feed.html" class="nav-link">Feed</a>
+                <a href="./editor.html" class="nav-link">Criar</a>
+                <a href="./perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-section">
+                    <div class="search-wrapper">
+                        <img src="../images/search.png" alt="Pesquisar">
+                        <input type="text" placeholder="Buscar jogos, temas...">
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <a href="./perfil.html"><img src="../images/user_ic.png" alt="Perfil" class="avatar"></a>
+                </div>
+            </header>
+
+            <section class="floating-hero">
+                <div class="hero-card">
+                    <div>
+                        <span class="hero-tag">Arena Literária</span>
+                        <h1>Selecione o jogo que você quer jogar</h1>
+                        <p class="hero-desc">Acesse os desafios Scribe em um visual coerente com o portal Poefo: navegação limpa, cards claros e mesmo estilo de interface.</p>
+                     
+                    </div>
+                    <div class="hero-cover">🎮</div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="score-panel">
+                    <div>
+                        <span class="hero-tag" style="color: #bfdbfe;">Seu progresso</span>
+                        <h3 id="games-menu-score">0 pontos</h3>
+                        <p id="games-menu-ranking">Ranking: Bronze</p>
+                    </div>
+                    <div class="score-pill">🏅 <span id="games-menu-medal">🥉 Bronze</span></div>
+                </div>
+
+                <div class="action-row">
+                    <button id="challenge-btn" class="action-btn action-btn--secondary">⚔️ Desafiar contato</button>
+                    <button id="share-score-btn" class="action-btn action-btn--primary">📣 Compartilhar score</button>
+                </div>
+
+                <div class="section-header" style="justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h2 class="section-title">Jogos Disponíveis</h2>
+                        <p class="hero-desc">Entre nos desafios criativos da Poefo e escolha seu modo de jogo.</p>
+                    </div>
+                </div>
+
+                <div class="leaderboard-card" style="margin-bottom: 24px;">
+                    <div class="section-header" style="margin-bottom: 8px;">
+                        <div>
+                            <h2 class="section-title">Placar de Games</h2>
+                            <p class="hero-desc">Os usuários com maior pontuação de games da Poefo.</p>
+                        </div>
+                    </div>
+                    <div id="leaderboard-list" class="leaderboard-list"></div>
+                </div>
+
+                <div class="game-grid">
+                    <!-- Novo Jogo Integrado: Caça-Palavras Literário -->
+                    <a href="../games/cassa_palavras.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">🔍</div>
+                            <div>
+                                <h3>Scribe - Caça-Palavras</h3>
+                                <p>Fases dinâmicas com títulos e autores modernos coletados em tempo real. Ache as palavras e envie pontos ao perfil!</p>
+                            </div>
+                        </div>
+                        <span class="game-badge" style="background: #e0f2fe; color: #0369a1;">Percepção</span>
+                    </a>
+
+                    <a href="../games/cronica.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">✍️</div>
+                            <div>
+                                <h3>Scribe - Desafio Literário</h3>
+                                <p>Digitando palavras com tempo limitado, você treina agilidade e ganha pontos por precisão.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge">Velocidade</span>
+                    </a>
+
+                    <a href="../games/enigma.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">🧠</div>
+                            <div>
+                                <h3>Scribe - Termo & Gartic</h3>
+                                <p>Resolva a palavra secreta com dicas, roleta de inspiração e lógica de padrões.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge">Raciocínio</span>
+                    </a>
+
+                    <a href="../games/versos.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">📜</div>
+                            <div>
+                                <h3>Scribe - O Enigma</h3>
+                                <p>Adivinhe palavras poéticas a partir de pistas literárias e desafios de evolução de score.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge">Estratégia</span>
+                    </a>
+
+                    <a href="../games/quiz_literario.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">❓</div>
+                            <div>
+                                <h3>Scribe - Quiz Literário</h3>
+                                <p>Responda perguntas sobre obras e autores para acumular pontos e subir no ranking.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge">Conhecimento</span>
+                    </a>
+
+                    <a href="../games/memoria_literaria.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">🧠</div>
+                            <div>
+                                <h3>Scribe - Memória Literária</h3>
+                                <p>Encontre os pares de termos literários e avance com foco e memória.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge">Memória</span>
+                    </a>
+
+                    <a href="../games/anagrama_literario.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">🔤</div>
+                            <div>
+                                <h3>Scribe - Anagrama Literário</h3>
+                                <p>Desembaralhe palavras e teste sua rapidez no universo da literatura.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge">Lógica</span>
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <a href="./publicador.html" class="fab">
+            <img src="../images/ic_edition.png" alt="Add">
+        </a>
+
+        <nav class="mobile-nav">
+            <a href="./home.html" class="nav-item"><img src="../images/ic_home.png"></a>
+            <a href="./feed.html" class="nav-item"><img src="../images/ic_cloud_off_white.png"></a>
+            <a href="./editor.html" class="nav-item"><img src="../images/ic_edition.png"></a>
+            <a href="./perfil.html" class="nav-item"><img src="../images/user_ic.png"></a>
+        </nav>
+
+        <div class="home-indicator"></div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const scoreEl = document.getElementById('games-menu-score');
+            const rankingEl = document.getElementById('games-menu-ranking');
+            const medalEl = document.getElementById('games-menu-medal');
+
+            let summary = null;
+            try {
+                summary = await loadUserProgressSummary();
+            } catch (error) {
+                console.warn('Falha ao carregar progresso do usuário:', error);
+            }
+
+            const progress = summary || await loadUserProgressFallback();
+            const totalScore = progress?.totalScore || 0;
+            const medal = getScoreMedal(totalScore);
+
+            if (scoreEl) scoreEl.textContent = `${totalScore} pontos`;
+            if (rankingEl) rankingEl.textContent = `Ranking: ${medal.label}`;
+            if (medalEl) medalEl.textContent = `${medal.emoji} ${medal.label}`;
+        });
+    </script>
+</body>
+</html>

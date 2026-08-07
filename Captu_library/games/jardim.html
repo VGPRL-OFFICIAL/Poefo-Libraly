@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scribe | O Jardim</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f7f6; --card: #ffffff; --primary: #2d3436; --accent: #81a684;
+            --water: #3498db; --nutrient: #e67e22; --health: #e74c3c; --gold: #c5a059;
+            --border-ui: 1px solid rgba(0,0,0,0.1); --shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        .top-nav { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: var(--border-ui); gap: 8px; }
+        .currency-badge { background: var(--primary); color: white; padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
+        .btn-promo-open { background: var(--gold); color: white; border: none; padding: 6px 12px; border-radius: 50px; font-size: 0.65rem; font-weight: 800; cursor: pointer; }
+
+        .farm-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 10px; }
+        
+        .pot-slot { 
+            background: white; border-radius: 20px; border: var(--border-ui); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; box-shadow: var(--shadow); transition: 0.3s;
+            padding: 10px; overflow: hidden;
+        }
+        .pot-slot.selected { border: 2px solid var(--gold); transform: scale(1.02); z-index: 2; }
+
+        .visual-sombrite { position: absolute; top: 0; left: 0; width: 100%; height: 35%; border-bottom: 2px dashed rgba(0,0,0,0.3); z-index: 5; pointer-events: none; }
+        .visual-sensor { position: absolute; bottom: 45px; right: 10px; font-size: 0.8rem; z-index: 6; }
+        .visual-regador { position: absolute; top: 10px; right: 10px; font-size: 0.9rem; z-index: 6; animation: drip 2s infinite; }
+        .visual-minhocas { position: absolute; bottom: 45px; left: 10px; font-size: 0.8rem; z-index: 6; }
+        .visual-robo { position: absolute; top: 40%; left: 5px; font-size: 0.9rem; z-index: 7; animation: float 2s infinite ease-in-out; }
+        .visual-praga { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; z-index: 8; pointer-events: none; animation: shake 0.5s infinite; }
+        .tier-indicator { position: absolute; top: 5px; left: 10px; font-size: 0.5rem; font-weight: 900; opacity: 0.4; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes shake { 0% { transform: translate(-52%, -50%); } 50% { transform: translate(-48%, -50%); } }
+        @keyframes drip { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        .plant-emoji { font-size: 3rem; margin-bottom: 5px; z-index: 2; position: relative; }
+        .status-container { width: 100%; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+        .status-item { display: flex; align-items: center; gap: 5px; width: 100%; }
+        .status-bar-bg { flex: 1; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+        .status-bar-fill { height: 100%; transition: width 0.4s ease; }
+        .status-pct { font-size: 0.55rem; font-weight: 800; width: 35px; text-align: right; color: #666; }
+
+        .controls { background: white; border-top: var(--border-ui); padding: 15px 10px; }
+        .actions-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .btn-action { background: #fdfdfd; border: var(--border-ui); padding: 10px 2px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .btn-action i { font-style: normal; font-size: 1.1rem; margin-bottom: 4px; }
+        .btn-action span { font-size: 0.45rem; font-weight: 800; text-transform: uppercase; color: #7f8c8d; text-align: center; }
+        .btn-harvest-ready { background: var(--accent) !important; color: white !important; }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(2px); }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 80vh; overflow-y: auto; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .item-info { font-size: 0.6rem; color: #999; display: block; }
+    </style>
+</head>
+<body>
+
+    <header class="top-nav">
+        <button onclick="window.location.href='index.html'" style="border:none; background:none; font-weight:700;">←</button>
+        <button class="btn-promo-open" onclick="openModal('promo-modal')">🎁 RESGATE</button>
+        <div class="currency-badge">💰 <span id="global-balance">0</span></div>
+    </header>
+
+    <div class="farm-grid" id="farm-grid">
+        <div class="pot-slot" id="slot-0" onclick="selectSlot(0)"></div>
+        <div class="pot-slot" id="slot-1" onclick="selectSlot(1)"></div>
+        <div class="pot-slot" id="slot-2" onclick="selectSlot(2)"></div>
+        <div class="pot-slot" id="slot-3" onclick="selectSlot(3)"></div>
+    </div>
+
+    <div class="controls">
+        <div style="text-align:center; margin-bottom:10px;"><h4 id="selected-title" style="font-size:0.7rem; color:var(--gold)">SELECIONE UM CANTEIRO</h4></div>
+        <div class="actions-grid">
+            <button class="btn-action" onclick="openModal('seeds-modal')"><i>🌱</i><span>Plantar</span></button>
+            <button class="btn-action" onclick="openModal('irrigation-modal')"><i>💧</i><span>Rega</span></button>
+            <button class="btn-action" onclick="openModal('utensils-modal')"><i>🛠️</i><span>Tecno</span></button>
+            <button class="btn-action" onclick="openModal('fertilizer-modal')"><i>🧪</i><span>Bio</span></button>
+            <button class="btn-action" id="harvest-btn" onclick="harvestSelected()"><i>🍎</i><span>Colher</span></button>
+            <button class="btn-action" onclick="clearSlot()" style="grid-column: span 5; margin-top: 5px; background: #fff5f5;"><i>🧹</i><span>Limpar Canteiro</span></button>
+        </div>
+    </div>
+
+    <div id="seeds-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
+        <h3>Sementes</h3>
+        <div class="item-row" onclick="plantSeed('Uva', 2000, '🍇')"><span>🍇 Uva</span><b>2000</b></div>
+        <div class="item-row" onclick="plantSeed('Melancia', 1500, '🍉')"><span>🍉 Melancia</span><b>1500</b></div>
+        <div class="item-row" onclick="plantSeed('Melão', 1200, '🍈')"><span>🍈 Melão</span><b>1200</b></div>
+        <div class="item-row" onclick="plantSeed('Abacate', 1000, '🥑')"><span>🥑 Abacate</span><b>1000</b></div>
+        <div class="item-row" onclick="plantSeed('Banana', 800, '🍌')"><span>🍌 Banana</span><b>800</b></div>
+        <div class="item-row" onclick="plantSeed('Limão', 600, '🍋')"><span>🍋 Limão</span><b>600</b></div>
+        <div class="item-row" onclick="plantSeed('Maçã', 500, '🍎')"><span>🍎 Maçã</span><b>500</b></div>
+        <div class="item-row" onclick="plantSeed('Pera', 450, '🍐')"><span>🍐 Pera</span><b>450</b></div>
+        <div class="item-row" onclick="plantSeed('Tomate', 400, '🍅')"><span>🍅 Tomate</span><b>400</b></div>
+    </div></div>
+
+    <div id="irrigation-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
+        <h3>Irrigação</h3>
+        <div class="item-row" onclick="applyWater(30, 20)"><span>💧 Chuva (+30%)</span><b>20</b></div>
+        <div class="item-row" onclick="applyWater(100, 150)"><span>🤖 Artificial (100%)</span><b>150</b></div>
+    </div></div>
+
+    <div id="utensils-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
+        <h3>Tecnologia Avançada</h3>
+        <div class="item-row" onclick="buyTool('sombrite-normal', 1200)"><span>🕸️ Sombrite Básico</span><b>1200</b></div>
+        <div class="item-row" onclick="buyTool('sombrite-pro', 2500)"><span>🏁 Sombrite Pro</span><b>2500</b></div>
+        <div class="item-row" onclick="buyTool('reg-50', 2000)"><span>🚿 Regador Auto (50%)</span><b>2000</b></div>
+        <div class="item-row" onclick="buyTool('reg-75', 3500)"><span>🚿 Regador High (75%)</span><b>3500</b></div>
+        <div class="item-row" onclick="buyTool('reg-90', 5500)"><span>💎 Regador Fluxo (90%)</span><b>5500</b></div>
+        <div class="item-row" onclick="buyTool('sensor', 1500)"><span>📡 Sensor IoT</span><b>1500</b></div>
+        <div class="item-row" onclick="buyTool('robo', 5000)"><span>🛡️ Robô Anti-Praga</span><b>5000</b></div>
+    </div></div>
+
+    <div id="fertilizer-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
+        <h3>Bio-Lab & Fertilizantes</h3>
+        <div class="item-row" onclick="applyFertilizer(30, 5, 250)">
+            <div><span>💩 Adubo Simples</span><span class="item-info">Nutrição +30% | Saúde +5%</span></div><b>250</b>
+        </div>
+        <div class="item-row" onclick="applyFertilizer(60, 15, 600)">
+            <div><span>🧪 NPK Concentrado</span><span class="item-info">Nutrição +60% | Saúde +15%</span></div><b>600</b>
+        </div>
+        <div class="item-row" onclick="applyFertilizer(100, 40, 1200)">
+            <div><span>💎 Bio-Estimulante</span><span class="item-info">Nutrição 100% | Saúde +40%</span></div><b>1200</b>
+        </div>
+        <hr style="opacity: 0.1; margin: 10px 0;">
+        <div class="item-row" onclick="buyTool('worms-comum', 800)">
+            <div><span>🪱 Califórnia</span><span class="item-info">Nutrição/Vida constante +5%</span></div><b>800</b>
+        </div>
+        <div class="item-row" onclick="buyTool('worms-ouro', 4000)">
+            <div><span>✨ Dourada</span><span class="item-info">Nutrição/Vida constante +20%</span></div><b>4000</b>
+        </div>
+        <div class="item-row" onclick="applyPesticide()"><span>☢️ Agrotóxico (Mata praga)</span><b>600</b></div>
+    </div></div>
+
+    <div id="promo-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
+        <div style="padding:20px; text-align:center;">
+            <h3>Resgate</h3>
+            <input type="text" id="promo-code" style="width:100%; padding:15px; border-radius:15px; border:2px solid #eee; margin:15px 0; font-size:1.2rem; text-align:center;" placeholder="CÓDIGO">
+            <button class="btn-action" style="width:100%; background:var(--primary); color:white;" onclick="checkPromo()">VALIDAR</button>
+        </div>
+    </div></div>
+
+    <script>
+        let slots = [createSlot(), createSlot(), createSlot(), createSlot()];
+        let selectedIdx = 0;
+        let globalBalance = 0;
+
+        function createSlot() {
+            return { 
+                active: false, hp: 0, wat: 0, nut: 0, age: 0, phase: 'none', fruit: '', cost: 0,
+                sombrite: 0, autoPlanter: false, irrigator: 0, worms: 'none', sensor: false,
+                robo: false, pest: null, pestStrikes: 0, tier: 1
+            };
+        }
+
+        function updateUI() {
+            const gardenBonus = parseInt(localStorage.getItem('garden_bonus')) || 0;
+            const sTotal = (parseInt(localStorage.getItem('poefo_enigma')) || 0) + (parseInt(localStorage.getItem('poefo_versos')) || 0) + (parseInt(localStorage.getItem('poefo_cronica')) || 0);
+            globalBalance = sTotal + gardenBonus;
+            document.getElementById('global-balance').innerText = globalBalance.toLocaleString();
+            
+            slots.forEach((s, i) => {
+                const el = document.getElementById(`slot-${i}`);
+                let visualContent = `<div class="tier-indicator">LVL ${s.tier}</div>`;
+                if(s.sombrite > 0) visualContent += `<div class="visual-sombrite" style="background:rgba(0,0,0,${s.sombrite === 1 ? '0.2' : '0.4'})"></div>`;
+                if(s.irrigator > 0) visualContent += `<div class="visual-regador">${s.irrigator === 90 ? '💎' : '🚿'}</div>`;
+                if(s.sensor) visualContent += `<div class="visual-sensor">📡</div>`;
+                if(s.worms !== 'none') {
+                    let wEmoji = s.worms === 'worms-ouro' ? '✨' : '🪱';
+                    visualContent += `<div class="visual-minhocas">${wEmoji}</div>`;
+                }
+                if(s.robo) visualContent += `<div class="visual-robo">🤖</div>`;
+                if(s.pest) visualContent += `<div class="visual-praga">${s.pest === 'bug' ? '🦗' : '🦠'}</div>`;
+
+                if (!s.active) {
+                    el.innerHTML = visualContent + `<span style="color:#ddd; font-size:0.8rem;">TERRA LIVRE</span>`;
+                } else {
+                    let emoji = s.phase === 'seed' ? '🌱' : s.phase === 'grow' ? '🌿' : s.phase === 'tree' ? '🌳' : s.fruit;
+                    if(s.phase === 'dead') emoji = '🍂';
+                    el.innerHTML = visualContent + `
+                        <div class="plant-emoji">${emoji}</div>
+                        <div class="status-container">
+                            <div class="status-item"><div class="status-bar-bg"><div class="status-bar-fill" style="width:${s.hp}%; background:var(--health)"></div></div><span class="status-pct">❤️${Math.floor(s.hp)}%</span></div>
+                            <div class="status-item"><div class="status-bar-bg"><div class="status-bar-fill" style="width:${s.wat}%; background:var(--water)"></div></div><span class="status-pct">💧${Math.floor(s.wat)}%</span></div>
+                            <div class="status-item"><div class="status-bar-bg"><div class="status-bar-fill" style="width:${s.nut}%; background:var(--nutrient)"></div></div><span class="status-pct">🟤${Math.floor(s.nut)}%</span></div>
+                        </div>
+                    `;
+                }
+                el.className = `pot-slot ${i === selectedIdx ? 'selected' : ''}`;
+            });
+
+            const sel = slots[selectedIdx];
+            document.getElementById('selected-title').innerText = sel.active ? `C${selectedIdx+1}: ${sel.fruit} (${sel.phase})` : `CANTEIRO ${selectedIdx+1}`;
+            const hBtn = document.getElementById('harvest-btn');
+            if(sel.phase === 'fruit') hBtn.classList.add('btn-harvest-ready');
+            else hBtn.classList.remove('btn-harvest-ready');
+        }
+
+        // --- FUNÇÕES ---
+        function savePoints(val) {
+            let b = parseInt(localStorage.getItem('garden_bonus')) || 0;
+            localStorage.setItem('garden_bonus', b + val);
+            updateUI();
+        }
+
+        function plantSeed(name, cost, emoji) {
+            if(globalBalance < cost || slots[selectedIdx].active) return;
+            savePoints(-cost);
+            let s = slots[selectedIdx];
+            s.tier = Math.floor(Math.random() * 3) + 1;
+            s.active = true; s.hp = 100; s.wat = 100; s.nut = 100; s.age = 0; s.phase = 'seed'; s.fruit = emoji; s.cost = cost;
+            closeModals(); updateUI();
+        }
+
+        function buyTool(tool, cost) {
+            if(globalBalance < cost) return;
+            savePoints(-cost);
+            let s = slots[selectedIdx];
+            if(tool === 'sombrite-normal') s.sombrite = 1;
+            if(tool === 'sombrite-pro') s.sombrite = 2;
+            if(tool === 'sensor') s.sensor = true;
+            if(tool === 'robo') s.robo = true;
+            if(tool.startsWith('worms-')) s.worms = tool;
+            if(tool.startsWith('reg-')) s.irrigator = parseInt(tool.split('-')[1]);
+            closeModals(); updateUI();
+        }
+
+        function applyWater(p, cost) {
+            if(globalBalance >= cost && slots[selectedIdx].active) {
+                savePoints(-cost);
+                slots[selectedIdx].wat = Math.min(100, slots[selectedIdx].wat + p);
+                closeModals(); updateUI();
+            }
+        }
+
+        // Nova Lógica de Adubo com Saúde
+        function applyFertilizer(nutP, healP, cost) {
+            if(globalBalance >= cost && slots[selectedIdx].active) {
+                savePoints(-cost);
+                let s = slots[selectedIdx];
+                s.nut = Math.min(100, s.nut + nutP);
+                s.hp = Math.min(100, s.hp + healP);
+                closeModals(); updateUI();
+            }
+        }
+
+        function applyPesticide() {
+            if(globalBalance >= 600 && slots[selectedIdx].pest) {
+                savePoints(-600);
+                slots[selectedIdx].pest = null; slots[selectedIdx].hp -= 10;
+                closeModals(); updateUI();
+            }
+        }
+
+        function clearSlot() {
+            let s = slots[selectedIdx];
+            s.active = false; s.hp = 0; s.wat = 0; s.nut = 0; s.age = 0; s.phase = 'none'; s.fruit = ''; s.pest = null;
+            updateUI();
+        }
+
+        function harvestSelected() {
+            let s = slots[selectedIdx];
+            if(s.phase === 'fruit') {
+                savePoints((s.cost * 2.5) * 0.8);
+                s.active = false; s.age = 0; s.phase = 'none'; s.pest = null;
+                updateUI();
+            }
+        }
+
+        function selectSlot(i) { selectedIdx = i; updateUI(); }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        function checkPromo() { if(document.getElementById('promo-code').value === '159753') { savePoints(2000); alert("Sucesso!"); closeModals(); } }
+
+        // --- LOOPS ---
+        setInterval(() => {
+            slots.forEach(s => {
+                if(!s.active || s.phase === 'dead') return;
+                s.age++;
+                let lossWat = 2.5 * (s.tier * 0.8);
+                if(s.sombrite === 1) lossWat *= 0.5;
+                if(s.sombrite === 2) lossWat *= 0.2;
+                s.wat -= lossWat;
+                s.nut -= (s.sensor ? 0.8 : 1.5) * (s.tier * 0.7);
+
+                if(s.irrigator > 0 && s.wat <= s.irrigator && globalBalance >= 40) {
+                    savePoints(-40);
+                    s.wat = s.irrigator === 90 ? 95 : 100; 
+                }
+
+                if(s.wat <= 0) { s.wat = 0; s.hp -= 20; }
+                if(s.nut <= 0) { s.nut = 0; s.hp -= 5; }
+
+                let pestChance = s.tier === 3 ? 0.12 : 0.05;
+                if(!s.pest && Math.random() < pestChance) {
+                    s.pest = Math.random() > 0.5 ? 'bug' : 'bac';
+                    s.pestStrikes = 5;
+                }
+                if(s.pest) {
+                    if(s.robo) s.pest = null;
+                    else if(s.pestStrikes > 0) { s.hp -= 10; s.pestStrikes--; if(s.pestStrikes <= 0) s.pest = null; }
+                }
+
+                if(s.hp <= 0) { s.hp = 0; s.phase = 'dead'; }
+                else {
+                    if(s.age < 15) s.phase = 'seed';
+                    else if(s.age < 40) s.phase = 'grow';
+                    else if(s.age < 75) s.phase = 'tree';
+                    else s.phase = 'fruit';
+                }
+            });
+            updateUI();
+        }, 2000);
+
+        setInterval(() => {
+            let bonus = 0;
+            slots.forEach(s => {
+                if(s.active && s.phase !== 'dead') bonus += (s.cost * (0.3 + (s.tier * 0.1)));
+            });
+            if(bonus > 0) savePoints(bonus);
+        }, 10000);
+
+        setInterval(() => {
+            slots.forEach(s => {
+                if(s.active && s.worms !== 'none' && s.phase !== 'dead') {
+                    let recover = s.worms === 'worms-ouro' ? 20 : 5;
+                    s.hp = Math.min(100, s.hp + recover);
+                    s.nut = Math.min(100, s.nut + recover);
+                }
+            });
+            updateUI();
+        }, 5000);
+
+        window.onload = updateUI;
+    </script>
+</body>
+</html>

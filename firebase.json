@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": "Captu_library",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  },
+  "functions": {
+    "source": "functions"
+  }
+}
+

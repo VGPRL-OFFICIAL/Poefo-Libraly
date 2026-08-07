@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Quiz Literário</title>
+    <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .game-container { max-width: 900px; margin: 0 auto; background: white; border: 1px solid #ececec; border-radius: 28px; padding: 32px; box-shadow: var(--shadow-soft); }
+        .game-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #f0f0f0; padding-bottom: 16px; }
+        .meta-indicators { display: flex; gap: 12px; }
+        .badge-indicator { background: #f4f7fb; padding: 10px 20px; border-radius: 999px; font-weight: 700; color: #1a1a1a; font-size: 0.95rem; }
+        .question-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 24px; padding: 24px; }
+        .question-box h3 { margin: 0 0 16px; font-size: 1.2rem; }
+        .option-btn { width: 100%; text-align: left; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 10px; cursor: pointer; background: white; font-weight: 600; }
+        .option-btn:hover { border-color: #3b82f6; }
+        .btn-voltar { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #444; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: 600; }
+        .result { margin-top: 12px; font-weight: 700; color: #166534; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
+                <span class="app-title">Poefo Libraly</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="../html/home.html" class="nav-link">Início</a>
+                <a href="../html/games_menu.html" class="nav-link active">Games</a>
+                <a href="../html/feed.html" class="nav-link">Feed</a>
+                <a href="../html/editor.html" class="nav-link">Criar</a>
+                <a href="../html/perfil.html" class="nav-link">Conta</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <button onclick="history.back()" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao Menu</button>
+
+            <div class="game-container">
+                <div class="game-header">
+                    <div>
+                        <h2>Scribe - Quiz Literário</h2>
+                        <p style="margin:4px 0 0; color:#666;">Responda rápido e ganhe pontos por acerto.</p>
+                    </div>
+                    <div class="meta-indicators">
+                        <div class="badge-indicator">Pontos: <span id="game-score">0</span></div>
+                        <div class="badge-indicator">Pergunta: <span id="question-counter">1/5</span></div>
+                    </div>
+                </div>
+
+                <div class="question-box">
+                    <h3 id="question-text"></h3>
+                    <div id="options"></div>
+                    <div id="feedback" class="result"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
+            authDomain: "captu-libraly.firebaseapp.com",
+            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
+            projectId: "captu-libraly",
+            storageBucket: "captu-libraly.firebasestorage.app",
+            messagingSenderId: "341104400887",
+            appId: "1:341104400887:web:8304c9aa2855dd945236f2"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        const questions = [
+            { question: 'Quem escreveu Dom Casmurro?', options: ['Machado de Assis', 'Carlos Drummond de Andrade', 'Clarice Lispector', 'Jorge Amado'], answer: 'Machado de Assis' },
+            { question: 'Qual obra é de Cecília Meireles?', options: ['Viagem', 'Memórias Póstumas de Brás Cubas', 'A Hora da Estrela', 'A Moreninha'], answer: 'Viagem' },
+            { question: 'Que gênero literário é O Guarani?', options: ['Romance', 'Poesia', 'Fábula', 'Crônica'], answer: 'Romance' },
+            { question: 'Quem criou Sherlock Holmes?', options: ['Arthur Conan Doyle', 'Edgar Allan Poe', 'H. G. Wells', 'Agatha Christie'], answer: 'Arthur Conan Doyle' },
+            { question: 'Qual palavra define um texto em versos?', options: ['Poema', 'Ensaio', 'Conto', 'Diário'], answer: 'Poema' }
+        ];
+
+        let currentIndex = 0;
+        let gameScore = 0;
+
+        function renderQuestion() {
+            const current = questions[currentIndex];
+            document.getElementById('question-text').textContent = current.question;
+            document.getElementById('question-counter').textContent = `${currentIndex + 1}/${questions.length}`;
+            const optionsEl = document.getElementById('options');
+            optionsEl.innerHTML = '';
+            current.options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'option-btn';
+                button.textContent = option;
+                button.onclick = () => handleAnswer(option);
+                optionsEl.appendChild(button);
+            });
+            document.getElementById('feedback').textContent = '';
+        }
+
+        async function handleAnswer(option) {
+            const current = questions[currentIndex];
+            const feedbackEl = document.getElementById('feedback');
+            if (option === current.answer) {
+                gameScore += 20;
+                document.getElementById('game-score').textContent = gameScore;
+                feedbackEl.textContent = '✅ Acertou!';
+                await syncGameScore(20);
+            } else {
+                feedbackEl.textContent = `❌ A resposta certa era ${current.answer}.`;
+            }
+
+            if (currentIndex < questions.length - 1) {
+                currentIndex += 1;
+                setTimeout(renderQuestion, 800);
+            } else {
+                feedbackEl.textContent += ' Jogo concluído!';
+            }
+        }
+
+        async function syncGameScore(points) {
+            try {
+                await incrementUserScore(points);
+            } catch (error) {
+                console.error('Erro ao salvar pontuação do quiz:', error);
+            }
+            saveUserProgressLocalFallback(points, 0);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserProgressSummary().catch(() => loadUserProgressFallback());
+            renderQuestion();
+        });
+    </script>
+</body>
+</html>

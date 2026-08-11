@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "Captu_library",
+    "public": "Poefo_library",
     "ignore": [
       "firebase.json",
       "**/.*",

@@ -1,6 +1,6 @@
 // --- URLs de Acesso Público ---
-const ALL_BOOKS_DATA_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Flivros.json?alt=media&token=3eaf739c-b9fc-45b7-ab15-800d9058655a';
-const ALL_POSTS_DATA_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Fposts.json?alt=media&token=e7b7b6fb-275a-45e3-9482-7830189c671f';
+const ALL_BOOKS_DATA_URL = window.POEFO_FIREBASE_URLS.allBooksDataUrl;
+const ALL_POSTS_DATA_URL = window.POEFO_FIREBASE_URLS.allPostsDataUrl;
 const POSTS_STORAGE_PATH = 'livros_json/posts.json';
 
 // --- Variáveis Globais ---

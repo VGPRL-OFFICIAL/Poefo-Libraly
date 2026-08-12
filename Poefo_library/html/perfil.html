@@ -6,17 +6,18 @@
     <title>Meu Perfil - Poefo</title>
     <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Link para o arquivo de estilo separado -->
+    
     <link rel="stylesheet" href="../style/style_perfil.css"> 
     
-    <!-- Firebase SDK v8 (Mantido por consistência) -->
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 </head>
 <body>
 
-    <!-- MODAL CUSTOMIZADO (SUBSTITUTO DO ALERT) -->
+    
     <div id="custom-modal" class="custom-modal">
         <div class="modal-content">
             <p id="modal-message"></p>
@@ -25,13 +26,13 @@
     </div>
 
     <div class="app-screen">
-        <!-- Barra superior com seta para voltar igual à referência do app -->
+        
         <header class="app-top-bar">
             <a href="./home.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
         </header>
 
         <div class="perfil-card-container">
-            <!-- Seção do Perfil Principal -->
+            
             <section class="perfil-header-block">
                 <div class="foto-perfil-wrapper"> 
                     <div class="foto-perfil">
@@ -52,7 +53,7 @@
                 </div>
             </section>
 
-            <!-- Contadores Numéricos (Fans, Seguindo, Posts) mapeados em chaves reais do JS -->
+            
             <section class="estatisticas-container">
                 <div class="stat-box">
                     <span class="stat-numero" id="stat-seguidores">0</span>
@@ -68,21 +69,21 @@
                 </div>
             </section>
 
-            <!-- Botões de Ação Principais em Gradiente da Imagem de Referência -->
+            
             <section class="botoes-acao-wrapper">
                 <button id="btn-editar-salvar" class="btn-gradiente btn-follow">Editar Perfil</button>
                 <button id="btn-logout" class="btn-gradiente btn-message">Sair</button>
             </section>
 
-            <!-- Abas Limpas (Removido as anteriores, fixado em Photo e Video conforme a imagem) -->
+            
             <nav class="nav-abas-perfil">
                 <a href="#" class="aba-item ativo" data-tab="posts">Photo</a>
                 <a href="#" class="aba-item" data-tab="anexos">Video</a>
             </nav>
             
-            <!-- Feed / Grade de Postagens Assimétrica/Estilo Pinterest e Responsiva -->
+            
             <main class="grid-galeria-posts" id="grid-posts-container">
-                <!-- Conteúdo carregado via JS dinamicamente -->
+                
                 <div class="post-item placeholder" id="posts-placeholder">
                     <span>Nenhum Post Encontrado</span>
                 </div>
@@ -95,26 +96,20 @@
     const POSTS_JSON_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Fposts.json?alt=media&token=e7b7b6fb-275a-45e3-9482-7830189c671f';
 
     // === CONFIGURAÇÃO DO FIREBASE ===
-    const firebaseConfig = {
-        apiKey: "SEU_API_KEY_AQUI", 
-        authDomain: "captu-libraly.firebaseapp.com",
-        databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/",
-        projectId: "captu-libraly",
-        storageBucket: "captu-libraly.firebasestorage.app",
-        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
-        appId: "SEU_APP_ID_AQUI",
-        measurementId: "SEU_MEASUREMENT_ID_AQUI"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
     const database = firebase.database();
+    window.db = database;
     const storage = firebase.storage();
+    window.storage = storage;
     const PROFILE_IMAGES_FOLDER = "captu-libraly/profile_images/";
     const DEFAULT_PROFILE_PIC = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.appspot.com/o/default_profile.png?alt=media';
 
     // === VARIÁVEIS DE ESTADO E REFERÊNCIAS ===
     let isEditing = false;
-    let currentUserId = sessionStorage.getItem('currentUserId'); 
+    let currentUserId = sessionStorage.getItem('currentUserId') || localStorage.getItem('currentUserId');
+    if (!sessionStorage.getItem('currentUserId') && currentUserId) {
+        sessionStorage.setItem('currentUserId', currentUserId);
+    }
     let allUserPosts = []; 
 
     // Elementos de Display

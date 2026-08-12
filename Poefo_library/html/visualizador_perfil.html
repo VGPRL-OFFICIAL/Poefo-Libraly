@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Perfil</title>
-    <!-- Link para o mesmo arquivo de estilos unificado -->
+    
     <link rel="stylesheet" href="../style/style_perfil.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -13,14 +13,14 @@
 <body>
 
     <div class="app-screen">
-        <!-- Barra superior com seta para voltar alinhada ao design do app -->
+        
         <header class="app-top-bar">
             <button onclick="history.back()" class="back-btn" style="background: none; border: none; cursor: pointer;">
                 <i class="fas fa-arrow-left"></i>
             </button>
         </header>
 
-        <!-- Container Dinâmico Principal do Perfil -->
+        
         <div id="profile-main">
             <div class="post-item placeholder">
                 <span>Carregando Perfil...</span>
@@ -28,22 +28,13 @@
         </div>
     </div>
 
-    <!-- Firebase SDK v8 (Mantido para total compatibilidade com o projeto) -->
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
-            authDomain: "captu-libraly.firebaseapp.com",
-            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
-            projectId: "captu-libraly",
-            storageBucket: "captu-libraly.firebasestorage.app",
-            messagingSenderId: "341104400887",
-            appId: "1:341104400887:web:8304c9aa2855dd945236f2",
-            measurementId: "G-7NM9CC35CX"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
         const db = firebase.database();
 
         const ALL_POSTS_DATA_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/livros_json%2Fposts.json?alt=media&token=e7b7b6fb-275a-45e3-9482-7830189c671f';
@@ -114,7 +105,7 @@
                             </div>
                         </section>
 
-                        <!-- Contadores Numéricos Unificados ao Estilo Minimalista -->
+                        
                         <section class="estatisticas-container">
                             <div class="stat-box">
                                 <span class="stat-numero" id="stat-posts">0</span>
@@ -134,7 +125,7 @@
                             </div>
                         </section>
 
-                        <!-- Dados extras de leitura do usuário (Pontos e Horas) incorporados em linha discreta -->
+                        
                         <section class="estatisticas-container" style="margin-top: -20px; margin-bottom: 25px; border-bottom: 1px solid #F2F2F7; padding-bottom: 15px;">
                             <div class="stat-box">
                                 <span class="stat-numero" id="stat-score">0</span>
@@ -146,7 +137,7 @@
                             </div>
                         </section>
 
-                        <!-- Botões de Gradiente Dinâmico correspondentes à foto -->
+                        
                         <section class="botoes-acao-wrapper">
                             ${isOwnProfile ? 
                                 `<button id="btn-editar" class="btn-gradiente btn-follow">Seu Perfil</button>` : 

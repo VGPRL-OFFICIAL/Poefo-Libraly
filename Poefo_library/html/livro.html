@@ -54,21 +54,13 @@
     <div class="home-indicator"></div>
    
    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
-            authDomain: "captu-libraly.firebaseapp.com",
-            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
-            projectId: "captu-libraly",
-            storageBucket: "captu-libraly.firebasestorage.app",
-            messagingSenderId: "34110440088" 
-        };
-
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
         }
         
         // Inicializa o objeto DB globalmente

@@ -57,19 +57,11 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="../scripts/script_progress.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
-            authDomain: "captu-libraly.firebaseapp.com",
-            databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
-            projectId: "captu-libraly",
-            storageBucket: "captu-libraly.firebasestorage.app",
-            messagingSenderId: "341104400887",
-            appId: "1:341104400887:web:8304c9aa2855dd945236f2"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
 
         const terms = ['POESIA', 'ROMANCE', 'CONTO', 'DRAMA', 'FABULA', 'BIOGRAFIA'];
         const cards = [...terms, ...terms];

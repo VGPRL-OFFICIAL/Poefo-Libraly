@@ -1,13 +1,5 @@
 // Helper de progresso e persistência no Firebase Realtime Database
-const FIREBASE_PROGRESS_CONFIG = {
-    apiKey: "AIzaSyDa373d5z6_VXUKPLTvXy5rYm7tNy0aSS0",
-    authDomain: "captu-libraly.firebaseapp.com",
-    databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com",
-    projectId: "captu-libraly",
-    storageBucket: "captu-libraly.firebasestorage.app",
-    messagingSenderId: "341104400887",
-    appId: "1:341104400887:web:8304c9aa2855dd945236f2"
-};
+const FIREBASE_PROGRESS_CONFIG = window.POEFO_FIREBASE_CONFIG;
 
 function ensureFirebaseProgress() {
     if (typeof firebase === 'undefined' || !firebase.apps) {

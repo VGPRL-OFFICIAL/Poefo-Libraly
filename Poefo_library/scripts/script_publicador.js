@@ -11,9 +11,9 @@ const LIVROS_FILE_NAME = "livros.json";
 const POSTS_FILE_NAME = "posts.json"; 
 
 // --- Variáveis Globais ---
-let CURRENT_USER_ID = sessionStorage.getItem('currentUserId') || 'GUEST_USER'; 
-let USER_NAME = sessionStorage.getItem('currentUserName') || 'Usuário Convidado'; 
-let CURRENT_USER_PIC = sessionStorage.getItem('currentUserPic') || '../images/user_ic.png'; 
+let CURRENT_USER_ID = sessionStorage.getItem('currentUserId') || localStorage.getItem('currentUserId') || 'GUEST_USER'; 
+let USER_NAME = sessionStorage.getItem('currentUserName') || localStorage.getItem('currentUserName') || 'Usuário Convidado'; 
+let CURRENT_USER_PIC = sessionStorage.getItem('currentUserPic') || localStorage.getItem('currentUserPic') || '../images/user_ic.png'; 
 let currentAttachment = null;
 let selectedBookFile = null;
 let selectedCoverFile = null;
@@ -22,16 +22,11 @@ let allBooks = [];
 let userDrafts = []; 
 
 // --- INICIALIZAÇÃO E CONFIGURAÇÃO DO FIREBASE ---
-const firebaseConfig = {
-    apiKey: "SEU_API_KEY_AQUI", // ⚠️ Substitua pela sua chave
-    authDomain: "captu-libraly.firebaseapp.com",
-    databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/", 
-    projectId: "captu-libraly",
-    storageBucket: "captu-libraly.firebasestorage.app",
-    messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI", // ⚠️ Substitua
-    appId: "SEU_APP_ID_AQUI", // ⚠️ Substitua
-    measurementId: "SEU_MEASUREMENT_ID_AQUI" // ⚠️ Substitua
-};
+const firebaseConfig = window.POEFO_FIREBASE_CONFIG;
+
+if (!firebaseConfig || !firebaseConfig.apiKey) {
+    console.error('Firebase config não encontrado. Verifique se ../scripts/firebase-config.js está carregado.');
+}
 
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);

@@ -9,6 +9,7 @@
    
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
@@ -51,19 +52,8 @@
 
 <script>
     // ⚠️ ATENÇÃO: Substitua os placeholders do Firebase Config com seus dados reais.
-    const firebaseConfig = {
-        apiKey: "SEU_API_KEY_AQUI", // Ex: "AIzaSy..."
-        authDomain: "captu-libraly.firebaseapp.com",
-        databaseURL: "https://captu-libraly-default-rtdb.firebaseio.com/", // Seu URL RTDB
-        projectId: "captu-libraly",
-        storageBucket: "captu-libraly.firebasestorage.app",
-        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
-        appId: "SEU_APP_ID_AQUI",
-        measurementId: "SEU_MEASUREMENT_ID_AQUI"
-    };
-    
     if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
     }
     const database = firebase.database();
     
@@ -127,6 +117,16 @@
                         // 🟢 LÓGICA CHAVE: SALVAR DADOS NA SESSION STORAGE
                         sessionStorage.setItem('currentUserId', userKey);
                         sessionStorage.setItem('currentUserName', userData.nome_usuario);
+                        if (userData.foto_perfil) {
+                            sessionStorage.setItem('currentUserPic', userData.foto_perfil);
+                        }
+                        
+                        // Mantém um fallback no localStorage para páginas abertas em novas guias
+                        localStorage.setItem('currentUserId', userKey);
+                        localStorage.setItem('currentUserName', userData.nome_usuario);
+                        if (userData.foto_perfil) {
+                            localStorage.setItem('currentUserPic', userData.foto_perfil);
+                        }
                         
                         // Lógica de Lembrar Login
                         if (rememberMeCheckbox.checked) {

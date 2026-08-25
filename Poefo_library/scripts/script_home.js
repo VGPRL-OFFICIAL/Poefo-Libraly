@@ -4,21 +4,57 @@ const LIVROS_API_URL = 'https://firebasestorage.googleapis.com/v0/b/captu-libral
 
 let allBooksPoefo = [];
 
-// Elementos DOM (Capturados via função para garantir que o DOM existe)
-let heroContainer, genreSectionsContainer, gridPoefo, gridGoogle, genreFilters, searchInput, userAvatarElement;
+// Elementos DOM
+let heroContainer, genreSectionsContainer, gridPoefo, gridDuckDog, genreFilters, searchInput, userAvatarElement, continueReadingContainer;
 
 function initDOMElements() {
     heroContainer = document.getElementById('hero-highlight');
     genreSectionsContainer = document.getElementById('dynamic-genre-sections');
     gridPoefo = document.getElementById('all-books-grid');
-    gridGoogle = document.getElementById('google-books-grid');
+    gridDuckDog = document.getElementById('google-books-grid');
     genreFilters = document.getElementById('genre-filters');
     searchInput = document.getElementById('main-search');
-    userAvatarElement = document.querySelector('.avatar');
+    userAvatarElement = document.getElementById('header-user-avatar');
+    continueReadingContainer = document.getElementById('continue-reading-card');
 }
 
+// --- CONFIGURAÇÃO DOS CARDS DE REDIRECIONAMENTO POR CATEGORIA ---
+// Adicione ou edite imagens/textos nesta lista para alterar o conteúdo entre categorias!
+const REDIRECT_CARDS_DATA = {
+    // Card Padrão da página de Games para a Primeira Categoria
+    0: {
+        tag: "NOVO DESAFIO",
+        title: "Acesse os games e aumente seu ranking",
+        desc: "Complete desafios literários, acumule pontos e veja sua evolução continuar salva no perfil.",
+        btnText: "Abrir games",
+        btnUrl: "./games_menu.html",
+        iconOrImg: "🎯" // Pode ser um emoji ou HTML de imagem
+    },
+    // Estrutura do 2º Campo de Redirecionamento (Basta alterar os dados abaixo)
+    1: {
+        tag: "COMUNIDADE",
+        title: "Participe das discussões no Feed",
+        desc: "Veja o que outros leitores estão comentando e compartilhe suas opiniões.",
+        btnText: "Ver Feed",
+        btnUrl: "./feed.html",
+        iconOrImg: "💬"
+    },
+    // Estrutura do 3º Campo de Redirecionamento (Basta alterar os dados abaixo)
+    2: {
+        tag: "PUBLICAÇÃO",
+        title: "Escreva e publique seu próprio livro",
+        desc: "Utilize nosso editor completo para criar novas histórias e compartilhar com a comunidade.",
+        btnText: "Criar agora",
+        btnUrl: "./editor.html",
+        iconOrImg: "✍️"
+    }
+};
+
 // --- CARREGAR PERFIL ---
-function loadUserProfile() {
+async function loadUserProfile() {
+    const cachedPic = sessionStorage.getItem('currentUserPic') || '../images/user_ic.png';
+    if (userAvatarElement) userAvatarElement.src = cachedPic;
+
     const userData = localStorage.getItem('userLogado');
     if (userData) {
         try {
@@ -30,15 +66,29 @@ function loadUserProfile() {
             console.error("Erro ao carregar perfil:", e);
         }
     }
-}
 
-// --- CARREGAR APP ---
-async function loadApp() {
-    initDOMElements(); // Inicializa os elementos primeiro
-    loadUserProfile();
+    const userId = sessionStorage.getItem('currentUserId') || localStorage.getItem('currentUserId');
+    if (!userId || typeof firebase === 'undefined' || !window.POEFO_FIREBASE_CONFIG) return;
 
     try {
-        // 1. Carregar Livros da Poefo (Sua API)
+        if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
+        const snapshot = await firebase.database().ref(`usuarios/${userId}`).once('value');
+        const profile = snapshot.val() || {};
+        const profilePic = profile.foto_perfil || profile.img || cachedPic;
+        if (userAvatarElement) userAvatarElement.src = profilePic;
+        sessionStorage.setItem('currentUserPic', profilePic);
+    } catch (error) {
+        console.warn('Não foi possível carregar a foto de perfil:', error);
+    }
+}
+
+// --- CARREGAR APLICAÇÃO ---
+async function loadApp() {
+    initDOMElements();
+    loadUserProfile();
+    setupFilterToggle();
+
+    try {
         const res = await fetch(LIVROS_API_URL);
         if (!res.ok) throw new Error("Falha ao acessar API Poefo");
         
@@ -49,13 +99,12 @@ async function loadApp() {
             
             renderFilters(genres);
             renderHero(allBooksPoefo[0]);
+            await renderMostRecentReading(allBooksPoefo);
             renderGenreSections(genres);
             renderGrid(allBooksPoefo, gridPoefo);
         }
 
-        // 2. Carregar Google Books (Inicia com ficção)
-        await loadGoogleBooks("subject:fiction");
-        
+        await loadDuckDogBooks("fiction");
         setupSearch();
     } catch (err) {
         console.error("Erro ao carregar app:", err);
@@ -63,103 +112,146 @@ async function loadApp() {
     }
 }
 
-async function loadGoogleBooks(query = "subject:fiction") {
-    if (!gridGoogle) return;
-    
-    try {
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=20&langRestrict=pt`);
-        const data = await response.json();
-        
-        if (data.items) {
-            const formattedBooks = data.items.map(item => {
-                const info = item.volumeInfo;
-                return {
-                    "id": item.id, 
-                    "titulo": info.title || "Título Indisponível",
-                    "autor": info.authors ? info.authors[0] : "Autor Desconhecido",
-                    "sinopse": info.description || "Nenhuma sinopse disponível.",
-                    "genero": info.categories ? info.categories[0] : "Geral",
-                    "classificacao": info.maturityRating === "MATURE" ? "18" : "L",
-                    "likes": "0",
-                    "comentarios": `google_${item.id}`,
-                    "link_capa": info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : '../images/placeholder.jpg',
-                    "link_acesso": info.previewLink || "#" 
-                };
-            });
-            renderGrid(formattedBooks, gridGoogle);
-        }
-    } catch (err) {
-        console.error("Erro Google Books:", err);
-    }
+// --- RENDERIZAR LIVRO EM DESTAQUE ---
+function renderHero(book) {
+    if(!book || !heroContainer) return;
+    heroContainer.innerHTML = `
+        <div class="hero-content">
+            <span class="hero-tag">Destaque da Semana</span>
+            <h2 class="hero-title">${book.titulo}</h2>
+            <p class="hero-desc">${book.sinopse ? book.sinopse.substring(0, 130) + '...' : 'Inicie sua leitura agora.'}</p>
+            <button class="btn-primary" onclick="openBook('${encodeURIComponent(JSON.stringify(book))}')">Começar Leitura</button>
+        </div>
+        <div class="hero-floating-img" style="background-image: url('${book.link_capa}')"></div>
+    `;
 }
 
-function renderGrid(list, container) {
+// --- RENDERIZAR CONTINUAR LENDO (ESTILO DA IMAGEM DE REFERÊNCIA) ---
+async function renderMostRecentReading(books) {
+    if (!books?.length) return;
+
+    const progressEntries = await Promise.all(books.map(async book => ({
+        book,
+        progress: typeof loadUserBookProgress === 'function'
+            ? await loadUserBookProgress(String(book.id))
+            : null
+    })));
+    const recent = progressEntries
+        .filter(entry => entry.progress && (Number(entry.progress.segundos) > 0 || Number(entry.progress.pagina) > 1))
+        .sort((a, b) => Number(b.progress.atualizado_em || 0) - Number(a.progress.atualizado_em || 0))[0];
+
+    renderContinueReading(recent?.book || books[0], recent?.progress || null);
+}
+
+function renderContinueReading(book, progress = null) {
+    if(!continueReadingContainer || !book) return;
+
+    const currentPage = Math.max(1, Number(progress?.pagina) || 1);
+    const totalPages = Math.max(0, Number(progress?.paginas_totais) || 0);
+    const savedProgress = totalPages ? Math.min(100, Math.round((currentPage / totalPages) * 100)) : 0;
+    const progressLabel = totalPages
+        ? `${savedProgress}% concluído`
+        : `Página ${currentPage}`;
+
+    continueReadingContainer.innerHTML = `
+        <div class="cr-cover" style="background-image: url('${book.link_capa}')"></div>
+        <div class="cr-info">
+            <h3 class="cr-title">${book.titulo}</h3>
+            <p class="cr-author">${book.autor}</p>
+            <div class="cr-progress-bar-bg">
+                <div class="cr-progress-fill" style="width: ${savedProgress}%"></div>
+            </div>
+            <div class="cr-progress-text">
+                <span>${progressLabel}</span>
+            </div>
+        </div>
+        <button class="btn-resume" onclick="openBook('${encodeURIComponent(JSON.stringify(book))}')">RESUME</button>
+    `;
+}
+
+// --- RENDERIZAR CATEGORIAS E CAMPOS DE REDIRECIONAMENTO ---
+function renderGenreSections(genres) {
+    if(!genreSectionsContainer) return;
+
+    genreSectionsContainer.innerHTML = genres.map((genre, index) => {
+        const filtered = allBooksPoefo.filter(b => b.genero === genre);
+        if (filtered.length === 0) return '';
+
+        // Pega as configurações de redirecionamento para esta posição ou aplica um padrão editável
+        const redirectData = REDIRECT_CARDS_DATA[index] || {
+            tag: "DESTAQUE POEFO",
+            title: `Explorar mais em ${genre}`,
+            desc: "Descubra novos títulos, avalie histórias e interaja com os autores.",
+            btnText: "Ver categoria",
+            btnUrl: "#",
+            iconOrImg: "📚"
+        };
+
+        return `
+            <div class="genre-section">
+                <h2 class="section-heading">${genre}</h2>
+                <div class="scroll-list">
+                    ${filtered.map(b => `
+                        <div class="book-item" onclick="openBook('${encodeURIComponent(JSON.stringify(b))}')">
+                            <div class="book-cover" style="background-image: url('${b.link_capa}')"></div>
+                            <div class="book-title">${b.titulo}</div>
+                            <div class="book-author-sub">${b.autor}</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- CAMPO DE REDIRECIONAMENTO DE CONTEÚDO INTERCALADO -->
+                <div class="promo-redirect-card">
+                    <div>
+                        <span class="hero-tag" style="color: #bfdbfe;">${redirectData.tag}</span>
+                        <h2>${redirectData.title}</h2>
+                        <p>${redirectData.desc}</p>
+                        <a href="${redirectData.btnUrl}" class="promo-redirect-btn">${redirectData.btnText}</a>
+                    </div>
+                    <div class="promo-redirect-illustration">${redirectData.iconOrImg}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- RENDERIZAR GRID COMPLETO ---
+function renderGrid(list, container, options = {}) {
     if (!container) return;
     if (list.length === 0) {
         container.innerHTML = "<p>Nenhum livro encontrado.</p>";
         return;
     }
 
+    const openAction = options.directToReader ? 'openBookForReading' : 'openBook';
     container.innerHTML = list.map(b => `
-        <div class="book-item" onclick="openBook('${encodeURIComponent(JSON.stringify(b))}')" style="cursor:pointer;">
+        <div class="book-item" onclick="${openAction}('${encodeURIComponent(JSON.stringify(b))}')">
             <div class="book-cover" style="background-image: url('${b.link_capa}')"></div>
             <div class="book-info">
                 <div class="book-title">${b.titulo}</div>
-                <div class="book-author" style="font-size:11px; color:#aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${b.autor}</div>
+                <div class="book-author-sub">${b.autor}</div>
             </div>
         </div>
     `).join('');
 }
 
-function renderHero(book) {
-    if(!book || !heroContainer) return;
-    heroContainer.innerHTML = `
-        <div class="hero-content">
-            <span class="hero-tag">Destaque</span>
-            <h1 class="hero-title">${book.titulo}</h1>
-            <p class="hero-desc">${book.sinopse ? book.sinopse.substring(0, 140) + '...' : 'Inicie sua leitura agora.'}</p>
-            <button class="btn-primary" onclick="openBook('${encodeURIComponent(JSON.stringify(book))}')">Abrir Livro</button>
-        </div>
-        <div class="hero-cover-wrapper">
-            <div class="hero-floating-img" style="background-image: url('${book.link_capa}')"></div>
-        </div>
-    `;
+// --- DUCKDOG API ---
+async function loadDuckDogBooks(query = "fiction") {
+    if (!gridDuckDog || !window.DuckDogApi) return;
+    try {
+        const books = await window.DuckDogApi.searchDuckDog(query);
+        renderGrid(books, gridDuckDog, { directToReader: true });
+    } catch (err) {
+        console.error("Erro DuckDog:", err);
+        gridDuckDog.innerHTML = '<p>Configure a API DuckDog para explorar novos livros.</p>';
+    }
 }
 
+// --- FILTROS E PESQUISA ---
 function renderFilters(genres) {
     if(!genreFilters) return;
     genreFilters.innerHTML = `<div class="genre-chip active" onclick="filterByGenre('Todos', this)">Todos</div>` +
         genres.map(g => `<div class="genre-chip" onclick="filterByGenre('${g}', this)">${g}</div>`).join('');
-}
-
-function renderGenreSections(genres) {
-    if(!genreSectionsContainer) return;
-    genreSectionsContainer.innerHTML = genres.map(genre => {
-        const filtered = allBooksPoefo.filter(b => b.genero === genre);
-        if (filtered.length === 0) return '';
-        const [first, ...rest] = filtered;
-        return `
-            <div class="genre-section">
-                <h2 class="genre-title-main">${genre}</h2>
-                <div class="genre-banner-discreet" onclick="openBook('${encodeURIComponent(JSON.stringify(first))}')" style="cursor:pointer">
-                    <div class="banner-discreet-cover" style="background-image: url('${first.link_capa}')"></div>
-                    <div class="banner-discreet-info">
-                        <h3>${first.titulo}</h3>
-                        <p>${first.sinopse ? first.sinopse.substring(0, 80) + '...' : 'Saiba mais.'}</p>
-                        <small><b>${first.autor}</b></small>
-                    </div>
-                </div>
-                <div class="scroll-list">
-                    ${rest.map(b => `
-                        <div class="book-item" onclick="openBook('${encodeURIComponent(JSON.stringify(b))}')">
-                            <div class="book-cover" style="background-image: url('${b.link_capa}')"></div>
-                            <div class="book-title">${b.titulo}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }).join('');
 }
 
 function setupSearch() {
@@ -168,7 +260,7 @@ function setupSearch() {
         if (e.key === 'Enter') {
             const term = e.target.value;
             if (term.length > 2) {
-                loadGoogleBooks(term);
+                loadDuckDogBooks(term);
                 const filtered = allBooksPoefo.filter(b => b.titulo.toLowerCase().includes(term.toLowerCase()));
                 renderGrid(filtered, gridPoefo);
                 
@@ -179,6 +271,18 @@ function setupSearch() {
     });
 }
 
+function setupFilterToggle() {
+    const filterButton = document.getElementById('filter-btn-trigger');
+    const filterContainer = document.getElementById('genre-filters');
+    if (!filterButton || !filterContainer) return;
+
+    filterButton.addEventListener('click', () => {
+        const isCollapsed = filterContainer.classList.toggle('is-collapsed');
+        filterButton.setAttribute('aria-expanded', String(!isCollapsed));
+        filterButton.classList.toggle('is-active', !isCollapsed);
+    });
+}
+
 window.filterByGenre = (genre, el) => {
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
@@ -186,13 +290,13 @@ window.filterByGenre = (genre, el) => {
     if (genre === 'Todos') {
         renderGrid(allBooksPoefo, gridPoefo);
         genreSectionsContainer.style.display = 'block';
-        heroContainer.style.display = 'flex';
-        loadGoogleBooks("subject:fiction");
+        if(heroContainer) heroContainer.style.display = 'flex';
+        loadDuckDogBooks("fiction");
     } else {
         renderGrid(allBooksPoefo.filter(b => b.genero === genre), gridPoefo);
         genreSectionsContainer.style.display = 'none';
-        heroContainer.style.display = 'none';
-        loadGoogleBooks(genre); 
+        if(heroContainer) heroContainer.style.display = 'none';
+        loadDuckDogBooks(genre); 
     }
 };
 
@@ -200,12 +304,19 @@ window.openBook = (data) => {
     const bookData = JSON.parse(decodeURIComponent(data));
     sessionStorage.setItem('selectedBook', JSON.stringify(bookData));
     
-    // Repassa perfil para manter a consistência na página de leitura
     const userData = localStorage.getItem('userLogado');
     if (userData) sessionStorage.setItem('userProfile', userData);
 
     window.location.href = './livro.html';
 };
 
-// Inicialização segura
+window.openBookForReading = (data) => {
+    const bookData = JSON.parse(decodeURIComponent(data));
+    if (!bookData.link_acesso) return;
+    sessionStorage.setItem('selectedBook', JSON.stringify(bookData));
+    sessionStorage.setItem('readerUrl', bookData.link_acesso);
+    sessionStorage.setItem('readerBookId', String(bookData.id));
+    window.location.href = './reader.html';
+};
+
 document.addEventListener('DOMContentLoaded', loadApp);

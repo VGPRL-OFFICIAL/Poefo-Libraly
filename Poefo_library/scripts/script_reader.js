@@ -6,6 +6,9 @@ let isDrawingMode = false, isDrawing = false;
 let readerSessionSeconds = 0;
 let readerTotalStoredSeconds = 0;
 let readerTimerInterval = null;
+let readerBookId = null;
+let readerBookProgress = null;
+let readerCurrentPage = 1;
 
 // Variáveis de Controle de Zoom e Movimentação (Pan)
 let scale = 1;
@@ -17,10 +20,19 @@ let lastDist = 0;
 async function initReader() {
     const url = sessionStorage.getItem('readerUrl');
     if (!url) return;
+    readerBookId = sessionStorage.getItem('readerBookId');
 
     try {
         pdfDoc = await pdfjsLib.getDocument(url).promise;
         document.getElementById('page-count').textContent = pdfDoc.numPages;
+        if (readerBookId && typeof loadUserBookProgress === 'function') {
+            readerBookProgress = await loadUserBookProgress(readerBookId);
+            readerCurrentPage = Math.min(
+                Math.max(1, Number(readerBookProgress?.pagina) || 1),
+                pdfDoc.numPages
+            );
+            document.getElementById('page-num').textContent = readerCurrentPage;
+        }
         await renderAllPages();
         setupPageFlip();
         if (typeof loadUserProgressSummary === 'function') {
@@ -77,10 +89,14 @@ function setupPageFlip() {
         drawShadow: false, // Estética limpa (sem fundo branco/sombras na dobra)
         flippingTime: 800,
         usePortrait: isMobile,
-        startPage: 0
+        startPage: Math.max(0, readerCurrentPage - 1)
     });
     pageFlip.loadFromHTML(document.querySelectorAll('.page-wrapper'));
-    pageFlip.on('flip', (e) => { document.getElementById('page-num').textContent = e.data + 1; });
+    pageFlip.on('flip', (e) => {
+        readerCurrentPage = e.data + 1;
+        document.getElementById('page-num').textContent = readerCurrentPage;
+        saveCurrentBookProgress();
+    });
 }
 
 // Lógica da Barra de Filtros
@@ -118,11 +134,7 @@ async function startReaderTimer() {
         if (readerSessionSeconds >= 60) {
             const secondsToAdd = 60;
             readerSessionSeconds -= 60;
-            if (typeof addUserReadingSeconds === 'function') {
-                await addUserReadingSeconds(secondsToAdd).catch(() => saveUserProgressLocalFallback(0, secondsToAdd));
-            } else {
-                saveUserProgressLocalFallback(0, secondsToAdd);
-            }
+            await persistReadingTime(secondsToAdd);
         }
         const display = document.getElementById('reader-time-value');
         if (display) display.innerText = formatDuration(readerTotalStoredSeconds + readerSessionSeconds);
@@ -137,12 +149,27 @@ async function stopReaderTimer() {
     if (readerSessionSeconds > 0) {
         const leftover = readerSessionSeconds;
         readerSessionSeconds = 0;
-        if (typeof addUserReadingSeconds === 'function') {
-            await addUserReadingSeconds(leftover).catch(() => saveUserProgressLocalFallback(0, leftover));
-        } else {
-            saveUserProgressLocalFallback(0, leftover);
-        }
+        await persistReadingTime(leftover);
     }
+    await saveCurrentBookProgress();
+}
+
+async function persistReadingTime(seconds) {
+    const tasks = [];
+    if (typeof addUserReadingSeconds === 'function' && typeof getCurrentUserId === 'function' && getCurrentUserId()) {
+        tasks.push(addUserReadingSeconds(seconds).catch(() => saveUserProgressLocalFallback(0, seconds)));
+    } else {
+        tasks.push(saveUserProgressLocalFallback(0, seconds));
+    }
+    if (readerBookId && typeof saveUserBookProgress === 'function') {
+        tasks.push(saveUserBookProgress(readerBookId, readerCurrentPage, seconds, pdfDoc?.numPages));
+    }
+    await Promise.all(tasks);
+}
+
+async function saveCurrentBookProgress() {
+    if (!readerBookId || typeof saveUserBookProgress !== 'function') return;
+    await saveUserBookProgress(readerBookId, readerCurrentPage, 0, pdfDoc?.numPages);
 }
 
 function setupDrawing(canvas) {

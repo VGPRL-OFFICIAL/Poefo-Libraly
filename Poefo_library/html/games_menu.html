@@ -6,6 +6,7 @@
     <title>Poefo Games - Seletor de Jogos</title>
     <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
     <link rel="stylesheet" href="../style/style_home.css">
+    <link rel="stylesheet" href="../style/style_theme.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .hero-card {
@@ -161,7 +162,7 @@
                 <span class="app-title">Poefo Libraly</span>
             </div>
             <nav class="nav-menu">
-                <a href="./home.html" class="nav-link">Início</a>
+                <a href="./home.at.html" class="nav-link">Início</a>
                 <a href="./games_menu.html" class="nav-link active">Games</a>
                 <a href="./feed.html" class="nav-link">Feed</a>
                 <a href="./editor.html" class="nav-link">Criar</a>
@@ -170,15 +171,20 @@
         </aside>
 
         <main class="main-content">
-            <header class="top-bar">
-                <div class="search-section">
-                    <div class="search-wrapper">
-                        <img src="../images/search.png" alt="Pesquisar">
-                        <input type="text" placeholder="Buscar jogos, temas...">
-                    </div>
+            <header class="top-bar-custom">
+                <a href="./home.at.html" class="mobile-app-brand" aria-label="Ir para o início">
+                    <img src="../images/Logo_Poefo.png" alt="Poefo Library" class="mobile-app-icon">
+                </a>
+                <div class="search-input-wrapper">
+                    <img src="../images/search.png" alt="Buscar" class="search-ic">
+                    <input type="text" id="games-search" placeholder="Buscar jogos..." autocomplete="off">
                 </div>
-                <div class="user-actions">
-                    <a href="./perfil.html"><img src="../images/user_ic.png" alt="Perfil" class="avatar"></a>
+                <h1 class="page-header-title">Games</h1>
+                <div class="header-actions">
+                    <button class="filter-btn" type="button" title="Filtrar jogos" id="games-filter-btn" aria-label="Filtrar jogos">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    </button>
+                    <a href="./perfil.html" class="user-avatar-link"><img src="../images/user_ic.png" alt="Perfil" class="avatar"></a>
                 </div>
             </header>
 
@@ -312,7 +318,7 @@
         </a>
 
         <nav class="mobile-nav">
-            <a href="./home.html" class="nav-item"><img src="../images/ic_home.png"></a>
+            <a href="./home.at.html" class="nav-item"><img src="../images/ic_home.png"></a>
             <a href="./feed.html" class="nav-item"><img src="../images/ic_cloud_off_white.png"></a>
             <a href="./editor.html" class="nav-item"><img src="../images/ic_edition.png"></a>
             <a href="./perfil.html" class="nav-item"><img src="../images/user_ic.png"></a>
@@ -343,6 +349,19 @@
             if (scoreEl) scoreEl.textContent = `${totalScore} pontos`;
             if (rankingEl) rankingEl.textContent = `Ranking: ${medal.label}`;
             if (medalEl) medalEl.textContent = `${medal.emoji} ${medal.label}`;
+
+            const gamesSearch = document.getElementById('games-search');
+            const gameCards = [...document.querySelectorAll('.game-card')];
+            const filterGames = () => {
+                const query = gamesSearch.value.trim().toLocaleLowerCase();
+                gameCards.forEach(card => {
+                    card.hidden = query && !card.textContent.toLocaleLowerCase().includes(query);
+                });
+            };
+            gamesSearch?.addEventListener('input', filterGames);
+            document.getElementById('games-filter-btn')?.addEventListener('click', () => {
+                gamesSearch?.focus();
+            });
         });
     </script>
 </body>

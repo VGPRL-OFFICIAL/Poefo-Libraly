@@ -456,6 +456,7 @@ function setupEventListeners(book) {
     if (lerBtnMain && book.link_acesso) {
         lerBtnMain.onclick = function() {
             sessionStorage.setItem('readerUrl', book.link_acesso);
+            sessionStorage.setItem('readerBookId', String(book.id));
             window.location.href = './reader.html';
         };
     }

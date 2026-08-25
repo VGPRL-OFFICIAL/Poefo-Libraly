@@ -1,0 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --theme-bg: #f4f2ee;
+    --theme-surface: #ffffff;
+    --theme-surface-soft: rgba(255, 255, 255, 0.74);
+    --theme-border: #e3dfd7;
+    --theme-text: #1d1d1f;
+    --theme-muted: #7e7e82;
+    --theme-black: #121212;
+    --theme-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    --theme-radius: 24px;
+}
+
+html, body {
+    background: var(--theme-bg);
+    color: var(--theme-text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    min-height: 100vh;
+}
+
+button, input, textarea, select {
+    font: inherit;
+}
+
+.app-container {
+    min-height: 100vh;
+}
+
+.sidebar {
+    background: var(--theme-surface);
+    border-color: var(--theme-border);
+}
+
+.app-title {
+    color: var(--theme-text);
+}
+
+.nav-link {
+    color: var(--theme-muted);
+}
+
+.nav-link:hover {
+    background: #f2f0eb;
+    color: var(--theme-text);
+}
+
+.nav-link.active {
+    background: var(--theme-black);
+    color: #fff;
+}
+
+.main-content {
+    background: transparent;
+}
+
+.mobile-app-brand {
+    display: none;
+}
+
+.chat-btn {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--theme-border);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text);
+    background: rgba(255, 255, 255, 0.8);
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.chat-btn:hover {
+    transform: translateY(-2px);
+    background: var(--theme-surface);
+}
+
+.top-bar,
+.top-bar-custom,
+.main-header,
+.feed-header {
+    background: var(--theme-surface-soft);
+    border-color: var(--theme-border);
+    box-shadow: var(--theme-shadow);
+    backdrop-filter: blur(14px);
+}
+
+.search-wrapper,
+.search-input-wrapper,
+.search-bar,
+.search-bar-desktop .search-input {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--theme-border);
+    color: var(--theme-text);
+}
+
+.search-wrapper input,
+.search-input,
+.search-bar input,
+.search-bar-desktop input {
+    color: var(--theme-text);
+}
+
+.card,
+.post,
+.trends-box,
+.feed,
+.app-screen,
+.perfil-card-container,
+.modal-content,
+.editor-card,
+.reader-container,
+.book-details,
+.content-card {
+    border-color: var(--theme-border);
+    box-shadow: var(--theme-shadow);
+}
+
+.post,
+.trends-box,
+.perfil-card-container,
+.modal-content,
+.editor-card,
+.content-card {
+    background: var(--theme-surface);
+}
+
+.btn-primary,
+.btn-follow,
+.btn-gradiente.btn-follow,
+.action-button,
+.primary-button {
+    background: var(--theme-black);
+    color: #fff;
+    border-color: var(--theme-black);
+}
+
+.btn-message,
+.secondary-button {
+    background: #eae7e1;
+    color: var(--theme-text);
+    border-color: var(--theme-border);
+}
+
+.mobile-nav {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: var(--theme-border);
+    backdrop-filter: blur(14px);
+}
+
+.mobile-nav .nav-item.active img {
+    filter: brightness(0);
+}
+
+.mobile-nav .nav-item img {
+    filter: brightness(0);
+    opacity: 1;
+}
+
+.fab {
+    background: var(--theme-black);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.fab img {
+    filter: brightness(0) invert(1);
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding-bottom: 92px;
+    }
+
+    .top-bar-custom {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+    }
+
+    .mobile-app-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+    }
+
+    .mobile-app-icon {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+    }
+
+    .top-bar-custom .search-input-wrapper {
+        min-width: 0;
+        max-width: none;
+    }
+
+    .top-bar-custom .header-actions {
+        gap: 6px;
+    }
+
+    .top-bar-custom .chat-btn,
+    .top-bar-custom .filter-btn {
+        width: 34px;
+        height: 34px;
+    }
+}

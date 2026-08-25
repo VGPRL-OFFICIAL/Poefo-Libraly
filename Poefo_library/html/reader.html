@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Poefo Reader Pro</title>
     <link rel="stylesheet" href="../style/style_reader.css">
+    <link rel="stylesheet" href="../style/style_theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -27,9 +28,8 @@
         </div>
     </header>
 
-    <div class="reader-status">
-        <span>Horas lidas:</span>
-        <strong id="reader-time-value">0h 0m</strong>
+    <div id="reader-progress-data" hidden>
+        <span id="reader-time-value">0h 0m</span>
     </div>
 
     <div id="filter-bar">
@@ -47,6 +47,7 @@
     <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="../scripts/script_progress.js"></script>
     <script src="../scripts/script_reader.js"></script>
 </body>

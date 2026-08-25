@@ -206,7 +206,7 @@ async function loadUsersForModal() {
 function renderParticipantList(users, filter = '') {
     const participantList = document.getElementById('participant-list');
     const search = document.getElementById('participant-search').value.toLowerCase();
-    const filtered = users.filter(u => u.name.toLowerCase().includes(search) || u.id.toLowerCase().includes(search));
+    const filtered = users.filter(u => u.id !== currentUserId && (u.name.toLowerCase().includes(search) || u.id.toLowerCase().includes(search)));
     
     participantList.innerHTML = filtered.slice(0, 100).map(u => `
         <div class="participant-item">
@@ -219,7 +219,7 @@ function renderParticipantList(users, filter = '') {
             </div>
             <input type="checkbox" class="participant-checkbox" data-userid="${u.id}" value="${u.id}">
         </div>
-    `).join('');
+    `).join('') || '<div class="empty-state-text">Nenhum usuário encontrado</div>';
 }
 
 document.addEventListener('DOMContentLoaded', () => {

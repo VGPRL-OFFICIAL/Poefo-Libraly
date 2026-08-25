@@ -113,6 +113,64 @@ async function addUserReadingSeconds(seconds = 0) {
     }
 }
 
+async function loadUserBookProgress(bookId) {
+    if (!bookId) return null;
+    const userId = getCurrentUserId();
+    if (userId && ensureFirebaseProgress()) {
+        try {
+            const snapshot = await firebase.database()
+                .ref(`usuarios/${userId}/progresso_leitura/${bookId}`)
+                .once('value');
+            return snapshot.val() || null;
+        } catch (error) {
+            console.warn('Erro ao carregar progresso do livro:', error);
+        }
+    }
+
+    try {
+        return JSON.parse(localStorage.getItem(`reading_progress_${bookId}`)) || null;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function saveUserBookProgress(bookId, page = 1, seconds = 0, totalPages = 0) {
+    if (!bookId) return;
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeSeconds = Math.max(0, Number(seconds) || 0);
+    const userId = getCurrentUserId();
+
+    if (userId && ensureFirebaseProgress()) {
+        try {
+            const progressRef = firebase.database().ref(`usuarios/${userId}/progresso_leitura/${bookId}`);
+            await progressRef.transaction(current => ({
+                ...(current || {}),
+                pagina: safePage,
+                segundos: (Number(current?.segundos) || 0) + safeSeconds,
+                paginas_totais: Math.max(Number(totalPages) || 0, Number(current?.paginas_totais) || 0),
+                atualizado_em: firebase.database.ServerValue.TIMESTAMP
+            }));
+            return;
+        } catch (error) {
+            console.warn('Erro ao salvar progresso do livro:', error);
+        }
+    }
+
+    const key = `reading_progress_${bookId}`;
+    let stored = {};
+    try {
+        stored = JSON.parse(localStorage.getItem(key)) || {};
+    } catch (error) {
+        stored = {};
+    }
+    localStorage.setItem(key, JSON.stringify({
+        pagina: safePage,
+        segundos: (Number(stored.segundos) || 0) + safeSeconds,
+        paginas_totais: Math.max(Number(totalPages) || 0, Number(stored.paginas_totais) || 0),
+        atualizado_em: Date.now()
+    }));
+}
+
 async function saveUserProgressLocalFallback(points = 0, seconds = 0) {
     const storedScore = Number(localStorage.getItem('poefo_total_score')) || 0;
     const storedSeconds = Number(localStorage.getItem('poefo_total_read_seconds')) || 0;

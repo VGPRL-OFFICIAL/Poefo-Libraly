@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="../style/style_home.css">
     <link rel="stylesheet" href="../style/style_chat.css">
+    <link rel="stylesheet" href="../style/style_theme.css">
 </head>
 <body>
     <div class="app-container">
@@ -17,7 +18,7 @@
                 <span class="app-title">Poefo Libraly</span>
             </div>
             <nav class="nav-menu">
-                <a href="./home.html" class="nav-link">Início</a>
+                <a href="./home.at.html" class="nav-link">Início</a>
                 <a href="./games_menu.html" class="nav-link">Games</a>
                 <a href="./feed.html" class="nav-link">Feed</a>
                 <a href="./editor.html" class="nav-link">Criar</a>
@@ -92,7 +93,7 @@
     </a>
 
     <nav class="mobile-nav">
-        <a href="./home.html" class="nav-item"><img src="../images/ic_home.png"></a>
+        <a href="./home.at.html" class="nav-item"><img src="../images/ic_home.png"></a>
         <a href="./feed.html" class="nav-item"><img src="../images/ic_cloud_off_white.png"></a>
         <a href="./editor.html" class="nav-item"><img src="../images/ic_edition.png"></a>
         <a href="./perfil.html" class="nav-item"><img src="../images/user_ic.png"></a>
@@ -103,14 +104,14 @@
     
     <div class="modal-overlay" id="new-group-modal">
         <div class="modal-content">
-            <div class="modal-header">Criar novo grupo</div>
+            <div class="modal-header">Nova conversa</div>
             <div class="modal-search">
                 <input type="text" id="participant-search" placeholder="Buscar usuário...">
             </div>
             <div class="modal-body" id="participant-list"></div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeNewGroupModal()">Cancelar</button>
-                <button class="btn-primary" onclick="createNewGroup()">Criar</button>
+                <button class="btn-primary" onclick="createNewGroup()">Iniciar conversa</button>
             </div>
         </div>
     </div>

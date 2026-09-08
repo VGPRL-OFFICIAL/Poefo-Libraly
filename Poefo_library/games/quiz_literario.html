@@ -7,6 +7,7 @@
     <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
     <link rel="stylesheet" href="../style/style_home.css">
     <link rel="stylesheet" href="../style/style_theme.css">
+    <script src="../scripts/theme.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -70,9 +71,9 @@
         if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
 
         const questions = [
-            { question: 'Quem escreveu Dom Casmurro?', options: ['Machado de Assis', 'Carlos Drummond de Andrade', 'Clarice Lispector', 'Jorge Amado'], answer: 'Machado de Assis' },
-            { question: 'Qual obra é de Cecília Meireles?', options: ['Viagem', 'Memórias Póstumas de Brás Cubas', 'A Hora da Estrela', 'A Moreninha'], answer: 'Viagem' },
-            { question: 'Que gênero literário é O Guarani?', options: ['Romance', 'Poesia', 'Fábula', 'Crônica'], answer: 'Romance' },
+            { question: 'Quem escreveu Dom Casmurro?', options: ['Carlos Drummond de Andrade', 'Machado de Assis', 'Clarice Lispector', 'Jorge Amado'], answer: 'Machado de Assis' },
+            { question: 'Qual obra é de Cecília Meireles?', options: ['Memórias Póstumas de Brás Cubas','Viagem', 'A Hora da Estrela', 'A Moreninha'], answer: 'Viagem' },
+            { question: 'Que gênero literário é O Guarani?', options: ['Poesia', 'Fábula', 'Romance', 'Crônica'], answer: 'Romance' },
             { question: 'Quem criou Sherlock Holmes?', options: ['Arthur Conan Doyle', 'Edgar Allan Poe', 'H. G. Wells', 'Agatha Christie'], answer: 'Arthur Conan Doyle' },
             { question: 'Qual palavra define um texto em versos?', options: ['Poema', 'Ensaio', 'Conto', 'Diário'], answer: 'Poema' }
         ];
@@ -118,11 +119,11 @@
 
         async function syncGameScore(points) {
             try {
-                await incrementUserScore(points);
+                if (await incrementUserScore(points)) return;
             } catch (error) {
                 console.error('Erro ao salvar pontuação do quiz:', error);
+                await saveUserProgressLocalFallback(points, 0);
             }
-            saveUserProgressLocalFallback(points, 0);
         }
 
         document.addEventListener('DOMContentLoaded', async () => {

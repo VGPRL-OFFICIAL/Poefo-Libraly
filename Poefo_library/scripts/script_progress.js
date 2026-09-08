@@ -2,7 +2,7 @@
 const FIREBASE_PROGRESS_CONFIG = window.POEFO_FIREBASE_CONFIG;
 
 function ensureFirebaseProgress() {
-    if (typeof firebase === 'undefined' || !firebase.apps) {
+    if (typeof firebase === 'undefined' || !firebase.apps || !FIREBASE_PROGRESS_CONFIG?.apiKey) {
         console.warn('Firebase não está disponível nesta página.');
         return false;
     }
@@ -13,7 +13,7 @@ function ensureFirebaseProgress() {
 }
 
 function getCurrentUserId() {
-    return sessionStorage.getItem('currentUserId') || null;
+    return sessionStorage.getItem('currentUserId') || localStorage.getItem('currentUserId') || null;
 }
 
 function formatDuration(totalSeconds = 0) {
@@ -83,7 +83,11 @@ async function loadUserProgressSummary() {
 
 async function incrementUserScore(points = 0) {
     const userId = getCurrentUserId();
-    if (!userId || !points || !ensureFirebaseProgress()) return;
+    if (!points) return false;
+    if (!userId || !ensureFirebaseProgress()) {
+        await saveUserProgressLocalFallback(points, 0);
+        return false;
+    }
 
     try {
         const scoreRef = firebase.database().ref(`usuarios/${userId}/pontuacao_total`);
@@ -92,8 +96,11 @@ async function incrementUserScore(points = 0) {
             return value + points;
         });
         await loadUserProgressSummary();
+        return true;
     } catch (error) {
         console.error('Erro ao incrementar pontuação:', error);
+        await saveUserProgressLocalFallback(points, 0);
+        return false;
     }
 }
 

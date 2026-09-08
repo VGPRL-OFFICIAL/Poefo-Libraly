@@ -126,9 +126,12 @@ input[type="text"] {
 /* ========================================================================= */
 .post {
     padding: 15px;
-    /* REMOVIDA BORDER BOTTOM - SUBSTITUÍDA POR SOMBRA */
-    /* border-bottom: 1px solid var(--color-border-subtle); */
-    box-shadow: 0 1px 0 0 var(--color-border-subtle), var(--shadow-subtle); /* Borda sutil na parte inferior */
+    margin: 10px 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 16px;
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-subtle);
     transition: background-color 0.1s;
 }
 
@@ -631,7 +634,9 @@ input[type="text"] {
     }
 
     .post {
-        padding: 10px 15px;
+        margin: 8px 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
     }
     .avatar {
         width: 30px;
@@ -656,13 +661,84 @@ input[type="text"] {
         padding: 6px 8px;
     }
 }
-.fab_icon{
-  
-        bottom: 75px;
-        right: 10px;
-        width: 48px;
-        height: 48px;
-        padding: 8px;
 
+/* Ajustes da interface atual do Feed */
+.main-content > .top-bar-custom {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr) auto auto;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
+
+.main-content > .top-bar-custom .mobile-app-brand {
+    display: flex;
+    align-items: center;
+}
+
+.main-content > .top-bar-custom .mobile-app-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.main-content > .top-bar-custom .search-input-wrapper {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.fab_icon {
+    display: block;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    object-fit: contain;
+}
+
+@media (max-width: 600px) {
+    .main-content > .top-bar-custom {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 8px 10px;
+        margin-bottom: 16px;
+        border-radius: 16px;
+    }
+
+    .main-content > .top-bar-custom .page-header-title {
+        display: none;
+    }
+
+    .main-content > .top-bar-custom .search-input-wrapper {
+        min-width: 0;
+        padding: 7px 10px;
+    }
+
+    .main-content > .top-bar-custom .header-actions {
+        gap: 6px;
+    }
+
+    .main-content > .top-bar-custom .filter-btn,
+    .main-content > .top-bar-custom .avatar {
+        width: 34px;
+        height: 34px;
+    }
+
+    .fab {
+        right: 14px;
+        bottom: 76px;
+        width: 52px;
+        height: 52px;
+    }
+
+    .fab_icon {
+        width: 28px;
+        height: 28px;
+    }
 }

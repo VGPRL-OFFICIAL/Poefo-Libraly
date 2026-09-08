@@ -11,6 +11,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="../style/style_home.css">
     <link rel="stylesheet" href="../style/style_theme.css">
+    <script src="../scripts/theme.js"></script>
     <style>
         /* Estilos customizados para cores específicas e rolagem */
         :root {
@@ -24,6 +25,29 @@
             font-family: 'Inter', sans-serif;
             padding-bottom: 70px;
             /* Espaço para o Nav Bar */
+        }
+
+        .main-content {
+            width: 100%;
+            max-width: 1500px;
+            padding: 16px 2% 100px;
+        }
+
+        .app-header,
+        #draft-list,
+        .main-content > .px-4,
+        .main-content > section {
+            width: 100%;
+        }
+
+        .app-header {
+            border-radius: 0 0 20px 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 12px 12px 90px;
+            }
         }
 
         /* Esconde a barra de rolagem horizontal, mas mantém a funcionalidade */

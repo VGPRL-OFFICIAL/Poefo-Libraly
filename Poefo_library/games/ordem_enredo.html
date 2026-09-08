@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Ordem do Enredo</title>
+    <link rel="icon" href="../images/Logo_Poefo.png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link rel="stylesheet" href="../style/style_theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../scripts/theme.js"></script>
+    <style>
+        :root {
+            --ink: #2b1712;
+            --accent: #c85a32;
+            --accent-soft: #f4a261;
+            --paper: #f9f6f0;
+            --card-bg: #fff;
+            --mint: #ffe8d6;
+            --border-ui: #e8d0c3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .shell {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border-ui);
+            border-radius: 24px;
+            padding: clamp(22px, 5vw, 52px);
+            box-shadow: 14px 16px 0 #eddcd2;
+            position: relative;
+        }
+
+        .btn-voltar {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .eyebrow {
+            display: block;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .shell h1 {
+            font: 700 clamp(40px, 7vw, 74px)/.95 Georgia, serif;
+            margin: 12px 0;
+            color: var(--ink);
+        }
+
+        .intro {
+            color: #6d5952;
+            line-height: 1.6;
+        }
+
+        .hud {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 24px 0;
+        }
+
+        .hud span {
+            background: #fdf0e7;
+            border: 1px solid var(--border-ui);
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .story {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin: 20px 0 12px;
+            color: var(--accent);
+        }
+
+        .events {
+            display: grid;
+            gap: 10px;
+        }
+
+        .event {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid var(--border-ui);
+            background: #fffaf7;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            color: var(--ink);
+            font: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .event b {
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--ink);
+            color: #fff;
+            font-size: 0.85rem;
+        }
+
+        .event.selected {
+            border-color: var(--accent);
+            background: var(--mint);
+        }
+
+        #feedback {
+            min-height: 28px;
+            margin-top: 18px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .submit {
+            padding: 14px 22px;
+            border: 0;
+            border-radius: 12px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .submit:hover {
+            background: #b04b27;
+        }
+
+        .btn-votar {
+            padding: 14px 22px;
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            background: transparent;
+            color: var(--accent);
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .btn-votar:hover {
+            background: var(--mint);
+        }
+
+        @media(max-width:600px) {
+            .shell {
+                margin: 20px 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" class="logo" alt="Logo">
+                <span class="app-title">Poefo Library</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="../html/home.at.html" class="nav-link">Início</a>
+                <a href="../html/games_menu.html" class="nav-link active">Games</a>
+                <a href="../html/feed.html" class="nav-link">Feed</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <section class="shell">
+                <a class="btn-voltar" href="../html/games_menu.html">
+                    <i class="fas fa-arrow-left"></i> Voltar aos Games
+                </a>
+                
+                <span class="eyebrow">Scribe / estrutura</span>
+                <h1>Ordem do Enredo</h1>
+                <p class="intro">Clique nos acontecimentos na ordem em que deveriam acontecer. Clique novamente no item para desmarcar ou tente de novo se errar.</p>
+                
+                <div class="hud">
+                    <span>Score <strong id="score">0</strong></span>
+                    <span>Fase <strong id="round">1/3</strong></span>
+                </div>
+
+                <p class="story" id="story"></p>
+                <div class="events" id="events"></div>
+                
+                <div class="actions-bar">
+                    <button class="submit" id="submit">Confirmar ordem</button>
+                    <button class="btn-votar" onclick="votarJogo()"><i class="fas fa-heart"></i> Votar no Jogo</button>
+                </div>
+
+                <div id="feedback"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        // Estrutura de resposta formatada como Objeto JS simples de editar
+        const levels = [
+            {
+                id: 1,
+                title: 'O livro perdido',
+                events: [
+                    'O leitor encontra uma carta escondida.',
+                    'A biblioteca revela uma sala secreta.',
+                    'O mistério da carta é solucionado.'
+                ]
+            },
+            {
+                id: 2,
+                title: 'A viagem',
+                events: [
+                    'A personagem escolhe partir.',
+                    'Ela atravessa a serra durante a noite.',
+                    'Ao amanhecer, encontra uma nova cidade.'
+                ]
+            },
+            {
+                id: 3,
+                title: 'O palco',
+                events: [
+                    'O poeta escreve o primeiro verso.',
+                    'A plateia escuta em silêncio.',
+                    'O último verso recebe aplausos.'
+                ]
+            }
+        ];
+
+        let level = 0;
+        let score = 0;
+        let chosen = [];
+
+        function render() {
+            chosen = [];
+            const currentLevel = levels[level];
+            
+            document.querySelector('#round').textContent = `${level + 1}/${levels.length}`;
+            document.querySelector('#story').textContent = currentLevel.title;
+            
+            const box = document.querySelector('#events');
+            box.innerHTML = '';
+
+            // Embaralhar opções para renderização
+            [...currentLevel.events]
+                .sort(() => Math.random() - 0.5)
+                .forEach(text => {
+                    const button = document.createElement('button');
+                    button.className = 'event';
+                    button.setAttribute('data-text', text);
+                    button.innerHTML = '<b>+</b><span>' + text + '</span>';
+                    
+                    button.onclick = () => handleEventClick(button, text);
+                    
+                    box.appendChild(button);
+                });
+
+            document.querySelector('#feedback').textContent = '';
+        }
+
+        function handleEventClick(button, text) {
+            const index = chosen.indexOf(text);
+            
+            // Se já está selecionado, desmarca ele e reorganiza os índices
+            if (index > -1) {
+                chosen.splice(index, 1);
+                button.classList.remove('selected');
+                button.querySelector('b').textContent = '+';
+                updateBadges();
+            } else {
+                // Seleciona o novo item
+                chosen.push(text);
+                button.classList.add('selected');
+                button.querySelector('b').textContent = chosen.length;
+            }
+        }
+
+        function updateBadges() {
+            document.querySelectorAll('.event').forEach(button => {
+                const text = button.getAttribute('data-text');
+                const index = chosen.indexOf(text);
+                if (index > -1) {
+                    button.querySelector('b').textContent = index + 1;
+                }
+            });
+        }
+
+        function resetCurrentAttempt() {
+            chosen = [];
+            document.querySelectorAll('.event').forEach(button => {
+                button.classList.remove('selected');
+                button.querySelector('b').textContent = '+';
+            });
+        }
+
+        async function submit() {
+            const currentLevel = levels[level];
+            if (chosen.length !== currentLevel.events.length) {
+                document.querySelector('#feedback').textContent = 'Selecione todos os acontecimentos antes de confirmar.';
+                return;
+            }
+
+            const correct = currentLevel.events.every((item, i) => item === chosen[i]);
+
+            if (correct) {
+                score += 60;
+                document.querySelector('#score').textContent = score;
+                document.querySelector('#feedback').textContent = 'Sequência perfeita. +60 pontos!';
+                
+                if (typeof incrementUserScore === 'function') {
+                    await incrementUserScore(60);
+                }
+
+                if (level < levels.length - 1) {
+                    level++;
+                    setTimeout(render, 1000);
+                } else {
+                    document.querySelector('#feedback').textContent += ' Parabéns, história concluída!';
+                }
+            } else {
+                document.querySelector('#feedback').textContent = 'A ordem está incorreta. Tente novamente!';
+                // Reseta a tentativa para que o usuário possa reordenar imediatamente
+                setTimeout(() => {
+                    resetCurrentAttempt();
+                }, 1200);
+            }
+        }
+
+        function votarJogo() {
+            alert('Obrigado pelo seu voto! ❤');
+        }
+
+        document.querySelector('#submit').onclick = submit;
+        render();
+    </script>
+</body>
+
+</html>

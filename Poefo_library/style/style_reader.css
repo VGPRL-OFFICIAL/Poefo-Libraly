@@ -78,6 +78,10 @@ body {
 .dot-sepia { background: #d2b48c; }
 .dot-dark { background: #222; }
 .dot-warm { background: #ffd1a4; }
+.dot-blue { background: #b8d8f5; }
+.dot-green { background: #c8e0c1; }
+.dot-contrast { background: linear-gradient(90deg, #000 50%, #fff 50%); }
+.dot-cinema { background: #7c695d; }
 
 /* Container do Livro */
 .book-container {
@@ -93,6 +97,12 @@ body {
 #pdf-book {
     visibility: hidden;
     transition: transform 0.1s ease-out;
+}
+
+.reader-error {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 15px;
 }
 
 /* Estética das Páginas */
@@ -113,6 +123,10 @@ body {
 .dark .page-canvas { filter: invert(1) hue-rotate(180deg) brightness(0.8); }
 .warm .page-canvas { filter: sepia(0.4) saturate(1.2); }
 .grayscale .page-canvas { filter: grayscale(1); }
+.blue .page-canvas { filter: sepia(0.12) hue-rotate(175deg) saturate(0.72) brightness(1.04); }
+.green .page-canvas { filter: sepia(0.18) hue-rotate(55deg) saturate(0.62) brightness(1.03); }
+.contrast .page-canvas { filter: contrast(1.45) brightness(1.08); }
+.cinema .page-canvas { filter: sepia(0.28) contrast(1.12) brightness(0.82) saturate(0.82); }
 
 .draw-canvas {
     position: absolute;

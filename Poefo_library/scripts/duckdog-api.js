@@ -1,25 +1,4 @@
-/*
- * DuckDog Books API
- *
- * Configuração Firebase da API DuckDog:
- *   const firebaseConfig = {
- *       apiKey: '...',
- *       authDomain: '...',
- *       databaseURL: 'https://...-default-rtdb.firebaseio.com',
- *       projectId: '...',
- *       storageBucket: '...',
- *       messagingSenderId: '...',
- *       appId: '...'
- *   };
- *
- * Contrato esperado no Realtime Database:
- *   /acervo/{categoria}/{id}: { titulo, capa, pdf, categoria }
- *
- * O caminho pode ser alterado em `window.DUCKDOG_API_CONFIG.collectionPath`.
- *
- * Também são aceitos `data` no lugar de `items` e aliases comuns em português.
- * `readUrl` precisa apontar para um PDF acessível pelo PDF.js e com CORS habilitado.
- */
+
 (function initDuckDogApi(window) {
     const firebaseConfig = {
         apiKey: "AIzaSyCbdEsisg6fqKguc-AVFx1GexFCrWL9HGU",
@@ -50,8 +29,7 @@
 
     function normalizeReadUrl(url) {
         if (!url) return '';
-        const driveMatch = String(url).match(/drive\.google\.com\/file\/d\/([^/]+)/);
-        return driveMatch ? `https://drive.google.com/uc?export=download&id=${driveMatch[1]}` : String(url);
+        return String(url);
     }
 
     /** Converte um item DuckDog para o modelo usado pela biblioteca Poefo. */

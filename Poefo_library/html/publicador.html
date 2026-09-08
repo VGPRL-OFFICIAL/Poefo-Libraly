@@ -8,9 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="../style/style_home.css">
-    <link rel="stylesheet" href="../style/style_post.css"> 
     <link rel="stylesheet" href="../style/style_publicador.css">
     <link rel="stylesheet" href="../style/style_theme.css">
+    <script src="../scripts/theme.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="../scripts/firebase-config.js"></script>
@@ -21,12 +21,12 @@
     
 </head>
 
-<body class="min-h-screen relative">
+<body class="min-h-screen relative publisher-page">
     <div class="app-container">
         <aside class="sidebar">
             <div class="logo-section">
                 <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
-                <span class="app-title">Poefo Libraly</span>
+                <span class="app-title">Poefo Library</span>
             </div>
             <nav class="nav-menu">
                 <a href="./home.at.html" class="nav-link">Início</a>
@@ -40,29 +40,37 @@
         <main class="main-content">
             <div class="main-editor pb-20">
 
-                <div class="flex justify-between items-center p-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-                    <a href="javascript:window.close();" class="text-gray-500 hover:text-gray-800 transition">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </a>
-                    <h1 class="text-lg font-semibold text-gray-800">Criar Publicação</h1>
-                    <button id="post-button" class="px-4 py-1.5 text-sm font-bold rounded-full bg-blue-500 text-white opacity-50 cursor-not-allowed" disabled>
-                        Publicar
-                    </button>
+                <div class="publisher-header flex justify-between items-center p-4 sticky top-0 z-10">
+                        <div class="publisher-heading">
+                            <h1 class="text-lg font-semibold text-gray-800">Criar Publicação</h1>
+                        <span class="publisher-eyebrow">Espaço do autor</span>
+                        </div>
+                    <div class="publisher-header-tools">
+                        <button onclick="selectAttachment('image')" class="publisher-tool-button" title="Adicionar foto">
+                            <i data-lucide="image" class="w-5 h-5"></i>
+                            <span>Foto</span>
+                        </button>
+                        <button onclick="openBookSearch()" class="publisher-tool-button" title="Buscar livro">
+                            <i data-lucide="book-open" class="w-5 h-5"></i>
+                            <span>Livro</span>
+                        </button>
+                        <img id="publisher-header-profile" src="../images/user_ic.png" alt="Foto da conta" class="publisher-header-profile">
+                    </div>
                 </div>
 
-                <div class="flex p-4">
-                    <img id="profile-pic" src="../images/user_ic.png" alt="Foto de Perfil" class="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0 mr-3 object-cover">
-                    
+                <div class="publisher-compose flex p-4">
                     <div class="flex-grow">
-                        <p id="logged-username" class="text-sm font-semibold text-gray-700 mb-2">Carregando usuário...</p> 
+                        <div class="publisher-identity">
+                            <span>Publicando como</span>
+                            <strong id="logged-username">Carregando usuário...</strong>
+                        </div>
                         
                         <textarea 
                             id="post-text-area"
-                            placeholder="O que está acontecendo? Escreva aqui..."
+                            placeholder="O que está imaginando? Escreva aqui..."
                             class="w-full text-lg text-gray-800 resize-none outline-none border-none focus:ring-0"
                             rows="5"
-                            oninput="checkTextLength()">
-                        </textarea>
+                            oninput="checkTextLength()"></textarea>
 
                         <input 
                             type="file" 
@@ -72,23 +80,18 @@
                             onchange="handleImageSelection(event)"
                         >
 
-                        <div id="attachment-area" class="mt-4 border border-dashed border-gray-300 rounded-xl p-4 text-center text-gray-500 hidden">
+                        <div id="attachment-area" class="publisher-attachment mt-4 border border-dashed rounded-xl p-4 text-center hidden">
+                        </div>
+
+                        <div class="publisher-toolbar flex justify-end items-center">
+                            <span id="char-count" class="text-sm text-gray-500">0/280</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center p-4 border-t border-gray-100 fixed bottom-20 w-full bg-white z-10">
-                    <div class="flex space-x-4">
-                        <button onclick="selectAttachment('image')" class="text-blue-500 hover:text-blue-700 transition">
-                            <i data-lucide="image" class="w-6 h-6"></i>
-                        </button>
-                        <button onclick="openBookSearch()" class="text-blue-500 hover:text-blue-700 transition">
-                            <i data-lucide="book-open" class="w-6 h-6"></i>
-                        </button>
-                    </div>
-                    <span id="char-count" class="text-sm text-gray-500">0/280</span>
-                </div>
-
+                <button id="post-button" class="publisher-submit px-5 py-3 text-sm font-bold rounded-full" disabled>
+                    Publicar
+                </button>
             </div>
             
             <div id="book-modal" class="fixed inset-0 bg-white p-5 overflow-y-auto hidden z-50">

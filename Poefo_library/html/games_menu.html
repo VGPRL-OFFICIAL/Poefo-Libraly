@@ -7,22 +7,57 @@
     <link rel="icon" href="../images/Logo_Poefo.png" type="image/png">
     <link rel="stylesheet" href="../style/style_home.css">
     <link rel="stylesheet" href="../style/style_theme.css">
+    <script src="../scripts/theme.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        .top-bar-custom {
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+        .floating-hero {
+            display: block;
+            min-height: 0;
+            padding: 0;
+            margin-bottom: 32px;
+            color: inherit;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            overflow: visible;
+        }
+        .floating-hero::after { display: none; }
         .hero-card {
             display: grid;
-            grid-template-columns: 1.4fr 0.9fr;
-            gap: 28px;
-            background: #f7fafc;
-            border-radius: 28px;
-            padding: 32px;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 0.78fr);
+            gap: 36px;
+            align-items: center;
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 36px;
             margin-bottom: 32px;
-            border: 1px solid #ececec;
+            border: 1px solid #dbe4ed;
+            overflow: hidden;
+            position: relative;
+        }
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: #d9f99d;
+            opacity: 0.5;
+            right: 28%;
+            top: -150px;
         }
         .hero-card h1 {
             margin: 0 0 16px;
-            font-size: 42px;
+            max-width: 560px;
+            font-size: clamp(34px, 4vw, 52px);
             line-height: 1.05;
+            letter-spacing: -1px;
+            position: relative;
         }
         .hero-card p {
             margin: 0 0 24px;
@@ -32,14 +67,32 @@
             line-height: 1.7;
         }
         .hero-cover {
-            border-radius: 24px;
-            background: linear-gradient(135deg, #b8ced2 0%, #ffffff 100%);
-            min-height: 280px;
-            box-shadow: var(--shadow-soft);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 64px;
+            min-height: 300px;
+            border-radius: 18px;
+            background: #183642;
+            color: #fef3c7;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 12px 14px 0 #cbd5e1;
+            transform: rotate(2deg);
+        }
+        .hero-cover::before, .hero-cover::after {
+            content: '';
+            position: absolute;
+            border: 1px solid rgba(254, 243, 199, 0.35);
+            border-radius: 50%;
+        }
+        .hero-cover::before { width: 230px; height: 230px; right: -90px; top: -80px; }
+        .hero-cover::after { width: 170px; height: 170px; left: -90px; bottom: -80px; }
+        .hero-cover-content { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+        .hero-cover-kicker { color: #bef264; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+        .hero-cover-title { max-width: 220px; margin: 18px 0; font-family: Georgia, serif; font-size: 34px; line-height: 0.98; }
+        .hero-cover-mark { align-self: flex-end; color: #fef3c7; font-size: 54px; line-height: 1; }
+        .hero-tag { position: relative; }
+        @media (max-width: 768px) {
+            .hero-card { padding: 26px 22px 30px; gap: 28px; }
+            .hero-cover { min-height: 220px; }
         }
         .game-grid {
             display: grid;
@@ -100,11 +153,20 @@
         .hero-desc { margin: 0; color: #666; }
         .section-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
         .score-panel {
-            display: flex; justify-content: space-between; align-items: center; gap: 16px;
-            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-            color: white; border-radius: 24px; padding: 22px 24px; margin-bottom: 24px;
+            display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px;
+            background: linear-gradient(120deg, #183642 0%, #24505a 58%, #365c38 100%);
+            color: white; border-radius: 24px; padding: 24px; margin-bottom: 24px;
             box-shadow: var(--shadow-soft);
+            position: relative; overflow: hidden;
         }
+        .score-panel::after { content: '✦'; position: absolute; right: 38%; top: -18px; font-size: 150px; color: rgba(190, 242, 100, 0.12); transform: rotate(14deg); }
+        .score-kicker { display: flex; align-items: center; gap: 8px; color: #bef264; font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; }
+        .score-level { margin: 8px 0 4px; font-size: 13px; color: rgba(255,255,255,0.78); }
+        .score-progress { height: 8px; max-width: 430px; margin-top: 14px; background: rgba(255,255,255,0.16); border-radius: 99px; overflow: hidden; }
+        .score-progress-bar { width: 0%; height: 100%; background: #bef264; border-radius: inherit; transition: width .5s ease; }
+        .score-stats { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .score-stat { padding: 8px 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; background: rgba(0,0,0,0.12); font-size: 12px; }
+        .score-stat strong { display: block; color: #fef3c7; font-size: 16px; }
         .action-row {
             display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
         }
@@ -150,7 +212,7 @@
         @media (max-width: 768px) {
             .hero-card { grid-template-columns: 1fr; text-align: center; }
             .hero-cover { min-height: 220px; }
-            .score-panel { flex-direction: column; align-items: flex-start; }
+            .score-panel { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -184,7 +246,7 @@
                     <button class="filter-btn" type="button" title="Filtrar jogos" id="games-filter-btn" aria-label="Filtrar jogos">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                     </button>
-                    <a href="./perfil.html" class="user-avatar-link"><img src="../images/user_ic.png" alt="Perfil" class="avatar"></a>
+                    <a href="./perfil.html" class="user-avatar-link"><img src="../images/user_ic.png" alt="Perfil" class="avatar" id="games-user-avatar"></a>
                 </div>
             </header>
 
@@ -193,26 +255,37 @@
                     <div>
                         <span class="hero-tag">Arena Literária</span>
                         <h1>Selecione o jogo que você quer jogar</h1>
-                        <p class="hero-desc">Acesse os desafios Scribe em um visual coerente com o portal Poefo: navegação limpa, cards claros e mesmo estilo de interface.</p>
-                     
+                        <p class="hero-desc">Acesse os desafios em um visual coerente com o portal Poefo: navegação limpa, cards claros e mesmo estilo de interface.</p>
                     </div>
-                    <div class="hero-cover">🎮</div>
+                    <div class="hero-cover" aria-label="Poster da Arena Literária">
+                        <div class="hero-cover-content">
+                            <span class="hero-cover-kicker">Poefo apresenta</span>
+                            <strong class="hero-cover-title">A palavra também joga.</strong>
+                            <span class="hero-cover-mark">✦</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <section class="content-section">
                 <div class="score-panel">
                     <div>
-                        <span class="hero-tag" style="color: #bfdbfe;">Seu progresso</span>
+                        <span class="score-kicker">✦ Seu progresso</span>
                         <h3 id="games-menu-score">0 pontos</h3>
-                        <p id="games-menu-ranking">Ranking: Bronze</p>
+                        <p id="games-menu-ranking" class="score-level">Ranking: Bronze</p>
+                        <div class="score-progress" aria-label="Progresso para a próxima medalha"><div id="games-score-progress" class="score-progress-bar"></div></div>
+                        <div class="score-stats">
+                            <span class="score-stat"><strong id="games-score-level">1</strong>Nível</span>
+                            <span class="score-stat"><strong id="games-score-next">500</strong>Próxima medalha</span>
+                        </div>
                     </div>
                     <div class="score-pill">🏅 <span id="games-menu-medal">🥉 Bronze</span></div>
                 </div>
 
                 <div class="action-row">
+                   <button id="share-score-btn" class="action-btn action-btn--primary">📣 Compartilhar score</button>
                     <button id="challenge-btn" class="action-btn action-btn--secondary">⚔️ Desafiar contato</button>
-                    <button id="share-score-btn" class="action-btn action-btn--primary">📣 Compartilhar score</button>
+                  
                 </div>
 
                 <div class="section-header" style="justify-content: space-between; flex-wrap: wrap; gap: 16px;">
@@ -222,22 +295,14 @@
                     </div>
                 </div>
 
-                <div class="leaderboard-card" style="margin-bottom: 24px;">
-                    <div class="section-header" style="margin-bottom: 8px;">
-                        <div>
-                            <h2 class="section-title">Placar de Games</h2>
-                            <p class="hero-desc">Os usuários com maior pontuação de games da Poefo.</p>
-                        </div>
-                    </div>
-                    <div id="leaderboard-list" class="leaderboard-list"></div>
-                </div>
+        
 
                 <div class="game-grid">
                     <a href="../games/cassa_palavras.html" class="game-card">
                         <div class="card-top">
                             <div class="card-icon">🔍</div>
                             <div>
-                                <h3>Scribe - Caça-Palavras</h3>
+                                <h3>Caça-Palavras</h3>
                                 <p>Fases dinâmicas com títulos e autores modernos coletados em tempo real. Ache as palavras e envie pontos ao perfil!</p>
                             </div>
                         </div>
@@ -248,7 +313,7 @@
                         <div class="card-top">
                             <div class="card-icon">✍️</div>
                             <div>
-                                <h3>Scribe - Desafio Literário</h3>
+                                <h3>Desafio Literário</h3>
                                 <p>Digitando palavras com tempo limitado, você treina agilidade e ganha pontos por precisão.</p>
                             </div>
                         </div>
@@ -259,7 +324,7 @@
                         <div class="card-top">
                             <div class="card-icon">🧠</div>
                             <div>
-                                <h3>Scribe - Termo & Gartic</h3>
+                                <h3>Termo & Gartic</h3>
                                 <p>Resolva a palavra secreta com dicas, roleta de inspiração e lógica de padrões.</p>
                             </div>
                         </div>
@@ -270,7 +335,7 @@
                         <div class="card-top">
                             <div class="card-icon">📜</div>
                             <div>
-                                <h3>Scribe - O Enigma</h3>
+                                <h3>O Enigma</h3>
                                 <p>Adivinhe palavras poéticas a partir de pistas literárias e desafios de evolução de score.</p>
                             </div>
                         </div>
@@ -281,7 +346,7 @@
                         <div class="card-top">
                             <div class="card-icon">❓</div>
                             <div>
-                                <h3>Scribe - Quiz Literário</h3>
+                                <h3>Quiz Literário</h3>
                                 <p>Responda perguntas sobre obras e autores para acumular pontos e subir no ranking.</p>
                             </div>
                         </div>
@@ -292,7 +357,7 @@
                         <div class="card-top">
                             <div class="card-icon">🧠</div>
                             <div>
-                                <h3>Scribe - Memória Literária</h3>
+                                <h3>Memória Literária</h3>
                                 <p>Encontre os pares de termos literários e avance com foco e memória.</p>
                             </div>
                         </div>
@@ -303,11 +368,44 @@
                         <div class="card-top">
                             <div class="card-icon">🔤</div>
                             <div>
-                                <h3>Scribe - Anagrama Literário</h3>
+                                <h3>Anagrama Literário</h3>
                                 <p>Desembaralhe palavras e teste sua rapidez no universo da literatura.</p>
                             </div>
                         </div>
                         <span class="game-badge">Lógica</span>
+                    </a>
+
+                    <a href="../games/citacao_oculta.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">❝</div>
+                            <div>
+                                <h3>Citação Oculta</h3>
+                                <p>Reconheça a voz por trás de uma frase literária e pontue por conhecimento e velocidade.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge" style="background: #fef3c7; color: #92400e;">Repertório</span>
+                    </a>
+
+                    <a href="../games/ordem_enredo.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">↕</div>
+                            <div>
+                                <h3>Ordem do Enredo</h3>
+                                <p>Reconstrua a sequência de acontecimentos e descubra como uma história se sustenta.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge" style="background: #dcfce7; color: #166534;">Estrutura</span>
+                    </a>
+
+                    <a href="../games/duelo_metaforas.html" class="game-card">
+                        <div class="card-top">
+                            <div class="card-icon">✦</div>
+                            <div>
+                                <h3>Duelo de Metáforas</h3>
+                                <p>Escolha a leitura mais potente para cada imagem e afine seu olhar poético.</p>
+                            </div>
+                        </div>
+                        <span class="game-badge" style="background: #fce7f3; color: #9d174d;">Interpretação</span>
                     </a>
                 </div>
             </section>
@@ -327,6 +425,7 @@
         <div class="home-indicator"></div>
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="../scripts/script_progress.js"></script>
     <script>
@@ -334,6 +433,28 @@
             const scoreEl = document.getElementById('games-menu-score');
             const rankingEl = document.getElementById('games-menu-ranking');
             const medalEl = document.getElementById('games-menu-medal');
+            const shareScoreButton = document.getElementById('share-score-btn');
+            const avatarEl = document.getElementById('games-user-avatar');
+
+            const storedAvatar = sessionStorage.getItem('currentUserPic') || localStorage.getItem('currentUserPic');
+            if (avatarEl && storedAvatar) avatarEl.src = storedAvatar;
+
+            const userId = sessionStorage.getItem('currentUserId') || localStorage.getItem('currentUserId');
+            if (avatarEl && userId && window.POEFO_FIREBASE_CONFIG?.apiKey && typeof firebase !== 'undefined') {
+                try {
+                    if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
+                    const profileSnapshot = await firebase.database().ref(`usuarios/${userId}`).once('value');
+                    const profile = profileSnapshot.val() || {};
+                    const profilePhoto = profile.foto_perfil;
+                    if (profilePhoto) {
+                        avatarEl.src = profilePhoto;
+                        sessionStorage.setItem('currentUserPic', profilePhoto);
+                        localStorage.setItem('currentUserPic', profilePhoto);
+                    }
+                } catch (error) {
+                    console.warn('Não foi possível carregar a foto do perfil nos Games:', error);
+                }
+            }
 
             let summary = null;
             try {
@@ -349,6 +470,61 @@
             if (scoreEl) scoreEl.textContent = `${totalScore} pontos`;
             if (rankingEl) rankingEl.textContent = `Ranking: ${medal.label}`;
             if (medalEl) medalEl.textContent = `${medal.emoji} ${medal.label}`;
+            const nextMedalScore = totalScore < 500 ? 500 : totalScore < 1500 ? 1500 : 3000;
+            const previousMedalScore = totalScore < 500 ? 0 : totalScore < 1500 ? 500 : 1500;
+            const progressPercent = Math.min(100, Math.round(((totalScore - previousMedalScore) / (nextMedalScore - previousMedalScore)) * 100));
+            document.getElementById('games-score-progress')?.style.setProperty('width', `${Math.max(0, progressPercent)}%`);
+            document.getElementById('games-score-level')?.replaceChildren(document.createTextNode(String(Math.floor(totalScore / 250) + 1)));
+            document.getElementById('games-score-next')?.replaceChildren(document.createTextNode(totalScore >= 1500 ? 'Lenda' : `${nextMedalScore} pts`));
+
+            shareScoreButton?.addEventListener('click', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1200;
+                canvas.height = 1500;
+                const context = canvas.getContext('2d');
+                const userName = sessionStorage.getItem('currentUserName') || 'Leitor Poefo';
+                const safeName = userName.length > 22 ? `${userName.slice(0, 22)}...` : userName;
+
+                context.fillStyle = '#f6f0df';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.fillStyle = '#183642';
+                context.fillRect(72, 72, 1056, 1356);
+                context.strokeStyle = '#bef264';
+                context.lineWidth = 3;
+                context.strokeRect(102, 102, 996, 1296);
+                context.beginPath();
+                context.arc(1000, 150, 230, 0, Math.PI * 2);
+                context.strokeStyle = 'rgba(254, 243, 199, 0.25)';
+                context.stroke();
+                context.fillStyle = '#bef264';
+                context.font = '800 30px Arial';
+                context.letterSpacing = '5px';
+                context.fillText('POEFO  /  ARENA LITERARIA', 150, 190);
+                context.fillStyle = '#fef3c7';
+                context.font = '700 92px Georgia';
+                context.fillText('Meu score', 150, 390);
+                context.fillText('entrou no jogo.', 150, 490);
+                context.fillStyle = '#facc15';
+                context.font = '800 210px Arial';
+                context.fillText(String(totalScore), 145, 800);
+                context.fillStyle = '#fef3c7';
+                context.font = '700 38px Arial';
+                context.fillText('PONTOS', 155, 865);
+                context.fillStyle = '#bef264';
+                context.font = '700 46px Arial';
+                context.fillText(`${medal.emoji}  RANKING ${medal.label.toUpperCase()}`, 150, 1030);
+                context.fillStyle = '#fef3c7';
+                context.font = '400 34px Arial';
+                context.fillText(safeName, 150, 1190);
+                context.fillStyle = '#cbd5e1';
+                context.font = '400 26px Arial';
+                context.fillText('Desafios literários da Poefo', 150, 1305);
+
+                const posterDataUrl = canvas.toDataURL('image/png');
+                const shareText = `🎮 Meu score na Arena Literária Poefo: ${totalScore} pontos, ranking ${medal.label}.`;
+                sessionStorage.setItem('pendingShareScore', JSON.stringify({ score: totalScore, text: shareText, posterDataUrl }));
+                window.location.href = './publicador.html';
+            });
 
             const gamesSearch = document.getElementById('games-search');
             const gameCards = [...document.querySelectorAll('.game-card')];

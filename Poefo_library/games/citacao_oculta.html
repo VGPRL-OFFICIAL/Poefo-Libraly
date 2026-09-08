@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Citação Oculta</title>
+    <link rel="icon" href="../images/Logo_Poefo.png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link rel="stylesheet" href="../style/style_theme.css">
+    <script src="../scripts/theme.js"></script>
+    <style>
+        :root {
+            --ink: #183642;
+            --lime: #bef264;
+            --paper: #f6f0df
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', sans-serif
+        }
+
+        .game-shell {
+            max-width: 860px;
+            margin: 40px auto;
+            background: var(--ink);
+            color: #fef3c7;
+            border-radius: 24px;
+            padding: clamp(22px, 5vw, 52px);
+            box-shadow: 16px 18px 0 #d7dfc1
+        }
+
+        .btn-voltar {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: #444;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .eyebrow {
+            color: var(--lime);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase
+        }
+
+        .game-shell h1 {
+            font-family: Georgia, serif;
+            font-size: clamp(38px, 7vw, 72px);
+            line-height: .95;
+            margin: 14px 0
+        }
+
+        .intro {
+            color: #cbd5e1;
+            line-height: 1.6
+        }
+
+        .hud {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 28px 0
+        }
+
+        .hud span {
+            padding: 10px 14px;
+            border: 1px solid #42636a;
+            border-radius: 12px
+        }
+
+        .quote {
+            background: #fef3c7;
+            color: var(--ink);
+            border-radius: 14px;
+            padding: 28px;
+            font: italic 700 clamp(22px, 4vw, 34px)/1.25 Georgia, serif;
+            margin: 20px 0
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px
+        }
+
+        .option {
+            padding: 15px;
+            border: 1px solid #52727a;
+            background: transparent;
+            color: #fff;
+            border-radius: 12px;
+            text-align: left;
+            cursor: pointer;
+            font-weight: 700
+        }
+
+        .option:hover,
+        .option:focus {
+            background: #315862;
+            border-color: var(--lime)
+        }
+
+        #feedback {
+            min-height: 28px;
+            margin-top: 18px;
+            font-weight: 700;
+            color: var(--lime)
+        }
+
+        @media(max-width:600px) {
+            .options {
+                grid-template-columns: 1fr
+            }
+
+            .game-shell {
+                margin: 20px 16px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+
+        <main class="main-content">
+            <button onclick="history.back()" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao
+                Menu</button>
+
+            <section class="game-shell"><span class="eyebrow">Scribe / repertório</span>
+                <h1>Citação Oculta</h1>
+                <p class="intro">Uma frase, quatro vozes. Reconheça o autor e construa sua sequência de acertos.</p>
+                <div class="hud"><span>Score <strong id="score">0</strong></span><span>Rodada <strong
+                            id="round">1/5</strong></span><span>Sequência <strong id="streak">0</strong></span></div>
+                <div class="quote" id="quote"></div>
+                <div class="options" id="options"></div>
+                <div id="feedback"></div>
+            </section>
+        </main>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const rounds = [['A vida só pode ser compreendida olhando-se para trás; mas só pode ser vivida olhando-se para frente.', ['Clarice Lispector', 'Soren Kierkegaard', 'Machado de Assis', 'Cecília Meireles'], 'Soren Kierkegaard'], ['Liberdade é pouco. O que eu desejo ainda não tem nome.', ['Clarice Lispector', 'Hilda Hilst', 'Lygia Fagundes Telles', 'Cora Coralina'], 'Clarice Lispector'], ['Navegar é preciso; viver não é preciso.', ['Fernando Pessoa', 'Carlos Drummond', 'José de Alencar', 'Manuel Bandeira'], 'Fernando Pessoa'], ['A alegria não chega apenas no encontro do achado, mas faz parte do processo da busca.', ['Paulo Freire', 'Rubem Alves', 'Mario Quintana', 'Ariano Suassuna'], 'Paulo Freire'], ['O essencial é invisível aos olhos.', ['Antoine de Saint-Exupéry', 'Jorge Amado', 'Monteiro Lobato', 'Edgar Allan Poe'], 'Antoine de Saint-Exupéry']]; let index = 0, score = 0, streak = 0, locked = false;
+        function render() { locked = false; const item = rounds[index]; document.querySelector('#quote').textContent = '“' + item[0] + '”'; document.querySelector('#round').textContent = `${index + 1}/${rounds.length}`; const box = document.querySelector('#options'); box.innerHTML = ''; item[1].forEach(author => { const button = document.createElement('button'); button.className = 'option'; button.textContent = author; button.onclick = () => answer(author); box.appendChild(button) }); document.querySelector('#feedback').textContent = '' }
+        async function answer(author) { if (locked) return; locked = true; const right = author === rounds[index][2]; const points = right ? 40 + streak * 10 : 0; if (right) { score += points; streak++; document.querySelector('#feedback').textContent = `Acertou. +${points} pontos`; await incrementUserScore(points) } else { streak = 0; document.querySelector('#feedback').textContent = `A resposta era ${rounds[index][2]}.` } document.querySelector('#score').textContent = score; document.querySelector('#streak').textContent = streak; if (index < rounds.length - 1) { index++; setTimeout(render, 700) } else { document.querySelector('#feedback').textContent += '  Rodada finalizada.' } }
+        render();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poefo Games - Duelo de Metáforas</title>
+    <link rel="icon" href="../images/Logo_Poefo.png">
+    <link rel="stylesheet" href="../style/style_home.css">
+    <link rel="stylesheet" href="../style/style_theme.css">
+    <!-- FontAwesome para o ícone de voltar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../scripts/theme.js"></script>
+    <style>
+        :root {
+            --ink: #3d254d;
+            --pink: #fbcfe8;
+            --paper: #fff7fb
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', sans-serif
+        }
+
+        .shell {
+            max-width: 880px;
+            margin: 40px auto;
+            background: var(--ink);
+            color: #fff7fb;
+            border-radius: 24px;
+            padding: clamp(22px, 5vw, 52px);
+            box-shadow: 15px 17px 0 #f5c2dc
+        }
+
+        .back {
+            color: var(--ink);
+            font-weight: 700;
+            text-decoration: none
+        }
+
+        .eyebrow {
+            display: block;
+            color: var(--pink);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 28px
+        }
+
+        .shell h1 {
+            font: 700 clamp(40px, 7vw, 74px)/.95 Georgia, serif;
+            margin: 12px 0
+        }
+
+        .intro {
+            color: #e9d5ef;
+            line-height: 1.6
+        }
+
+        .hud {
+            display: flex;
+            gap: 10px;
+            margin: 24px 0
+        }
+
+        .hud span {
+            padding: 10px 14px;
+            border: 1px solid #795a86;
+            border-radius: 12px
+        }
+
+        .prompt {
+            font: 700 clamp(24px, 4vw, 38px)/1.15 Georgia, serif;
+            color: var(--pink);
+            margin: 28px 0 20px
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .choice {
+            padding: 18px;
+            border: 1px solid #795a86;
+            background: #50345d;
+            color: #fff7fb;
+            border-radius: 14px;
+            text-align: left;
+            cursor: pointer;
+            font: 600 16px/1.4 inherit
+        }
+
+        .choice:hover:not(:disabled),
+        .choice:focus:not(:disabled) {
+            background: #684a76;
+            border-color: var(--pink)
+        }
+
+        .choice:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        #feedback {
+            min-height: 28px;
+            margin-top: 18px;
+            font-weight: 700;
+            color: var(--pink)
+        }
+
+        @media(max-width:600px) {
+            .shell {
+                margin: 20px 16px
+            }
+
+            .choices {
+                grid-template-columns: 1fr
+            }
+
+            .end-actions {
+                flex-direction: column;
+            }
+        }
+
+        .btn-voltar {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: #444;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* Estilos da Tela de Conclusão */
+        .end-screen {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .end-screen h2 {
+            font: 700 clamp(28px, 5vw, 48px)/1.1 Georgia, serif;
+            color: var(--pink);
+            margin-bottom: 16px;
+        }
+
+        .end-stats {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            color: #e9d5ef;
+        }
+
+        .end-stats strong {
+            color: #fff;
+            font-size: 1.4rem;
+        }
+
+        .end-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .btn-action {
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-restart {
+            background: var(--pink);
+            color: var(--ink);
+        }
+
+        .btn-restart:hover {
+            background: #f4a5d0;
+        }
+
+        .btn-exit {
+            background: #50345d;
+            color: #fff7fb;
+            border: 1px solid #795a86;
+        }
+
+        .btn-exit:hover {
+            background: #684a76;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section"><img src="../images/Logo_Poefo.png" class="logo" alt="Logo"><span
+                    class="app-title">Poefo Library</span></div>
+            <nav class="nav-menu"><a href="../html/home.at.html" class="nav-link">Início</a><a
+                    href="../html/games_menu.html" class="nav-link active">Games</a><a href="../html/feed.html"
+                    class="nav-link">Feed</a></nav>
+        </aside>
+        <main class="main-content">
+            <button onclick="history.back()" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao Menu</button>
+            <section class="shell"><a class="back" href="../html/games_menu.html">← Voltar aos Games</a><span
+                    class="eyebrow">Scribe / interpretação</span>
+                <h1>Duelo de Metáforas</h1>
+                <p class="intro">Uma imagem pode abrir muitos caminhos. Escolha a leitura que melhor preserva sua força
+                    poética.</p>
+                
+                <!-- Área Principal do Jogo -->
+                <div id="game-container">
+                    <div class="hud">
+                        <span>Score <strong id="score">0</strong></span>
+                        <span>Rodada <strong id="round">1/10</strong></span>
+                    </div>
+                    <div class="prompt" id="prompt"></div>
+                    <div class="choices" id="choices"></div>
+                    <div id="feedback"></div>
+                </div>
+
+                <!-- Tela de Conclusão -->
+                <div id="end-screen" class="end-screen">
+                    <h2>Duelo Concluído!</h2>
+                    <p class="end-stats" id="end-feedback"></p>
+                    <div class="end-actions">
+                        <button class="btn-action btn-restart" onclick="restartGame()"><i class="fas fa-redo"></i> Jogar Novamente</button>
+                        <button class="btn-action btn-exit" onclick="window.location.href='../html/games_menu.html'"><i class="fas fa-sign-out-alt"></i> Parar e Sair</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="../scripts/script_progress.js"></script>
+    <script>
+        const rounds = [
+            {
+                metaphora: 'A lua derramou prata no rio.',
+                opcoes: [
+                    'A luz refletida transforma a água em uma imagem preciosa.',
+                    'O rio ficou cheio de moedas.',
+                    'A lua caiu dentro do rio.',
+                    'O rio secou durante a noite.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'O silêncio era uma casa sem portas.',
+                opcoes: [
+                    'O silêncio era impossível de abandonar.',
+                    'A casa estava sem janelas.',
+                    'Ninguém construiu uma casa.',
+                    'A cidade precisava de reformas.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'As palavras criaram raízes.',
+                opcoes: [
+                    'A fala ganhou força e passou a viver no pensamento.',
+                    'As letras foram plantadas na terra.',
+                    'O texto ficou preso em uma árvore.',
+                    'O autor esqueceu a história.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'Seu olhar acendeu a sala.',
+                opcoes: [
+                    'Sua presença trouxe vida e atenção ao ambiente.',
+                    'Ele ligou uma lâmpada.',
+                    'A sala pegou fogo.',
+                    'Todos fecharam os olhos.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'A saudade bateu à porta.',
+                opcoes: [
+                    'A lembrança voltou e pediu espaço dentro da pessoa.',
+                    'Alguém tocou a campainha.',
+                    'A porta precisava de pintura.',
+                    'A casa ficou vazia.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'O tempo é um rio que não desacelera.',
+                opcoes: [
+                    
+                    'O rio está correndo rápido demais por causa da chuva.',
+                    'A vida segue seu curso de forma contínua e inevitável.',
+                    'É preciso nadar contra a correnteza.',
+                    'As horas foram lavadas pela água.'
+                ],
+                correta: 1
+            },
+            {
+                metaphora: 'Seus pensamentos eram tempestades em alto-mar.',
+                opcoes: [
+                    'Sua mente estava agitada e cheia de conflitos internos.',
+                    'Estava chovendo forte enquanto ele pensava.',
+                    'Ele viajava de navio durante uma tempestade.',
+                    'Ele decidiu aprender a navegar.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'O riso dela era sol em dia de chuva.',
+                opcoes: [
+                    'Sua alegria trazia conforto e luz em momentos difíceis.',
+                    'Começou a fazer sol enquanto chovia.',
+                    'Ela só sorria quando o tempo mudava.',
+                    'A iluminação da casa melhorou.'
+                ],
+                correta: 0
+            },
+            {
+                metaphora: 'Ele carregava o peso do mundo nos ombros.',
+                opcoes: [
+                    'Sentia uma enorme responsabilidade e ansiedade.',
+                    'Ele fazia exercícios físicos pesados.',
+                    'O planeta Terra caiu sobre ele.',
+                    'Ele viajou ao redor do globo.'
+                ],
+                correta: 0
+            },
+    
+            {
+                metaphora: 'A promessa dele era um castelo de areia.',
+                opcoes: [
+                    'O compromisso era frágil e sem garantia de duração.',
+                    'Ele construiu uma maquete na praia.',
+                    'A promessa foi gravada em uma rocha.',
+                    'Ele comprou um terreno perto do mar.'
+                ],
+                correta: 0
+            }
+        ];
+
+        let index = 0;
+        let score = 0;
+        let correctAnswers = 0;
+        let isAnswering = false; // Flag para ignorar cliques adicionais
+
+        function render() {
+            isAnswering = false; // Libera novos cliques na nova rodada
+            const rodadaAtual = rounds[index];
+            document.querySelector('#prompt').textContent = rodadaAtual.metaphora;
+            document.querySelector('#round').textContent = `${index + 1}/${rounds.length}`;
+            
+            const box = document.querySelector('#choices');
+            box.innerHTML = '';
+
+            rodadaAtual.opcoes.forEach((texto, i) => {
+                const b = document.createElement('button');
+                b.className = 'choice';
+                b.textContent = texto;
+                b.onclick = () => answer(i);
+                box.appendChild(b);
+            });
+
+            document.querySelector('#feedback').textContent = '';
+        }
+
+        async function answer(choice) {
+            // Se já tiver um clique em processamento, cancela chamadas extras
+            if (isAnswering) return;
+            isAnswering = true;
+
+            // Desabilita os botões visualmente para evitar múltiplos cliques
+            const buttons = document.querySelectorAll('.choice');
+            buttons.forEach(btn => btn.disabled = true);
+
+            const rodadaAtual = rounds[index];
+            
+            if (choice === rodadaAtual.correta) {
+                score += 50;
+                correctAnswers++;
+                document.querySelector('#score').textContent = score;
+                document.querySelector('#feedback').textContent = 'Leitura precisa. +50 pontos';
+                await incrementUserScore(50);
+            } else {
+                document.querySelector('#feedback').textContent = 'Essa leitura ficou literal demais.';
+            }
+
+            if (index < rounds.length - 1) {
+                index++;
+                setTimeout(render, 700);
+            } else {
+                setTimeout(showEndScreen, 700);
+            }
+        }
+
+        function showEndScreen() {
+            document.querySelector('#game-container').style.display = 'none';
+            const endScreen = document.querySelector('#end-screen');
+            endScreen.style.display = 'block';
+
+            const total = rounds.length;
+            const percentual = Math.round((correctAnswers / total) * 100);
+            
+            let mensagem = '';
+            if (percentual === 100) {
+                mensagem = 'Excelente! Você demonstrou uma perfeita sensibilidade poética.';
+            } else if (percentual >= 70) {
+                mensagem = 'Muito bem! Você tem uma ótima interpretação de metáforas.';
+            } else if (percentual >= 50) {
+                mensagem = 'Bom trabalho! Continue praticando para aprofundar sua leitura.';
+            } else {
+                mensagem = 'Não desanime! A interpretação poética melhora com a prática.';
+            }
+
+            document.querySelector('#end-feedback').innerHTML = `
+                Você acertou <strong>${correctAnswers}</strong> de <strong>${total}</strong> metáforas (${percentual}% de aproveitamento).<br>
+                Pontuação total: <strong>${score} pontos</strong>.<br><br>
+                <em>${mensagem}</em>
+            `;
+        }
+
+        function restartGame() {
+            index = 0;
+            score = 0;
+            correctAnswers = 0;
+            isAnswering = false;
+            document.querySelector('#score').textContent = '0';
+            document.querySelector('#end-screen').style.display = 'none';
+            document.querySelector('#game-container').style.display = 'block';
+            render();
+        }
+
+        render();
+    </script>
+</body>
+
+</html>

@@ -170,6 +170,70 @@ button, input, textarea, select {
     filter: brightness(0) invert(1);
 }
 
+.theme-toggle {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--theme-border);
+    border-radius: 50%;
+    background: var(--theme-surface-soft);
+    color: var(--theme-text);
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.theme-toggle:hover { transform: translateY(-2px); }
+.theme-icon-moon { display: none; }
+.theme-toggle.is-dark .theme-icon-sun { display: none; }
+.theme-toggle.is-dark .theme-icon-moon { display: block; }
+
+.home-top-bar {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+html.dark-theme {
+    --theme-bg: #171717;
+    --theme-surface: #242424;
+    --theme-surface-soft: rgba(36, 36, 36, 0.9);
+    --theme-border: #3b3b3b;
+    --theme-text: #f5f5f5;
+    --theme-muted: #b1b1b1;
+    --theme-black: #050505;
+    --theme-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+html.dark-theme body { background: var(--theme-bg); color: var(--theme-text); }
+html.dark-theme .nav-link:hover { background: #303030; color: var(--theme-text); }
+html.dark-theme .search-wrapper,
+html.dark-theme .search-input-wrapper,
+html.dark-theme .search-bar,
+html.dark-theme .search-bar-desktop .search-input { background: #2d2d2d; }
+html.dark-theme .search-wrapper input,
+html.dark-theme .search-input,
+html.dark-theme .search-bar input,
+html.dark-theme .search-bar-desktop input { color: var(--theme-text); }
+html.dark-theme .btn-message,
+html.dark-theme .secondary-button { background: #353535; color: var(--theme-text); }
+html.dark-theme .mobile-nav { background: rgba(28, 28, 28, 0.94); }
+html.dark-theme .mobile-nav .nav-item img { filter: invert(1); }
+html.dark-theme .card,
+html.dark-theme .post,
+html.dark-theme .trends-box,
+html.dark-theme .perfil-card-container,
+html.dark-theme .modal-content,
+html.dark-theme .editor-card,
+html.dark-theme .content-card { background: var(--theme-surface); }
+
+@media (max-width: 768px) {
+    .theme-toggle { width: 34px; height: 34px; }
+}
+
 @media (max-width: 768px) {
     .main-content {
         padding-bottom: 92px;

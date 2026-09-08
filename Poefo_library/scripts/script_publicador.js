@@ -42,6 +42,7 @@ const storage = firebase.storage();
 async function loadProfileFromRTDB() {
     const usernameElement = document.getElementById('logged-username');
     const profilePicElement = document.getElementById('profile-pic');
+    const headerProfileElement = document.getElementById('publisher-header-profile');
     const defaultPic = '../images/user_ic.png';
     const guestName = 'Faça Login para Publicar';
 
@@ -55,6 +56,7 @@ async function loadProfileFromRTDB() {
         CURRENT_USER_PIC = defaultPic; 
         if (usernameElement) usernameElement.textContent = USER_NAME;
         if (profilePicElement) profilePicElement.src = CURRENT_USER_PIC;
+        if (headerProfileElement) headerProfileElement.src = CURRENT_USER_PIC;
         return;
     }
     
@@ -71,6 +73,7 @@ async function loadProfileFromRTDB() {
             const photoUrl = userData.foto_perfil || defaultPic; 
             
             if (profilePicElement) profilePicElement.src = photoUrl;
+            if (headerProfileElement) headerProfileElement.src = photoUrl;
             
             CURRENT_USER_PIC = photoUrl;
             sessionStorage.setItem('currentUserPic', CURRENT_USER_PIC); 
@@ -88,6 +91,7 @@ async function loadProfileFromRTDB() {
 
     } catch (error) {
         if (profilePicElement) profilePicElement.src = defaultPic;
+        if (headerProfileElement) headerProfileElement.src = defaultPic;
         console.error("Erro ao carregar perfil:", error);
     }
 }
@@ -508,8 +512,8 @@ function attachMediaToPost(type, data) {
              // Lógica de prévia para imagem
              const imageUrl = data.url || URL.createObjectURL(data.file);
              contentHTML = `
-                <div class="relative rounded-xl overflow-hidden border border-gray-300">
-                    <img src="${imageUrl}" alt="Prévia da Imagem" class="max-h-60 w-full object-cover">
+                <div class="publisher-image-preview">
+                    <img src="${imageUrl}" alt="Prévia da Imagem">
                     <button onclick="removeAttachment()" class="absolute top-2 right-2 p-1 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-75 transition">
                         <i data-lucide="x-circle" class="w-5 h-5"></i>
                     </button>
@@ -529,6 +533,17 @@ function attachMediaToPost(type, data) {
         cancelBookEdit(); 
     }
     checkPostValidity();
+}
+
+function dataUrlToFile(dataUrl, fileName) {
+    const [metadata, encodedData] = dataUrl.split(',');
+    const mimeType = metadata.match(/data:(.*?);/)?.[1] || 'image/png';
+    const binary = atob(encodedData);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+    }
+    return new File([bytes], fileName, { type: mimeType });
 }
 
 
@@ -827,6 +842,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (textArea) {
                 textArea.value = parsed.text || `🎮 Eu estou com ${parsed.score || 0} pontos nos games da Poefo. Quem consegue me superar?`;
                 checkTextLength();
+            }
+            if (parsed.posterDataUrl) {
+                const posterFile = dataUrlToFile(parsed.posterDataUrl, `poefo-score-${parsed.score || 0}.png`);
+                attachMediaToPost('image', { url: parsed.posterDataUrl, file: posterFile });
             }
         } catch (error) {
             console.warn('Não foi possível carregar o score compartilhado:', error);

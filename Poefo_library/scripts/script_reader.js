@@ -23,7 +23,12 @@ async function initReader() {
     readerBookId = sessionStorage.getItem('readerBookId');
 
     try {
-        pdfDoc = await pdfjsLib.getDocument(url).promise;
+        pdfDoc = await pdfjsLib.getDocument({
+            url,
+            disableStream: true,
+            disableAutoFetch: false,
+            rangeChunkSize: 262144
+        }).promise;
         document.getElementById('page-count').textContent = pdfDoc.numPages;
         if (readerBookId && typeof loadUserBookProgress === 'function') {
             readerBookProgress = await loadUserBookProgress(readerBookId);
@@ -48,7 +53,14 @@ async function initReader() {
         
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('pdf-book').style.visibility = 'visible';
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error('PDF.js não conseguiu abrir o link:', e);
+        showReaderError();
+    }
+}
+
+function showReaderError() {
+    document.getElementById('loading-overlay').innerHTML = '<p class="reader-error">Não foi possível visualizar este arquivo. Abra o arquivo original para continuar.</p>';
 }
 
 async function renderAllPages() {
@@ -269,7 +281,7 @@ window.addEventListener('mouseup', stopDragging);
 window.addEventListener('beforeunload', stopReaderTimer);
 window.addEventListener('pagehide', stopReaderTimer);
 
-document.getElementById('prev-page').onclick = () => { if(!isDrawingMode) pageFlip.flipPrev(); };
-document.getElementById('next-page').onclick = () => { if(!isDrawingMode) pageFlip.flipNext(); };
+document.getElementById('prev-page').onclick = () => { if(!isDrawingMode && pageFlip) pageFlip.flipPrev(); };
+document.getElementById('next-page').onclick = () => { if(!isDrawingMode && pageFlip) pageFlip.flipNext(); };
 
 initReader();

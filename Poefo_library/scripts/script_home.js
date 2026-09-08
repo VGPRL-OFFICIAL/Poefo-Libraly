@@ -116,13 +116,23 @@ async function loadApp() {
 function renderHero(book) {
     if(!book || !heroContainer) return;
     heroContainer.innerHTML = `
+        <div class="hero-poster-backdrop" style="background-image: url('${book.link_capa}')"></div>
+        <div class="hero-poster-glow" aria-hidden="true"></div>
+        <div class="hero-poster-cover">
+            <img src="${book.link_capa}" alt="Capa de ${book.titulo}">
+        </div>
         <div class="hero-content">
-            <span class="hero-tag">Destaque da Semana</span>
+                <div class="hero-kicker-row">
+                    <span class="hero-tag">Destaque da Semana</span>
+                    <span class="hero-category">${book.genero || 'Poefo Library'}</span>
+                </div>
             <h2 class="hero-title">${book.titulo}</h2>
             <p class="hero-desc">${book.sinopse ? book.sinopse.substring(0, 130) + '...' : 'Inicie sua leitura agora.'}</p>
-            <button class="btn-primary" onclick="openBook('${encodeURIComponent(JSON.stringify(book))}')">Começar Leitura</button>
+                <div class="hero-poster-footer">
+                    <span class="hero-poster-note">Uma leitura selecionada para você</span>
+                    <button class="btn-primary" onclick="openBook('${encodeURIComponent(JSON.stringify(book))}')">Começar Leitura</button>
+                </div>
         </div>
-        <div class="hero-floating-img" style="background-image: url('${book.link_capa}')"></div>
     `;
 }
 
@@ -223,7 +233,7 @@ function renderGrid(list, container, options = {}) {
         return;
     }
 
-    const openAction = options.directToReader ? 'openBookForReading' : 'openBook';
+    const openAction = options.externalLink ? 'openDuckDogBook' : 'openBook';
     container.innerHTML = list.map(b => `
         <div class="book-item" onclick="${openAction}('${encodeURIComponent(JSON.stringify(b))}')">
             <div class="book-cover" style="background-image: url('${b.link_capa}')"></div>
@@ -240,7 +250,7 @@ async function loadDuckDogBooks(query = "fiction") {
     if (!gridDuckDog || !window.DuckDogApi) return;
     try {
         const books = await window.DuckDogApi.searchDuckDog(query);
-        renderGrid(books, gridDuckDog, { directToReader: true });
+        renderGrid(books, gridDuckDog, { externalLink: true });
     } catch (err) {
         console.error("Erro DuckDog:", err);
         gridDuckDog.innerHTML = '<p>Configure a API DuckDog para explorar novos livros.</p>';
@@ -310,13 +320,10 @@ window.openBook = (data) => {
     window.location.href = './livro.html';
 };
 
-window.openBookForReading = (data) => {
+window.openDuckDogBook = (data) => {
     const bookData = JSON.parse(decodeURIComponent(data));
     if (!bookData.link_acesso) return;
-    sessionStorage.setItem('selectedBook', JSON.stringify(bookData));
-    sessionStorage.setItem('readerUrl', bookData.link_acesso);
-    sessionStorage.setItem('readerBookId', String(bookData.id));
-    window.location.href = './reader.html';
+    window.open(bookData.link_acesso, '_blank', 'noopener,noreferrer');
 };
 
 document.addEventListener('DOMContentLoaded', loadApp);

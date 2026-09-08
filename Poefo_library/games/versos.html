@@ -1,138 +1,339 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scribe - O Enigma</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Poefo Games - Scribe</title>
+    <link rel="icon" href="../images/Logo_Poefo.png">
+    <link rel="stylesheet" href="../style/style_home.css">
     <link rel="stylesheet" href="../style/style_theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../scripts/theme.js"></script>
     <style>
         :root {
-            --bg-page: #f9f6f0;
-            --accent-soft: #b8ced2;
-            --text-main: #3d3d3d; 
-            --card-white: #ffffff;
-            --gold: #d4af37;
+            --ink: #2b1712;
+            --accent: #c85a32;
+            --accent-soft: #f4a261;
+            --paper: #f9f6f0;
+            --card-bg: #fff;
+            --mint: #ffe8d6;
+            --border-ui: #e8d0c3;
             --error: #d9534f;
         }
 
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-page);
-            color: var(--text-main);
-            margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .reader-container {
-            background-color: var(--card-white);
-            width: 100%; max-width: 550px; padding: 2.5rem; border-radius: 30px;
-            border: 1px solid var(--accent-soft);
-            box-shadow: 0 15px 35px rgba(184, 206, 210, 0.2);
-            text-align: center; position: relative;
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .shell {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border-ui);
+            border-radius: 24px;
+            padding: clamp(22px, 5vw, 52px);
+            box-shadow: 14px 16px 0 #eddcd2;
+            position: relative;
+        }
+
+        .btn-voltar {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .eyebrow {
+            display: block;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .shell h1 {
+            font: 700 clamp(40px, 7vw, 74px)/.95 Georgia, serif;
+            margin: 12px 0;
+            color: var(--ink);
+        }
+
+        .intro {
+            color: #6d5952;
+            line-height: 1.6;
+            margin-bottom: 24px;
         }
 
         .screen { display: none; }
         .screen.active { display: block; }
 
-        .theme-indicator {
-            display: inline-block;
-            background: var(--accent-soft);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-        }
-
-        h1 { font-family: 'Playfair Display', serif; font-size: 2rem; margin: 0 0 10px 0; }
-        
         .btn {
-            background-color: var(--accent-soft); color: white; border: none;
-            padding: 12px 25px; border-radius: 12px; font-weight: 600;
-            cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px;
-            font-family: 'Inter';
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            margin-bottom: 12px;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .btn:hover { background-color: #a4bcc1; transform: scale(1.01); }
-        .btn-danger { background-color: transparent; color: #a0a0a0; border: 1px solid #ddd; font-size: 0.8rem; margin-top: 15px; }
-        .btn-danger:hover { color: var(--error); border-color: var(--error); background: #fff5f5; }
 
-        .status-bar { display: flex; justify-content: space-between; margin: 15px 0; font-size: 0.75rem; color: #888; font-weight: bold; }
-
-        .hint-box { 
-            background: #f0f4f5; padding: 15px; border-radius: 15px; margin-bottom: 20px; 
-            text-align: left; border: 1px dashed var(--accent-soft); font-size: 0.85rem; line-height: 1.4;
+        .btn:hover {
+            background-color: #b04b27;
         }
 
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 15px; border: 1.5px solid #eee; border-radius: 12px; outline: none; background: #fafafa; }
-        
-        .ranking-container { max-height: 200px; overflow-y: auto; border-top: 1px solid #eee; padding-top: 15px; }
-        .ranking-item { padding: 10px; border-radius: 10px; border: 1px solid #f0f0f0; margin-bottom: 8px; text-align: left; }
-        .ranking-item.top-match { background: #e8f5e9; border-color: #c8e6c9; }
-        
-        .progress-bar { height: 4px; background: #eee; width: 100%; margin-top: 8px; border-radius: 2px; }
-        .progress-fill { height: 100%; background: var(--accent-soft); border-radius: 2px; transition: width 0.6s ease; }
+        .btn-danger {
+            background-color: transparent;
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
 
-        .score-display { font-size: 2.5rem; font-family: 'Playfair Display'; color: var(--gold); margin: 15px 0; }
-        
-        .records { font-size: 0.75rem; color: #999; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 15px; }
+        .btn-danger:hover {
+            background: #fff5f5;
+        }
+
+        .btn-votar {
+            padding: 14px 22px;
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            background: transparent;
+            color: var(--accent);
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-votar:hover {
+            background: var(--mint);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 800;
+            background: #fdf0e7;
+            border: 1px solid var(--border-ui);
+            padding: 10px 14px;
+            border-radius: 12px;
+        }
+
+        .hint-box {
+            background: #fffaf7;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+            border: 1px solid var(--border-ui);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--ink);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid var(--border-ui);
+            border-radius: 12px;
+            outline: none;
+            background: #fffaf7;
+            font-family: inherit;
+            color: var(--ink);
+            font-size: 1rem;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        .ranking-container {
+            max-height: 220px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border-ui);
+            padding-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .ranking-item {
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-ui);
+            background: #fffaf7;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+
+        .ranking-item.top-match {
+            background: var(--mint);
+            border-color: var(--accent-soft);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #eddcd2;
+            width: 100%;
+            margin-top: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .score-display {
+            font-size: 2.8rem;
+            font-family: Georgia, serif;
+            font-weight: bold;
+            color: var(--accent);
+            margin: 15px 0;
+        }
+
+        .records {
+            font-size: 0.85rem;
+            color: #6d5952;
+            margin-top: 20px;
+            text-align: left;
+            border-top: 1px solid var(--border-ui);
+            padding-top: 15px;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media(max-width:600px) {
+            .shell {
+                margin: 20px 16px;
+            }
+            .input-group {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
+
 <body>
-
-    <div class="reader-container">
-        <div class="theme-indicator">Tema: Literatura & Escrita</div>
-        
-        <div id="menu-screen" class="screen active">
-            <h1>Scribe</h1>
-            <p style="color: #888; margin-bottom: 25px;">Escolha o rigor da sua investigação:</p>
-            <button class="btn" onclick="initGame('facil')">NÍVEL FÁCIL</button>
-            <button class="btn" onclick="initGame('medio')">NÍVEL MÉDIO</button>
-            <button class="btn" onclick="initGame('dificil')">NÍVEL DIFÍCIL</button>
-            
-            <div class="records" id="high-scores">
-                <strong>MELHORES PONTUAÇÕES:</strong><br>
-                Fácil: <span id="record-facil">0</span> | Médio: <span id="record-medio">0</span> | Difícil: <span id="record-dificil">0</span>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" class="logo" alt="Logo">
+                <span class="app-title">Poefo Library</span>
             </div>
-            <button class="btn btn-danger" onclick="window.location.href='index.html'" style="border:none; background:none;">Voltar ao Menu Principal</button>
-        </div>
+            <nav class="nav-menu">
+                <a href="../html/home.at.html" class="nav-link">Início</a>
+                <a href="../html/games_menu.html" class="nav-link active">Games</a>
+                <a href="../html/feed.html" class="nav-link">Feed</a>
+            </nav>
+        </aside>
 
-        <div id="game-screen" class="screen">
-            <div class="status-bar">
-                <span id="diff-label"></span>
-                <span id="tries-label"></span>
-            </div>
-            
-            <div class="hint-box" id="hint-area">
-                <strong>Pista:</strong> <span id="hint-text">...</span>
-            </div>
+        <main class="main-content">
+            <section class="shell">
+                <a class="btn-voltar" href="../html/games_menu.html">
+                    <i class="fas fa-arrow-left"></i> Voltar aos Games
+                </a>
 
-            <div class="input-group">
-                <input type="text" id="guess-input" placeholder="Tente uma palavra..." autocomplete="off">
-                <button class="btn" style="width: auto; margin:0" onclick="handleGuess()">Investigar</button>
-            </div>
+                <span class="eyebrow">Scribe / investigação</span>
 
-            <div class="ranking-container" id="ranking-list"></div>
+                <!-- TELA: MENU -->
+                <div id="menu-screen" class="screen active">
+                    <h1>Scribe</h1>
+                    <p class="intro">Escolha o rigor da sua investigação e descubra a palavra secreta:</p>
+                    
+                    <button class="btn" onclick="initGame('facil')">NÍVEL FÁCIL</button>
+                    <button class="btn" onclick="initGame('medio')">NÍVEL MÉDIO</button>
+                    <button class="btn" onclick="initGame('dificil')">NÍVEL DIFÍCIL</button>
 
-            <button class="btn btn-danger" onclick="giveUp()">Desistir desta obra</button>
-        </div>
+                    <div class="records" id="high-scores">
+                        <strong>MELHORES PONTUAÇÕES:</strong><br>
+                        Fácil: <span id="record-facil">0</span> | Médio: <span id="record-medio">0</span> | Difícil: <span id="record-dificil">0</span>
+                    </div>
 
-        <div id="result-screen" class="screen">
-            <h1 id="result-title">Vitória</h1>
-            <div class="score-display" id="final-score-val">0</div>
-            <p id="result-desc" style="font-style: italic; margin-bottom: 20px;"></p>
-            <div id="stats-detail" style="font-size: 0.9rem; color: #666; margin-bottom: 25px;"></div>
-            <button class="btn" onclick="showMenu()">Nova Edição</button>
-            <button class="btn btn-danger" onclick="window.location.href='index.html'" style="border:none;">Sair</button>
-        </div>
+                    <div class="actions-bar">
+                        <button class="btn-votar" onclick="votarJogo()"><i class="fas fa-heart"></i> Votar no Jogo</button>
+                    </div>
+                </div>
+
+                <!-- TELA: JOGO -->
+                <div id="game-screen" class="screen">
+                    <div class="status-bar">
+                        <span id="diff-label"></span>
+                        <span id="tries-label"></span>
+                    </div>
+
+                    <div class="hint-box" id="hint-area">
+                        <strong style="color: var(--accent);">Pista:</strong> <span id="hint-text">...</span>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="guess-input" placeholder="Tente uma palavra..." autocomplete="off">
+                        <button class="btn" style="width: auto; margin: 0;" onclick="handleGuess()">Investigar</button>
+                    </div>
+
+                    <div class="ranking-container" id="ranking-list"></div>
+
+                    <button class="btn btn-danger" onclick="giveUp()">Desistir desta obra</button>
+                </div>
+
+                <!-- TELA: RESULTADO -->
+                <div id="result-screen" class="screen" style="text-align: center;">
+                    <h1 id="result-title">Vitória</h1>
+                    <div class="score-display" id="final-score-val">0</div>
+                    <p id="result-desc" style="font-style: italic; margin-bottom: 20px; color: #6d5952;"></p>
+                    <div id="stats-detail" style="font-size: 0.95rem; color: var(--ink); margin-bottom: 25px;"></div>
+                    
+                    <button class="btn" onclick="showMenu()">Nova Edição</button>
+                    <button class="btn btn-danger" onclick="window.location.href='../html/games_menu.html'">Sair para o Menu</button>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="../scripts/firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="../scripts/script_progress.js"></script>
     <script>
         const wordDatabase = [
@@ -166,7 +367,6 @@
         }
 
         function updateRecordsUI() {
-            // Carrega do localStorage para mostrar no menu
             records.facil = localStorage.getItem('versos_facil') || 0;
             records.medio = localStorage.getItem('versos_medio') || 0;
             records.dificil = localStorage.getItem('versos_dificil') || 0;
@@ -257,7 +457,7 @@
                 item.innerHTML = `
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem">
                         <span><strong>${g.word}</strong></span>
-                        <span>${g.score}</span>
+                        <span>${g.score} pts</span>
                     </div>
                     <div class="progress-bar"><div class="progress-fill" style="width:${perc}%"></div></div>
                 `;
@@ -274,24 +474,21 @@
 
             if (status === 'win') {
                 title.innerText = "Obra Concluída";
-                title.style.color = "var(--text-main)";
+                title.style.color = "var(--ink)";
                 const finalScore = Math.round(gameState.wordObj.d / gameState.tries);
                 scoreVal.innerText = finalScore + " pts";
                 desc.innerText = `Você desvendou: "${gameState.wordObj.w.toUpperCase()}"`;
                 detail.innerText = `Eficiência: ${gameState.tries} tentativa(s).`;
                 
-                // Salvamento de Recordes
                 let currentTotal = parseInt(localStorage.getItem('poefo_versos')) || 0;
                 if (finalScore > currentTotal) localStorage.setItem('poefo_versos', finalScore);
                 
-                // Atualiza pontuação total no banco
                 if (typeof incrementUserScore === 'function') {
-                    incrementUserScore(finalScore).catch(() => saveUserProgressLocalFallback(finalScore, 0));
-                } else {
+                    incrementUserScore(finalScore);
+                } else if (typeof saveUserProgressLocalFallback === 'function') {
                     saveUserProgressLocalFallback(finalScore, 0);
                 }
                 
-                // Salva recorde por dificuldade também para a interface interna
                 if (finalScore > (parseInt(localStorage.getItem('versos_'+gameState.difficulty)) || 0)) {
                     localStorage.setItem('versos_'+gameState.difficulty, finalScore);
                 }
@@ -304,8 +501,13 @@
             }
         }
 
+        function votarJogo() {
+            alert('Obrigado pelo seu voto! ❤');
+        }
+
         document.getElementById('guess-input').addEventListener('keypress', e => { if(e.key === 'Enter') handleGuess(); });
         updateRecordsUI();
     </script>
 </body>
+
 </html>

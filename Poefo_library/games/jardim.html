@@ -1,152 +1,518 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scribe | O Jardim</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>O Jardim</title>
+    <link rel="icon" href="../images/Logo_Poefo.png">
+    <link rel="stylesheet" href="../style/style_home.css">
     <link rel="stylesheet" href="../style/style_theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../scripts/theme.js"></script>
     <style>
         :root {
-            --bg: #f4f7f6; --card: #ffffff; --primary: #2d3436; --accent: #81a684;
-            --water: #3498db; --nutrient: #e67e22; --health: #e74c3c; --gold: #c5a059;
-            --border-ui: 1px solid rgba(0,0,0,0.1); --shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --ink: #11261f;
+            --accent: #10b981;
+            --accent-soft: #34d399;
+            --paper: #f2f7f4;
+            --card-bg: #1c382f;
+            --card-hover: #274c40;
+            --water: #38bdf8;
+            --nutrient: #f97316;
+            --health: #ef4444;
+            --gold: #f59e0b;
+            --border-tile: #2e5346;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-        .top-nav { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: var(--border-ui); gap: 8px; }
-        .currency-badge { background: var(--primary); color: white; padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
-        .btn-promo-open { background: var(--gold); color: white; border: none; padding: 6px 12px; border-radius: 50px; font-size: 0.65rem; font-weight: 800; cursor: pointer; }
-
-        .farm-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 10px; }
-        
-        .pot-slot { 
-            background: white; border-radius: 20px; border: var(--border-ui); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            position: relative; box-shadow: var(--shadow); transition: 0.3s;
-            padding: 10px; overflow: hidden;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        .pot-slot.selected { border: 2px solid var(--gold); transform: scale(1.02); z-index: 2; }
 
-        .visual-sombrite { position: absolute; top: 0; left: 0; width: 100%; height: 35%; border-bottom: 2px dashed rgba(0,0,0,0.3); z-index: 5; pointer-events: none; }
-        .visual-sensor { position: absolute; bottom: 45px; right: 10px; font-size: 0.8rem; z-index: 6; }
-        .visual-regador { position: absolute; top: 10px; right: 10px; font-size: 0.9rem; z-index: 6; animation: drip 2s infinite; }
-        .visual-minhocas { position: absolute; bottom: 45px; left: 10px; font-size: 0.8rem; z-index: 6; }
-        .visual-robo { position: absolute; top: 40%; left: 5px; font-size: 0.9rem; z-index: 7; animation: float 2s infinite ease-in-out; }
-        .visual-praga { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; z-index: 8; pointer-events: none; animation: shake 0.5s infinite; }
-        .tier-indicator { position: absolute; top: 5px; left: 10px; font-size: 0.5rem; font-weight: 900; opacity: 0.4; }
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.2s ease;
+        }
 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        @keyframes shake { 0% { transform: translate(-52%, -50%); } 50% { transform: translate(-48%, -50%); } }
-        @keyframes drip { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .shell {
+            max-width: 880px;
+            margin: 40px auto;
+            background: var(--ink);
+            color: #fdfbf7;
+            border-radius: 24px;
+            padding: clamp(20px, 4vw, 36px);
+            box-shadow: 15px 17px 0 #a7f3d0;
+            position: relative;
+        }
 
-        .plant-emoji { font-size: 3rem; margin-bottom: 5px; z-index: 2; position: relative; }
-        .status-container { width: 100%; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
-        .status-item { display: flex; align-items: center; gap: 5px; width: 100%; }
-        .status-bar-bg { flex: 1; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
-        .status-bar-fill { height: 100%; transition: width 0.4s ease; }
-        .status-pct { font-size: 0.55rem; font-weight: 800; width: 35px; text-align: right; color: #666; }
+        .btn-voltar {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: #444;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
 
-        .controls { background: white; border-top: var(--border-ui); padding: 15px 10px; }
-        .actions-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-        .btn-action { background: #fdfdfd; border: var(--border-ui); padding: 10px 2px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-        .btn-action i { font-style: normal; font-size: 1.1rem; margin-bottom: 4px; }
-        .btn-action span { font-size: 0.45rem; font-weight: 800; text-transform: uppercase; color: #7f8c8d; text-align: center; }
-        .btn-harvest-ready { background: var(--accent) !important; color: white !important; }
+        .eyebrow {
+            display: block;
+            color: var(--accent-soft);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 80vh; overflow-y: auto; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
-        .item-info { font-size: 0.6rem; color: #999; display: block; }
+        .shell h1 {
+            font: 700 clamp(32px, 6vw, 56px)/.95 Georgia, serif;
+            margin: 8px 0 16px;
+            color: #fdfbf7;
+        }
+
+        /* Top Nav do Jogo */
+        .top-nav {
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-tile);
+            margin-bottom: 20px;
+            gap: 8px;
+        }
+
+        .currency-badge {
+            background: var(--card-hover);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: 1px solid var(--border-tile);
+        }
+
+        .btn-promo-open {
+            background: var(--gold);
+            color: var(--ink);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-promo-open:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Farm Grid */
+        .farm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .pot-slot {
+            background: var(--card-bg);
+            border-radius: 18px;
+            border: 1px solid var(--border-tile);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: 0.3s;
+            padding: 16px;
+            overflow: hidden;
+            min-height: 180px;
+            cursor: pointer;
+        }
+
+        .pot-slot.selected {
+            border: 2px solid var(--gold);
+            transform: scale(1.02);
+            z-index: 2;
+            background: var(--card-hover);
+        }
+
+        .visual-sombrite {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 35%;
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .visual-sensor {
+            position: absolute;
+            bottom: 45px;
+            right: 10px;
+            font-size: 0.85rem;
+            z-index: 6;
+        }
+
+        .visual-regador {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.95rem;
+            z-index: 6;
+            animation: drip 2s infinite;
+        }
+
+        .visual-minhocas {
+            position: absolute;
+            bottom: 45px;
+            left: 10px;
+            font-size: 0.85rem;
+            z-index: 6;
+        }
+
+        .visual-robo {
+            position: absolute;
+            top: 40%;
+            left: 5px;
+            font-size: 0.95rem;
+            z-index: 7;
+            animation: float 2s infinite ease-in-out;
+        }
+
+        .visual-praga {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            z-index: 8;
+            pointer-events: none;
+            animation: shake 0.5s infinite;
+        }
+
+        .tier-indicator {
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            font-size: 0.6rem;
+            font-weight: 900;
+            color: var(--accent-soft);
+            opacity: 0.8;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(-52%, -50%); }
+            50% { transform: translate(-48%, -50%); }
+        }
+
+        @keyframes drip {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .plant-emoji {
+            font-size: 3rem;
+            margin-bottom: 8px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .status-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 2;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .status-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: #11261f;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .status-bar-fill {
+            height: 100%;
+            transition: width 0.4s ease;
+        }
+
+        .status-pct {
+            font-size: 0.6rem;
+            font-weight: 800;
+            width: 42px;
+            text-align: right;
+            color: #d1fae5;
+        }
+
+        /* Botões de Ação */
+        .controls {
+            background: var(--card-bg);
+            border: 1px solid var(--border-tile);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .btn-action {
+            background: var(--ink);
+            border: 1px solid var(--border-tile);
+            padding: 10px 4px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+        }
+
+        .btn-action:hover {
+            background: var(--card-hover);
+        }
+
+        .btn-action i {
+            font-style: normal;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .btn-action span {
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--accent-soft);
+            text-align: center;
+        }
+
+        .btn-harvest-ready {
+            background: var(--accent) !important;
+            color: var(--ink) !important;
+        }
+
+        .btn-harvest-ready span {
+            color: var(--ink) !important;
+        }
+
+        /* Modais */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(17, 38, 31, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: var(--ink);
+            border: 1px solid var(--border-tile);
+            color: #fff;
+            width: 100%;
+            max-width: 450px;
+            padding: 24px;
+            border-radius: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            font-family: Georgia, serif;
+            color: var(--accent-soft);
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-tile);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .item-row:hover {
+            background: var(--card-bg);
+        }
+
+        .item-info {
+            font-size: 0.7rem;
+            color: var(--accent-soft);
+            display: block;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 600px) {
+            .shell { margin: 16px; }
+            .actions-grid { grid-template-columns: repeat(3, 1fr); }
+            .actions-grid button:last-child { grid-column: span 3 !important; }
+        }
     </style>
 </head>
+
 <body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <img src="../images/Logo_Poefo.png" class="logo" alt="Logo">
+                <span class="app-title">Poefo Library</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="../html/home.at.html" class="nav-link">Início</a>
+                <a href="../html/games_menu.html" class="nav-link active">Games</a>
+                <a href="../html/feed.html" class="nav-link">Feed</a>
+            </nav>
+        </aside>
 
-    <header class="top-nav">
-        <button onclick="window.location.href='index.html'" style="border:none; background:none; font-weight:700;">←</button>
-        <button class="btn-promo-open" onclick="openModal('promo-modal')">🎁 RESGATE</button>
-        <div class="currency-badge">💰 <span id="global-balance">0</span></div>
-    </header>
+        <main class="main-content">
+            <button onclick="history.back()" class="btn-voltar">
+                <i class="fas fa-arrow-left"></i> Voltar ao Menu
+            </button>
 
-    <div class="farm-grid" id="farm-grid">
-        <div class="pot-slot" id="slot-0" onclick="selectSlot(0)"></div>
-        <div class="pot-slot" id="slot-1" onclick="selectSlot(1)"></div>
-        <div class="pot-slot" id="slot-2" onclick="selectSlot(2)"></div>
-        <div class="pot-slot" id="slot-3" onclick="selectSlot(3)"></div>
+            <section class="shell">
+                <span class="eyebrow">Simulador / O Jardim</span>
+               
+
+                <header class="top-nav">
+                    <button class="btn-promo-open" onclick="openModal('promo-modal')">🎁 RESGATE</button>
+                    <div class="currency-badge">💰 <span id="global-balance">0</span></div>
+                </header>
+
+                <div class="farm-grid" id="farm-grid">
+                    <div class="pot-slot" id="slot-0" onclick="selectSlot(0)"></div>
+                    <div class="pot-slot" id="slot-1" onclick="selectSlot(1)"></div>
+                    <div class="pot-slot" id="slot-2" onclick="selectSlot(2)"></div>
+                    <div class="pot-slot" id="slot-3" onclick="selectSlot(3)"></div>
+                </div>
+
+                <div class="controls">
+                    <div style="text-align:center; margin-bottom:12px;">
+                        <h4 id="selected-title" style="font-size:0.8rem; color:var(--gold); letter-spacing: 1px; text-transform: uppercase;">SELECIONE UM CANTEIRO</h4>
+                    </div>
+                    <div class="actions-grid">
+                        <button class="btn-action" onclick="openModal('seeds-modal')"><i>🌱</i><span>Plantar</span></button>
+                        <button class="btn-action" onclick="openModal('irrigation-modal')"><i>💧</i><span>Rega</span></button>
+                        <button class="btn-action" onclick="openModal('utensils-modal')"><i>🛠️</i><span>Tecno</span></button>
+                        <button class="btn-action" onclick="openModal('fertilizer-modal')"><i>🧪</i><span>Bio</span></button>
+                        <button class="btn-action" id="harvest-btn" onclick="harvestSelected()"><i>🍎</i><span>Colher</span></button>
+                        <button class="btn-action" onclick="clearSlot()" style="grid-column: span 5; margin-top: 5px; background: #321919; border-color: #5c2424;"><i>🧹</i><span>Limpar Canteiro</span></button>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <div class="controls">
-        <div style="text-align:center; margin-bottom:10px;"><h4 id="selected-title" style="font-size:0.7rem; color:var(--gold)">SELECIONE UM CANTEIRO</h4></div>
-        <div class="actions-grid">
-            <button class="btn-action" onclick="openModal('seeds-modal')"><i>🌱</i><span>Plantar</span></button>
-            <button class="btn-action" onclick="openModal('irrigation-modal')"><i>💧</i><span>Rega</span></button>
-            <button class="btn-action" onclick="openModal('utensils-modal')"><i>🛠️</i><span>Tecno</span></button>
-            <button class="btn-action" onclick="openModal('fertilizer-modal')"><i>🧪</i><span>Bio</span></button>
-            <button class="btn-action" id="harvest-btn" onclick="harvestSelected()"><i>🍎</i><span>Colher</span></button>
-            <button class="btn-action" onclick="clearSlot()" style="grid-column: span 5; margin-top: 5px; background: #fff5f5;"><i>🧹</i><span>Limpar Canteiro</span></button>
+    <!-- Modais das Ações -->
+    <div id="seeds-modal" class="modal" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Sementes</h3>
+            <div class="item-row" onclick="plantSeed('Uva', 2000, '🍇')"><span>🍇 Uva</span><b>2000</b></div>
+            <div class="item-row" onclick="plantSeed('Melancia', 1500, '🍉')"><span>🍉 Melancia</span><b>1500</b></div>
+            <div class="item-row" onclick="plantSeed('Melão', 1200, '🍈')"><span>🍈 Melão</span><b>1200</b></div>
+            <div class="item-row" onclick="plantSeed('Abacate', 1000, '🥑')"><span>🥑 Abacate</span><b>1000</b></div>
+            <div class="item-row" onclick="plantSeed('Banana', 800, '🍌')"><span>🍌 Banana</span><b>800</b></div>
+            <div class="item-row" onclick="plantSeed('Limão', 600, '🍋')"><span>🍋 Limão</span><b>600</b></div>
+            <div class="item-row" onclick="plantSeed('Maçã', 500, '🍎')"><span>🍎 Maçã</span><b>500</b></div>
+            <div class="item-row" onclick="plantSeed('Pera', 450, '🍐')"><span>🍐 Pera</span><b>450</b></div>
+            <div class="item-row" onclick="plantSeed('Tomate', 400, '🍅')"><span>🍅 Tomate</span><b>400</b></div>
         </div>
     </div>
 
-    <div id="seeds-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Sementes</h3>
-        <div class="item-row" onclick="plantSeed('Uva', 2000, '🍇')"><span>🍇 Uva</span><b>2000</b></div>
-        <div class="item-row" onclick="plantSeed('Melancia', 1500, '🍉')"><span>🍉 Melancia</span><b>1500</b></div>
-        <div class="item-row" onclick="plantSeed('Melão', 1200, '🍈')"><span>🍈 Melão</span><b>1200</b></div>
-        <div class="item-row" onclick="plantSeed('Abacate', 1000, '🥑')"><span>🥑 Abacate</span><b>1000</b></div>
-        <div class="item-row" onclick="plantSeed('Banana', 800, '🍌')"><span>🍌 Banana</span><b>800</b></div>
-        <div class="item-row" onclick="plantSeed('Limão', 600, '🍋')"><span>🍋 Limão</span><b>600</b></div>
-        <div class="item-row" onclick="plantSeed('Maçã', 500, '🍎')"><span>🍎 Maçã</span><b>500</b></div>
-        <div class="item-row" onclick="plantSeed('Pera', 450, '🍐')"><span>🍐 Pera</span><b>450</b></div>
-        <div class="item-row" onclick="plantSeed('Tomate', 400, '🍅')"><span>🍅 Tomate</span><b>400</b></div>
-    </div></div>
+    <div id="irrigation-modal" class="modal" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Irrigação</h3>
+            <div class="item-row" onclick="applyWater(30, 20)"><span>💧 Chuva (+30%)</span><b>20</b></div>
+            <div class="item-row" onclick="applyWater(100, 150)"><span>🤖 Artificial (100%)</span><b>150</b></div>
+        </div>
+    </div>
 
-    <div id="irrigation-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Irrigação</h3>
-        <div class="item-row" onclick="applyWater(30, 20)"><span>💧 Chuva (+30%)</span><b>20</b></div>
-        <div class="item-row" onclick="applyWater(100, 150)"><span>🤖 Artificial (100%)</span><b>150</b></div>
-    </div></div>
+    <div id="utensils-modal" class="modal" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Tecnologia Avançada</h3>
+            <div class="item-row" onclick="buyTool('sombrite-normal', 1200)"><span>🕸️ Sombrite Básico</span><b>1200</b></div>
+            <div class="item-row" onclick="buyTool('sombrite-pro', 2500)"><span>🏁 Sombrite Pro</span><b>2500</b></div>
+            <div class="item-row" onclick="buyTool('reg-50', 2000)"><span>🚿 Regador Auto (50%)</span><b>2000</b></div>
+            <div class="item-row" onclick="buyTool('reg-75', 3500)"><span>🚿 Regador High (75%)</span><b>3500</b></div>
+            <div class="item-row" onclick="buyTool('reg-90', 5500)"><span>💎 Regador Fluxo (90%)</span><b>5500</b></div>
+            <div class="item-row" onclick="buyTool('sensor', 1500)"><span>📡 Sensor IoT</span><b>1500</b></div>
+            <div class="item-row" onclick="buyTool('robo', 5000)"><span>🛡️ Robô Anti-Praga</span><b>5000</b></div>
+        </div>
+    </div>
 
-    <div id="utensils-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Tecnologia Avançada</h3>
-        <div class="item-row" onclick="buyTool('sombrite-normal', 1200)"><span>🕸️ Sombrite Básico</span><b>1200</b></div>
-        <div class="item-row" onclick="buyTool('sombrite-pro', 2500)"><span>🏁 Sombrite Pro</span><b>2500</b></div>
-        <div class="item-row" onclick="buyTool('reg-50', 2000)"><span>🚿 Regador Auto (50%)</span><b>2000</b></div>
-        <div class="item-row" onclick="buyTool('reg-75', 3500)"><span>🚿 Regador High (75%)</span><b>3500</b></div>
-        <div class="item-row" onclick="buyTool('reg-90', 5500)"><span>💎 Regador Fluxo (90%)</span><b>5500</b></div>
-        <div class="item-row" onclick="buyTool('sensor', 1500)"><span>📡 Sensor IoT</span><b>1500</b></div>
-        <div class="item-row" onclick="buyTool('robo', 5000)"><span>🛡️ Robô Anti-Praga</span><b>5000</b></div>
-    </div></div>
+    <div id="fertilizer-modal" class="modal" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Bio-Lab & Fertilizantes</h3>
+            <div class="item-row" onclick="applyFertilizer(30, 5, 250)">
+                <div><span>💩 Adubo Simples</span><span class="item-info">Nutrição +30% | Saúde +5%</span></div><b>250</b>
+            </div>
+            <div class="item-row" onclick="applyFertilizer(60, 15, 600)">
+                <div><span>🧪 NPK Concentrado</span><span class="item-info">Nutrição +60% | Saúde +15%</span></div><b>600</b>
+            </div>
+            <div class="item-row" onclick="applyFertilizer(100, 40, 1200)">
+                <div><span>💎 Bio-Estimulante</span><span class="item-info">Nutrição 100% | Saúde +40%</span></div><b>1200</b>
+            </div>
+            <hr style="border: none; border-top: 1px solid var(--border-tile); margin: 10px 0;">
+            <div class="item-row" onclick="buyTool('worms-comum', 800)">
+                <div><span>🪱 Califórnia</span><span class="item-info">Nutrição/Vida constante +5%</span></div><b>800</b>
+            </div>
+            <div class="item-row" onclick="buyTool('worms-ouro', 4000)">
+                <div><span>✨ Dourada</span><span class="item-info">Nutrição/Vida constante +20%</span></div><b>4000</b>
+            </div>
+            <div class="item-row" onclick="applyPesticide()"><span>☢️ Agrotóxico (Mata praga)</span><b>600</b></div>
+        </div>
+    </div>
 
-    <div id="fertilizer-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Bio-Lab & Fertilizantes</h3>
-        <div class="item-row" onclick="applyFertilizer(30, 5, 250)">
-            <div><span>💩 Adubo Simples</span><span class="item-info">Nutrição +30% | Saúde +5%</span></div><b>250</b>
+    <div id="promo-modal" class="modal" onclick="closeModals()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div style="text-align:center;">
+                <h3>Código de Resgate</h3>
+                <input type="text" id="promo-code" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--border-tile); background:var(--card-bg); color:#fff; margin:15px 0; font-size:1.2rem; text-align:center;" placeholder="CÓDIGO">
+                <button class="btn-action" style="width:100%; background:var(--accent); color:var(--ink); font-weight:bold; padding:12px;" onclick="checkPromo()">VALIDAR</button>
+            </div>
         </div>
-        <div class="item-row" onclick="applyFertilizer(60, 15, 600)">
-            <div><span>🧪 NPK Concentrado</span><span class="item-info">Nutrição +60% | Saúde +15%</span></div><b>600</b>
-        </div>
-        <div class="item-row" onclick="applyFertilizer(100, 40, 1200)">
-            <div><span>💎 Bio-Estimulante</span><span class="item-info">Nutrição 100% | Saúde +40%</span></div><b>1200</b>
-        </div>
-        <hr style="opacity: 0.1; margin: 10px 0;">
-        <div class="item-row" onclick="buyTool('worms-comum', 800)">
-            <div><span>🪱 Califórnia</span><span class="item-info">Nutrição/Vida constante +5%</span></div><b>800</b>
-        </div>
-        <div class="item-row" onclick="buyTool('worms-ouro', 4000)">
-            <div><span>✨ Dourada</span><span class="item-info">Nutrição/Vida constante +20%</span></div><b>4000</b>
-        </div>
-        <div class="item-row" onclick="applyPesticide()"><span>☢️ Agrotóxico (Mata praga)</span><b>600</b></div>
-    </div></div>
-
-    <div id="promo-modal" class="modal" onclick="closeModals()"><div class="modal-content" onclick="event.stopPropagation()">
-        <div style="padding:20px; text-align:center;">
-            <h3>Resgate</h3>
-            <input type="text" id="promo-code" style="width:100%; padding:15px; border-radius:15px; border:2px solid #eee; margin:15px 0; font-size:1.2rem; text-align:center;" placeholder="CÓDIGO">
-            <button class="btn-action" style="width:100%; background:var(--primary); color:white;" onclick="checkPromo()">VALIDAR</button>
-        </div>
-    </div></div>
+    </div>
 
     <script>
         let slots = [createSlot(), createSlot(), createSlot(), createSlot()];
@@ -171,7 +537,7 @@
                 const el = document.getElementById(`slot-${i}`);
                 let visualContent = `<div class="tier-indicator">LVL ${s.tier}</div>`;
                 if(s.sombrite > 0) visualContent += `<div class="visual-sombrite" style="background:rgba(0,0,0,${s.sombrite === 1 ? '0.2' : '0.4'})"></div>`;
-                if(s.irrigator > 0) visualContent += `<div class="visual-regador">${s.irrigator === 90 ? '💎' : '🚿'}</div>`;
+                if(s.irrigator > 0) visualContent += `<div class="visual-regador">${s.irrigator === 90 ? '💎' : 'D3'}</div>`;
                 if(s.sensor) visualContent += `<div class="visual-sensor">📡</div>`;
                 if(s.worms !== 'none') {
                     let wEmoji = s.worms === 'worms-ouro' ? '✨' : '🪱';
@@ -181,7 +547,7 @@
                 if(s.pest) visualContent += `<div class="visual-praga">${s.pest === 'bug' ? '🦗' : '🦠'}</div>`;
 
                 if (!s.active) {
-                    el.innerHTML = visualContent + `<span style="color:#ddd; font-size:0.8rem;">TERRA LIVRE</span>`;
+                    el.innerHTML = visualContent + `<span style="color:#668579; font-size:0.8rem; font-weight:700;">TERRA LIVRE</span>`;
                 } else {
                     let emoji = s.phase === 'seed' ? '🌱' : s.phase === 'grow' ? '🌿' : s.phase === 'tree' ? '🌳' : s.fruit;
                     if(s.phase === 'dead') emoji = '🍂';
@@ -204,7 +570,7 @@
             else hBtn.classList.remove('btn-harvest-ready');
         }
 
-        // --- FUNÇÕES ---
+        // Funções de lógica
         function savePoints(val) {
             let b = parseInt(localStorage.getItem('garden_bonus')) || 0;
             localStorage.setItem('garden_bonus', b + val);
@@ -241,7 +607,6 @@
             }
         }
 
-        // Nova Lógica de Adubo com Saúde
         function applyFertilizer(nutP, healP, cost) {
             if(globalBalance >= cost && slots[selectedIdx].active) {
                 savePoints(-cost);
@@ -280,7 +645,7 @@
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         function checkPromo() { if(document.getElementById('promo-code').value === '159753') { savePoints(2000); alert("Sucesso!"); closeModals(); } }
 
-        // --- LOOPS ---
+        // Loops de Estado e Rega
         setInterval(() => {
             slots.forEach(s => {
                 if(!s.active || s.phase === 'dead') return;
@@ -342,4 +707,5 @@
         window.onload = updateUI;
     </script>
 </body>
+
 </html>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#134e4a"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="704" y1="116" x2="1063" y2="386" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#0ea5a4"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h1200v500H0z"/>
+  <circle cx="1002" cy="107" r="206" fill="#2dd4bf" opacity=".17"/>
+  <circle cx="823" cy="463" r="245" fill="#60a5fa" opacity=".12"/>
+  <rect x="720" y="121" width="354" height="225" rx="34" fill="url(#bubble)" transform="rotate(5 720 121)"/>
+  <path d="m789 338-13 76 90-66" fill="#14b8a6"/>
+  <circle cx="786" cy="201" r="28" fill="#ecfeff" opacity=".95"/>
+  <path d="M840 191h165M840 224h132M780 269h222" stroke="#ecfeff" stroke-linecap="round" stroke-width="13" opacity=".9"/>
+  <rect x="904" y="302" width="210" height="112" rx="24" fill="#818cf8" transform="rotate(-7 904 302)"/>
+  <path d="m956 346 117-14m-111 42 77-9" stroke="#eef2ff" stroke-linecap="round" stroke-width="11"/>
+  <circle cx="1095" cy="126" r="12" fill="#fef08a"/>
+  <circle cx="703" cy="393" r="9" fill="#fef08a"/>
+  <path d="m1090 214 8 17 19 2-14 13 4 19-17-10-17 10 4-19-14-13 19-2 8-17Z" fill="#fef08a"/>
+</svg>

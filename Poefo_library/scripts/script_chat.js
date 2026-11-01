@@ -16,6 +16,12 @@ let allUsers = {};
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
+let isStartingRecording = false;
+let recordingStream = null;
+let recordingConvId = null;
+let selectedParticipantIds = new Set();
+let pendingBookChatInvite = null;
+let pendingGameChallenge = null;
 
 // Notificação sonora simples
 function playBeep() {
@@ -75,6 +81,218 @@ function timeAgo(timestamp) {
     if (diff < 86400000) return `${Math.floor(diff/3600000)}h`;
     const d = new Date(timestamp);
     return d.toLocaleDateString('pt-BR');
+}
+
+async function sendBookInviteToConversation(convId, participants, title) {
+    if (!pendingBookChatInvite) return false;
+    await openConversation(convId, participants, title);
+    const book = pendingBookChatInvite;
+    const bookTitle = book.titulo || 'este livro';
+    const sent = await sendMessage(`📚 ${currentUserName} convidou você para ler "${bookTitle}".`, null, null, book);
+    if (!sent) return false;
+
+    pendingBookChatInvite = null;
+    sessionStorage.removeItem('pendingBookChatInvite');
+    document.body.classList.remove('book-invite-mode');
+    const invitePrompt = document.getElementById('book-invite-prompt');
+    if (invitePrompt) invitePrompt.style.display = 'none';
+    loadConversations();
+    return true;
+}
+
+async function sendGameChallengeToConversation(convId, participants, title) {
+    if (!pendingGameChallenge) return false;
+    if (!currentUserId) {
+        alert('Entre na sua conta para desafiar um contato.');
+        return false;
+    }
+    await openConversation(convId, participants, title);
+    const sent = await sendMessage(pendingGameChallenge.text);
+    if (!sent) return false;
+
+    pendingGameChallenge = null;
+    sessionStorage.removeItem('pendingGameChallenge');
+    document.body.classList.remove('game-challenge-mode');
+    const challengePrompt = document.getElementById('game-challenge-prompt');
+    if (challengePrompt) challengePrompt.style.display = 'none';
+    loadConversations();
+    return true;
+}
+
+async function inviteBookToContact(userId, userName) {
+    if (!currentUserId) {
+        alert('Entre na sua conta para convidar um contato.');
+        return;
+    }
+
+    const participants = [currentUserId, userId];
+    const convId = getConvIdFromParticipants(participants);
+    try {
+        const metaRef = db.ref(`chat_metadata/${convId}`);
+        const existingMeta = await metaRef.once('value');
+        const meta = existingMeta.val() || {
+            title: userName,
+            participants: { [currentUserId]: true, [userId]: true },
+            createdBy: currentUserId,
+            createdAt: Date.now(),
+            lastMessage: '',
+            lastTimestamp: Date.now(),
+            avatar: allUsers[userId]?.foto_perfil || null
+        };
+        if (!existingMeta.exists()) await metaRef.set(meta);
+        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({ ...meta, unreadCount: 0 });
+        closeNewGroupModal();
+        const sent = await sendBookInviteToConversation(convId, meta.participants || participants, meta.title || userName);
+        if (!sent) throw new Error('A mensagem não foi enviada.');
+    } catch (error) {
+        console.error('Não foi possível enviar convite ao contato:', error);
+        alert(`Não foi possível enviar o convite: ${error.message}`);
+    }
+}
+
+async function challengeContact(userId, userName) {
+    if (!currentUserId) {
+        alert('Entre na sua conta para desafiar um contato.');
+        return;
+    }
+
+    const participants = [currentUserId, userId];
+    const convId = getConvIdFromParticipants(participants);
+    try {
+        const metaRef = db.ref(`chat_metadata/${convId}`);
+        const existingMeta = await metaRef.once('value');
+        const meta = existingMeta.val() || {
+            title: userName,
+            participants: { [currentUserId]: true, [userId]: true },
+            createdBy: currentUserId,
+            createdAt: Date.now(),
+            lastMessage: '',
+            lastTimestamp: Date.now(),
+            avatar: allUsers[userId]?.foto_perfil || null
+        };
+        if (!existingMeta.exists()) await metaRef.set(meta);
+        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({ ...meta, unreadCount: 0 });
+        closeNewGroupModal();
+        const sent = await sendGameChallengeToConversation(convId, meta.participants || participants, meta.title || userName);
+        if (!sent) throw new Error('A mensagem do desafio não foi enviada.');
+    } catch (error) {
+        console.error('Não foi possível enviar o desafio ao contato:', error);
+        alert(`Não foi possível enviar o desafio: ${error.message}`);
+    }
+}
+
+function createConversationItem(convId, meta) {
+    const item = document.createElement('div');
+    item.className = 'conversation-item' + (convId === currentConvId ? ' active' : '');
+    item.dataset.convId = convId;
+
+    const rawParticipants = Array.isArray(meta.participants)
+        ? meta.participants
+        : Object.keys(meta.participants || {});
+    const participantsArr = rawParticipants.filter(id =>
+        id && id !== 'null' && id !== 'undefined' && id !== 'NaN'
+    );
+    const otherIds = participantsArr.filter(id => id !== currentUserId);
+    const contactIdFromTitle = Object.entries(allUsers).find(([, user]) => {
+        const title = meta.title || meta.otherName;
+        const userNames = [user.nome_usuario, user.nome_completo, user.handle]
+            .filter(Boolean)
+            .map(name => String(name).replace(/^@/, '').toLowerCase());
+        return title && userNames.includes(String(title).replace(/^@/, '').toLowerCase());
+    })?.[0];
+    if (otherIds.length === 0 && contactIdFromTitle && contactIdFromTitle !== currentUserId) {
+        otherIds.push(contactIdFromTitle);
+        participantsArr.push(contactIdFromTitle);
+    }
+
+    const otherUser = otherIds.length === 1 ? allUsers[otherIds[0]] : null;
+    const avatar = meta.avatar || otherUser?.foto_perfil || null;
+    const title = [meta.title, meta.otherName].find(value =>
+        value && value !== 'undefined' && value !== 'null'
+    ) || otherUser?.nome_usuario || otherUser?.nome_completo || 'Conversa';
+    const unread = Number(meta.unreadCount) || 0;
+
+    const avatarElement = document.createElement('div');
+    avatarElement.className = 'conv-avatar';
+    const setAvatarFallback = () => {
+        avatarElement.replaceChildren();
+        const fallback = document.createElement('i');
+        fallback.className = `fas fa-${otherIds.length === 1 ? 'user' : 'users'}`;
+        avatarElement.appendChild(fallback);
+    };
+    if (avatar) {
+        const image = document.createElement('img');
+        image.src = avatar;
+        image.alt = `Foto de perfil de ${title}`;
+        image.addEventListener('error', setAvatarFallback, { once: true });
+        avatarElement.appendChild(image);
+    } else {
+        setAvatarFallback();
+    }
+
+    const info = document.createElement('div');
+    info.className = 'conv-info';
+    const titleRow = document.createElement('div');
+    titleRow.className = 'conv-title-row';
+    const name = document.createElement('div');
+    name.className = 'conv-name';
+    name.textContent = title;
+    titleRow.appendChild(name);
+    if (unread > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'conv-badge';
+        badge.textContent = String(unread);
+        titleRow.appendChild(badge);
+    }
+    const preview = document.createElement('div');
+    preview.className = 'conv-last-msg';
+    preview.textContent = meta.lastMessage || 'Sem mensagens';
+    info.append(titleRow, preview);
+    item.append(avatarElement, info);
+
+    item.addEventListener('click', () => {
+        openConversation(convId, participantsArr, title);
+    });
+
+    if (pendingBookChatInvite) {
+        const inviteButton = document.createElement('button');
+        inviteButton.type = 'button';
+        inviteButton.className = 'send-book-invite';
+        inviteButton.textContent = 'Enviar convite';
+        inviteButton.addEventListener('click', async event => {
+            event.stopPropagation();
+            inviteButton.disabled = true;
+            try {
+                const sent = await sendBookInviteToConversation(convId, meta.participants || participantsArr, meta.title);
+                if (!sent) inviteButton.disabled = false;
+            } catch (error) {
+                console.error('Não foi possível enviar o convite de leitura:', error);
+                alert(`Não foi possível enviar o convite: ${error.message}`);
+                inviteButton.disabled = false;
+            }
+        });
+        item.appendChild(inviteButton);
+    }
+    if (pendingGameChallenge) {
+        const challengeButton = document.createElement('button');
+        challengeButton.type = 'button';
+        challengeButton.className = 'send-game-challenge';
+        challengeButton.textContent = 'Enviar desafio';
+        challengeButton.addEventListener('click', async event => {
+            event.stopPropagation();
+            challengeButton.disabled = true;
+            try {
+                const sent = await sendGameChallengeToConversation(convId, meta.participants || participantsArr, meta.title);
+                if (!sent) challengeButton.disabled = false;
+            } catch (error) {
+                console.error('Não foi possível enviar o desafio do jogo:', error);
+                alert(`Não foi possível enviar o desafio: ${error.message}`);
+                challengeButton.disabled = false;
+            }
+        });
+        item.appendChild(challengeButton);
+    }
+    return item;
 }
 
 // ===== FCM: registro de service worker e token =====
@@ -182,13 +400,30 @@ function showChatInfo() {
     alert(`Conversa: ${document.getElementById('header-name').textContent}\nParticipantes: ${currentParticipants.length}`);
 }
 
+function closeMobileConversation() {
+    document.body.classList.remove('mobile-chat-open');
+}
+
 function openNewGroupModal() {
+    selectedParticipantIds.clear();
+    document.getElementById('group-name').value = '';
+    document.getElementById('participant-search').value = '';
+    updateGroupSelectionUI();
     document.getElementById('new-group-modal').classList.add('active');
     loadUsersForModal();
 }
 
 function closeNewGroupModal() {
     document.getElementById('new-group-modal').classList.remove('active');
+}
+
+function updateGroupSelectionUI() {
+    const isSpecialMode = Boolean(pendingBookChatInvite || pendingGameChallenge);
+    const groupNameField = document.getElementById('group-name-field');
+    const submitButton = document.getElementById('submit-new-conversation');
+    groupNameField.hidden = isSpecialMode || selectedParticipantIds.size < 2;
+    submitButton.hidden = isSpecialMode;
+    submitButton.textContent = selectedParticipantIds.size > 1 ? 'Criar grupo' : 'Iniciar conversa';
 }
 
 async function loadUsersForModal() {
@@ -203,23 +438,91 @@ async function loadUsersForModal() {
     })));
 }
 
-function renderParticipantList(users, filter = '') {
+function renderParticipantList(users) {
     const participantList = document.getElementById('participant-list');
     const search = document.getElementById('participant-search').value.toLowerCase();
     const filtered = users.filter(u => u.id !== currentUserId && (u.name.toLowerCase().includes(search) || u.id.toLowerCase().includes(search)));
-    
-    participantList.innerHTML = filtered.slice(0, 100).map(u => `
-        <div class="participant-item">
-            <div class="participant-avatar">
-                ${u.avatar ? `<img src="${u.avatar}" alt="${u.name}">` : '<i class="fas fa-user"></i>'}
-            </div>
-            <div class="participant-info">
-                <div class="participant-name">${u.name}</div>
-                <div class="participant-id">@${u.id}</div>
-            </div>
-            <input type="checkbox" class="participant-checkbox" data-userid="${u.id}" value="${u.id}">
-        </div>
-    `).join('') || '<div class="empty-state-text">Nenhum usuário encontrado</div>';
+    participantList.innerHTML = '';
+
+    filtered.slice(0, 100).forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'participant-item';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'participant-avatar';
+        if (user.avatar) {
+            const image = document.createElement('img');
+            image.src = user.avatar;
+            image.alt = `Foto de perfil de ${user.name}`;
+            image.addEventListener('error', () => {
+                avatar.replaceChildren();
+                const fallback = document.createElement('i');
+                fallback.className = 'fas fa-user';
+                avatar.appendChild(fallback);
+            }, { once: true });
+            avatar.appendChild(image);
+        } else {
+            const fallback = document.createElement('i');
+            fallback.className = 'fas fa-user';
+            avatar.appendChild(fallback);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'participant-info';
+        const name = document.createElement('div');
+        name.className = 'participant-name';
+        name.textContent = user.name;
+        const username = document.createElement('div');
+        username.className = 'participant-id';
+        username.textContent = `@${user.id}`;
+        info.append(name, username);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'participant-checkbox';
+        checkbox.dataset.userid = user.id;
+        checkbox.value = user.id;
+        checkbox.checked = selectedParticipantIds.has(user.id);
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) selectedParticipantIds.add(user.id);
+            else selectedParticipantIds.delete(user.id);
+            item.classList.toggle('selected', checkbox.checked);
+            updateGroupSelectionUI();
+        });
+
+        item.append(avatar, info, checkbox);
+        item.classList.toggle('selected', checkbox.checked);
+        item.addEventListener('click', event => {
+            if (event.target.closest('input, button') || pendingBookChatInvite || pendingGameChallenge) return;
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        if (pendingBookChatInvite) {
+            const inviteButton = document.createElement('button');
+            inviteButton.type = 'button';
+            inviteButton.className = 'send-book-invite';
+            inviteButton.textContent = 'Enviar convite';
+            inviteButton.addEventListener('click', () => inviteBookToContact(user.id, user.name));
+            item.appendChild(inviteButton);
+        }
+        if (pendingGameChallenge) {
+            const challengeButton = document.createElement('button');
+            challengeButton.type = 'button';
+            challengeButton.className = 'send-game-challenge';
+            challengeButton.textContent = 'Enviar desafio';
+            challengeButton.addEventListener('click', () => challengeContact(user.id, user.name));
+            item.appendChild(challengeButton);
+        }
+        participantList.appendChild(item);
+    });
+
+    if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state-text';
+        empty.textContent = 'Nenhum usuário encontrado';
+        participantList.appendChild(empty);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -234,138 +537,226 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function createNewGroup() {
-    const checkboxes = Array.from(document.querySelectorAll('.participant-checkbox:checked'));
-    const selectedIds = checkboxes.map(cb => cb.value);
+    if (!currentUserId) {
+        alert('Entre na sua conta para iniciar uma conversa.');
+        return;
+    }
+    const selectedIds = Array.from(selectedParticipantIds);
     if (selectedIds.length < 1) return alert('Selecione pelo menos um usuário');
     
     const participantsArr = [currentUserId, ...selectedIds];
     const convId = getConvIdFromParticipants(participantsArr);
-    const groupName = selectedIds.length === 1 ? 
+    const defaultTitle = selectedIds.length === 1 ?
         (allUsers[selectedIds[0]]?.nome_usuario || selectedIds[0]) : 
         `Grupo (${participantsArr.length} pessoas)`;
+    const groupName = selectedIds.length > 1
+        ? (document.getElementById('group-name').value.trim() || defaultTitle)
+        : defaultTitle;
+    const submitButton = document.getElementById('submit-new-conversation');
     
     try {
-        // Converter participants para objeto (requerido pelas regras de segurança)
+        submitButton.disabled = true;
         const participantsObj = {};
-        participantsArr.forEach(uid => participantsObj[uid] = true);
+        participantsArr.forEach(uid => {
+            participantsObj[uid] = true;
+        });
+        const metaRef = db.ref(`chat_metadata/${convId}`);
+        const existing = await metaRef.once('value');
+        let meta = existing.val();
+
+        if (!existing.exists()) {
+            meta = {
+                title: groupName,
+                participants: participantsObj,
+                createdAt: Date.now(),
+                createdBy: currentUserId,
+                lastMessage: '',
+                lastTimestamp: Date.now(),
+                avatar: selectedIds.length === 1 ? allUsers[selectedIds[0]]?.foto_perfil || null : null
+            };
+            await metaRef.set(meta);
+        }
         
-        const meta = {
-            title: groupName,
-            participants: participantsObj,
-            createdAt: Date.now(),
-            createdBy: currentUserId,
-            lastMessage: '',
-            lastTimestamp: Date.now()
-        };
-        
-        // Criar metadados da conversa
-        await db.ref(`chat_metadata/${convId}`).set(meta);
-        
-        // Adicionar para o usuário autenticado apenas
-        // (Cada participante deve sincronizar suas conversas localmente)
+        closeNewGroupModal();
         await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).set({
             ...meta,
             unreadCount: 0
         });
-        
-        closeNewGroupModal();
         await loadConversations();
-        openConversation(convId, participantsArr, groupName);
+        await openConversation(convId, meta.participants || participantsArr, meta.title || groupName);
     } catch (err) {
         console.error('Erro criar grupo:', err);
-        alert('Erro ao criar grupo');
+        alert(`Não foi possível iniciar a conversa: ${err.message}`);
+    } finally {
+        submitButton.disabled = false;
     }
 }
 
 async function attachImage() {
+    if (!currentConvId) {
+        alert('Selecione uma conversa antes de enviar uma imagem.');
+        return;
+    }
     document.getElementById('image-input').click();
 }
 
 document.getElementById('image-input')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
-    if (!file || !currentConvId) return;
-    
-    const path = `chat_media/${currentConvId}/img_${Date.now()}_${file.name}`;
+    if (!file) return;
+
     try {
-        const ref = storage.ref().child(path);
-        const snap = await ref.put(file);
-        const url = await snap.ref.getDownloadURL();
-        await sendMessage('', url, file.type);
+        if (!file.type.startsWith('image/')) throw new Error('Selecione um arquivo de imagem válido.');
+        await uploadChatMedia(file, currentConvId);
     } catch (err) {
         console.error('Erro upload imagem:', err);
-        alert('Erro ao enviar imagem');
+        alert(`Não foi possível enviar a imagem: ${err.message}`);
     }
     e.target.value = '';
 });
 
 async function toggleAudioRecorder() {
-    if (!isRecording) {
-        startRecording();
-    } else {
+    if (isRecording) {
         stopRecording();
+    } else if (!isStartingRecording) {
+        await startRecording();
     }
 }
 
 async function startRecording() {
-    if (!navigator.mediaDevices?.getUserMedia) return alert('Gravação não suportada');
+    if (!currentConvId) {
+        alert('Selecione uma conversa antes de gravar um áudio.');
+        return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        alert('Este navegador não oferece suporte à gravação de áudio.');
+        return;
+    }
+
+    isStartingRecording = true;
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Escolher mimeType suportado (prioriza webm/opus, senão ogg)
-        let mime = '';
-        if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mime = 'audio/webm;codecs=opus';
-        else if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) mime = 'audio/ogg;codecs=opus';
-        else if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm')) mime = 'audio/webm';
-        mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordingConvId = currentConvId;
+        const supportedTypes = [
+            'audio/webm;codecs=opus',
+            'audio/ogg;codecs=opus',
+            'audio/mp4',
+            'audio/webm',
+            'audio/ogg'
+        ];
+        const mimeType = typeof MediaRecorder.isTypeSupported === 'function'
+            ? supportedTypes.find(type => MediaRecorder.isTypeSupported(type))
+            : '';
+        mediaRecorder = mimeType
+            ? new MediaRecorder(recordingStream, { mimeType })
+            : new MediaRecorder(recordingStream);
         recordedChunks = [];
         mediaRecorder.ondataavailable = e => {
             if (e.data.size > 0) recordedChunks.push(e.data);
         };
         mediaRecorder.onstop = async () => {
-            const type = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
-            const blob = new Blob(recordedChunks, { type });
-            // Mostrar indicador de upload
-            const sendBtn = document.getElementById('send-btn');
-            if (sendBtn) { sendBtn.disabled = true; sendBtn.dataset.prev = sendBtn.innerHTML; sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
-            const path = `chat_media/${currentConvId}/audio_${Date.now()}.webm`;
             try {
-                const ref = storage.ref().child(path);
-                const snap = await ref.put(blob);
-                const url = await snap.ref.getDownloadURL();
-                await sendMessage('', url, type);
+                const type = mediaRecorder.mimeType || recordedChunks[0]?.type || 'audio/webm';
+                const blob = new Blob(recordedChunks, { type });
+                if (!blob.size) throw new Error('A gravação ficou vazia. Tente novamente.');
+                const extension = type.includes('ogg') ? 'ogg' : type.includes('mp4') ? 'm4a' : 'webm';
+                const audioFile = new File([blob], `audio_${Date.now()}.${extension}`, { type });
+                await uploadChatMedia(audioFile, recordingConvId);
             } catch (err) {
                 console.error('Erro upload áudio:', err);
+                alert(`Não foi possível enviar o áudio: ${err.message}`);
+            } finally {
+                recordingStream?.getTracks().forEach(track => track.stop());
+                recordingStream = null;
+                recordingConvId = null;
+                mediaRecorder = null;
+                recordedChunks = [];
+                setAudioRecordingUI(false);
             }
-            if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = sendBtn.dataset.prev || '<i class="fas fa-paper-plane"></i>'; }
         };
         mediaRecorder.start();
         isRecording = true;
-        document.querySelector('.compose-icon-btn:nth-of-type(2)').innerHTML = '<i class="fas fa-stop-circle"></i>';
+        setAudioRecordingUI(true);
     } catch (err) {
         console.error('Erro gravação:', err);
-        alert('Permissão negada para microfone');
+        recordingStream?.getTracks().forEach(track => track.stop());
+        recordingStream = null;
+        recordingConvId = null;
+        alert(`Não foi possível acessar o microfone: ${err.message}`);
+    } finally {
+        isStartingRecording = false;
     }
 }
 
 function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
         isRecording = false;
-        document.querySelector('.compose-icon-btn:nth-of-type(2)').innerHTML = '<i class="fas fa-microphone"></i>';
+        document.getElementById('media-status').textContent = 'Preparando áudio para envio...';
+        mediaRecorder.stop();
     }
 }
 
-async function sendMessage(text = '', mediaUrl = null, mediaType = null) {
+function setAudioRecordingUI(recording) {
+    isRecording = recording;
+    const button = document.getElementById('audio-record-btn');
+    const status = document.getElementById('media-status');
+    button.classList.toggle('is-recording', recording);
+    button.title = recording ? 'Parar e enviar áudio' : 'Gravar áudio';
+    button.setAttribute('aria-label', button.title);
+    button.innerHTML = recording
+        ? '<i class="fas fa-stop-circle"></i>'
+        : '<i class="fas fa-microphone"></i>';
+    status.hidden = !recording;
+    status.textContent = recording ? 'Gravando áudio... Toque novamente para enviar.' : '';
+}
+
+async function uploadChatMedia(file, convId) {
+    if (!convId) throw new Error('Selecione uma conversa antes de enviar o arquivo.');
+    if (!currentUserId) throw new Error('Entre na sua conta antes de enviar arquivos.');
+
+    const status = document.getElementById('media-status');
+    const imageButton = document.getElementById('image-attach-btn');
+    const audioButton = document.getElementById('audio-record-btn');
+    imageButton.disabled = true;
+    audioButton.disabled = true;
+    status.hidden = false;
+    status.textContent = 'Enviando arquivo...';
+
+    try {
+        const safeName = file.name.replace(/[^\w.-]/g, '_');
+        const path = `chat_media/${convId}/${currentUserId}/${Date.now()}_${safeName}`;
+        const fileRef = storage.ref().child(path);
+        const snapshot = await fileRef.put(file, {
+            contentType: file.type,
+            customMetadata: { conversationId: convId, senderId: currentUserId }
+        });
+        const url = await snapshot.ref.getDownloadURL();
+        const sent = await sendMessage('', url, file.type, null, convId);
+        if (!sent) {
+            await snapshot.ref.delete();
+            throw new Error('O arquivo foi enviado, mas a mensagem não pôde ser entregue.');
+        }
+    } finally {
+        imageButton.disabled = false;
+        audioButton.disabled = false;
+        status.hidden = true;
+        status.textContent = '';
+    }
+}
+
+async function sendMessage(text = null, mediaUrl = null, mediaType = null, bookAttachment = null, targetConvId = currentConvId) {
     const inputEl = document.getElementById('message-input');
-    text = text || (inputEl ? inputEl.value.trim() : '');
+    text = text === null
+        ? (inputEl ? inputEl.value.trim() : '')
+        : String(text).trim();
     
     if (!text && !mediaUrl) {
         console.warn('Mensagem vazia');
-        return;
+        return false;
     }
     
-    if (!currentConvId) {
+    if (!targetConvId) {
         alert('Selecione uma conversa primeiro');
-        return;
+        return false;
     }
     
     const message = {
@@ -376,78 +767,60 @@ async function sendMessage(text = '', mediaUrl = null, mediaType = null) {
         mediaType: mediaType || null,
         timestamp: Date.now()
     };
+    if (bookAttachment) message.bookAttachment = bookAttachment;
     
     try {
         console.log('=== DEBUG: Enviando Mensagem ===');
-        console.log('ConvId:', currentConvId);
+        console.log('ConvId:', targetConvId);
         console.log('UserId:', currentUserId);
-        console.log('Caminho:', `chat/${currentConvId}/messages`);
+        console.log('Caminho:', `chat/${targetConvId}/messages`);
         console.log('Mensagem:', message);
         
         // APENAS enviar mensagem - sem atualizar metadados
-        await db.ref(`chat/${currentConvId}/messages`).push(message);
+        await db.ref(`chat/${targetConvId}/messages`).push(message);
         
         // Limpar campo de input
-        if (inputEl) inputEl.value = '';
+        if (inputEl && !mediaUrl) inputEl.value = '';
         
         console.log('✓ Mensagem enviada com sucesso');
         
         // Atualizar metadados de forma assíncrona (sem bloquear envio)
-        updateChatMetadata(currentConvId, text, mediaUrl, mediaType).catch(err => {
+        updateChatMetadata(targetConvId, text, mediaUrl, mediaType).catch(err => {
             console.warn('Não foi possível atualizar metadados:', err);
         });
+        return true;
     } catch (err) {
         console.error('✗ ERRO ao enviar mensagem:', err);
         console.error('Código de erro:', err.code);
         console.error('Mensagem:', err.message);
         alert('Erro ao enviar mensagem: ' + err.message);
+        return false;
     }
 }
 
 // Atualizar metadados da conversa de forma assíncrona
 async function updateChatMetadata(convId, text, mediaUrl, mediaType) {
     try {
-        const preview = mediaUrl ? `[${mediaType?.split('/')[0] || 'arquivo'}]` : text;
+        const mediaLabel = mediaType?.startsWith('audio/')
+            ? 'Áudio'
+            : mediaType?.startsWith('image/')
+                ? 'Imagem'
+                : 'Arquivo';
+        const preview = mediaUrl ? `[${mediaLabel}]` : text;
+        const metadataSnapshot = await db.ref(`chat_metadata/${convId}`).once('value');
+        const metadata = metadataSnapshot.val() || {};
         const meta = {
+            ...metadata,
             lastMessage: preview,
             lastTimestamp: Date.now()
         };
 
-        // Atualizar metadados centrais
-        await db.ref(`chat_metadata/${convId}`).update(meta);
-
-        // Garantir lista de participantes
-        // Sempre ler participantes da fonte autoritativa para evitar usar uma conversa atualmente aberta
-        const pSnap = await db.ref(`chat_metadata/${convId}/participants`).once('value');
-        const pobj = pSnap.exists() ? pSnap.val() : {};
-        const participants = Array.isArray(pobj) ? pobj : Object.keys(pobj || {});
-
-        // Atualizar entrada em chat_users para cada participante
-        if (Array.isArray(participants)) {
-            await Promise.all(participants.map(async (uid) => {
-                const userConvRef = db.ref(`chat_users/${uid}/conversations/${convId}`);
-                try {
-                    if (uid === currentUserId) {
-                        // Para o remetente, garantir que o unreadCount seja zero
-                        await userConvRef.update({ lastMessage: meta.lastMessage, lastTimestamp: meta.lastTimestamp, unreadCount: 0 });
-                    } else {
-                        // Para outros participantes, incrementar unreadCount via transaction e atualizar preview
-                        await userConvRef.transaction(current => {
-                            const now = meta.lastTimestamp;
-                            const base = current || {};
-                            const newCount = (base.unreadCount || 0) + 1;
-                            return { ...base, lastMessage: meta.lastMessage, lastTimestamp: now, unreadCount: newCount };
-                        });
-                    }
-                } catch (e) {
-                    console.warn('Erro atualizando chat_users para', uid, e);
-                }
-            }));
-        }
-
-        console.log('Metadados atualizados e sincronizados em chat_users');
+        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({
+            ...meta,
+            unreadCount: 0
+        });
     } catch (err) {
-        console.warn('Erro ao atualizar metadados:', err);
+        console.warn('Erro ao atualizar a conversa do remetente:', err);
     }
 }
 
@@ -466,36 +839,7 @@ async function loadConversations() {
     const entries = Object.entries(conversations).sort((a, b) => (b[1].lastTimestamp || 0) - (a[1].lastTimestamp || 0));
 
     entries.forEach(([convId, meta]) => {
-        const item = document.createElement('div');
-        item.className = 'conversation-item' + (convId === currentConvId ? ' active' : '');
-        item.dataset.convId = convId;
-        
-        // Converter participants para array se for objeto
-        const participantsArr = Array.isArray(meta.participants) 
-            ? meta.participants 
-            : Object.keys(meta.participants || {});
-        
-        const otherIds = participantsArr.filter(id => id !== currentUserId);
-        const avatar = meta.avatar || (otherIds.length === 1 ? allUsers[otherIds[0]]?.foto_perfil : null);
-        
-        const unread = meta.unreadCount || 0;
-        item.innerHTML = `
-            <div class="conv-avatar">
-                ${avatar ? `<img src="${avatar}" alt="avatar">` : '<i class="fas fa-users"></i>'}
-            </div>
-            <div class="conv-info">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div class="conv-name">${meta.title || meta.otherName || convId}</div>
-                    ${unread > 0 ? `<div class="conv-badge">${unread}</div>` : ''}
-                </div>
-                <div class="conv-last-msg">${meta.lastMessage || 'Sem mensagens'}</div>
-            </div>
-        `;
-        item.addEventListener('click', () => {
-            openConversation(convId, meta.participants || participantsArr, meta.title);
-        });
-        
-        convList.appendChild(item);
+        convList.appendChild(createConversationItem(convId, meta));
     });
 }
 
@@ -514,38 +858,14 @@ function subscribeConversations() {
 
         const entries = Object.entries(data).sort((a, b) => (b[1].lastTimestamp || 0) - (a[1].lastTimestamp || 0));
         entries.forEach(([convId, meta]) => {
-            const item = document.createElement('div');
-            item.className = 'conversation-item' + (convId === currentConvId ? ' active' : '');
-            item.dataset.convId = convId;
-
-            const participantsArr = Array.isArray(meta.participants) ? meta.participants : Object.keys(meta.participants || {});
-            const otherIds = participantsArr.filter(id => id !== currentUserId);
-            const avatar = meta.avatar || (otherIds.length === 1 ? allUsers[otherIds[0]]?.foto_perfil : null);
-
-            const unread = meta.unreadCount || 0;
-            item.innerHTML = `
-                <div class="conv-avatar">
-                    ${avatar ? `<img src="${avatar}" alt="avatar">` : '<i class="fas fa-users"></i>'}
-                </div>
-                <div class="conv-info">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div class="conv-name">${meta.title || meta.otherName || convId}</div>
-                        ${unread > 0 ? `<div class="conv-badge">${unread}</div>` : ''}
-                    </div>
-                    <div class="conv-last-msg">${meta.lastMessage || 'Sem mensagens'}</div>
-                </div>
-            `;
-            item.addEventListener('click', () => {
-                openConversation(convId, meta.participants || participantsArr, meta.title);
-            });
-
-            convList.appendChild(item);
+            convList.appendChild(createConversationItem(convId, meta));
         });
     });
 }
 
 async function openConversation(convId, participants, title) {
     currentConvId = convId;
+    document.body.classList.add('mobile-chat-open');
     
     // Converter participants para array se for objeto
     let participantsArray = Array.isArray(participants) 
@@ -587,19 +907,24 @@ async function openConversation(convId, participants, title) {
     
     // Limpar e recarregar
     const snapshot = await messagesRef.limitToLast(200).once('value');
+    const renderedMessageIds = new Set();
     if (snapshot.exists()) {
         const msgs = [];
         snapshot.forEach(child => {
-            msgs.push(child.val());
+            msgs.push({ id: child.key, message: child.val() });
         });
-        msgs.sort((a, b) => a.timestamp - b.timestamp);
-        msgs.forEach(msg => renderMessage(msg, messagesArea));
+        msgs.sort((a, b) => a.message.timestamp - b.message.timestamp);
+        msgs.forEach(({ id, message }) => {
+            renderedMessageIds.add(id);
+            renderMessage(message, messagesArea);
+        });
     }
     
     // Listener para novas mensagens
     messagesRef.limitToLast(1).on('child_added', snap => {
         const msg = snap.val();
-        if (msg) {
+        if (msg && !renderedMessageIds.has(snap.key)) {
+            renderedMessageIds.add(snap.key);
             renderMessage(msg, messagesArea);
         }
     });
@@ -615,29 +940,63 @@ function renderMessage(msg, container) {
     const div = document.createElement('div');
     const isSent = msg.userId === currentUserId;
     div.className = 'message ' + (isSent ? 'sent' : 'received');
-    
-    let content = `
-        <div class="message-bubble">
-            ${msg.text ? `<div>${escapeHtml(msg.text)}</div>` : ''}
-    `;
-    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    if (msg.text) {
+        const text = document.createElement('div');
+        text.textContent = msg.text;
+        bubble.appendChild(text);
+    }
+
     if (msg.mediaUrl) {
-        const type = msg.mediaType || '';
-        if (type.startsWith('image')) {
-            content += `<div class="message-media"><img src="${msg.mediaUrl}" alt="image"></div>`;
-        } else if (type.startsWith('audio')) {
-            content += `<div class="message-media"><audio controls src="${msg.mediaUrl}"></audio></div>`;
-        } else if (type.startsWith('video')) {
-            content += `<div class="message-media"><video controls src="${msg.mediaUrl}" style="width:100%;"></video></div>`;
+        const mediaType = msg.mediaType || '';
+        const media = mediaType.startsWith('image/')
+            ? document.createElement('img')
+            : mediaType.startsWith('audio/')
+                ? document.createElement('audio')
+                : mediaType.startsWith('video/')
+                    ? document.createElement('video')
+                    : null;
+        if (media) {
+            media.src = msg.mediaUrl;
+            media.className = 'message-media';
+            if (media instanceof HTMLImageElement) {
+                media.alt = 'Imagem enviada';
+                media.loading = 'lazy';
+            } else {
+                media.controls = true;
+                media.preload = 'metadata';
+            }
+            bubble.appendChild(media);
         }
     }
-    
-    content += `
-        </div>
-        <div class="message-time">${timeAgo(msg.timestamp)}</div>
-    `;
-    
-    div.innerHTML = content;
+
+    div.appendChild(bubble);
+    const time = document.createElement('div');
+    time.className = 'message-time';
+    time.textContent = timeAgo(msg.timestamp);
+    div.appendChild(time);
+    if (msg.bookAttachment) {
+        const book = msg.bookAttachment;
+        const card = document.createElement('div');
+        card.className = 'book-invite-card';
+        const cover = document.createElement('img');
+        cover.src = book.link_capa || '../images/Logo_Poefo.png';
+        cover.alt = '';
+        const details = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = book.titulo || 'Livro';
+        const openButton = document.createElement('button');
+        openButton.type = 'button';
+        openButton.textContent = 'Ver livro';
+        openButton.addEventListener('click', () => {
+            sessionStorage.setItem('selectedBook', JSON.stringify(book));
+            window.location.href = './livro.html';
+        });
+        details.append(title, openButton);
+        card.append(cover, details);
+        div.querySelector('.message-bubble').appendChild(card);
+    }
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 }
@@ -655,21 +1014,68 @@ function escapeHtml(text) {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('mobile-chat-back')?.addEventListener('click', closeMobileConversation);
+
     // Carregar usuários primeiro
     allUsers = (await safeReadRef('usuarios')) || {};
+    const pendingBookInviteJson = sessionStorage.getItem('pendingBookChatInvite');
+    if (pendingBookInviteJson) {
+        try {
+            pendingBookChatInvite = JSON.parse(pendingBookInviteJson);
+            if (!pendingBookChatInvite || !pendingBookChatInvite.id) {
+                throw new Error('Dados do livro inválidos.');
+            }
+            const invitePrompt = document.getElementById('book-invite-prompt');
+            if (invitePrompt) invitePrompt.style.display = 'block';
+            document.body.classList.add('book-invite-mode');
+        } catch (error) {
+            console.error('Não foi possível carregar o convite de leitura:', error);
+            alert('Não foi possível carregar os dados do livro para o convite.');
+            sessionStorage.removeItem('pendingBookChatInvite');
+        }
+    }
+
+    document.getElementById('find-book-invite-contact')?.addEventListener('click', openNewGroupModal);
+    document.getElementById('cancel-book-invite')?.addEventListener('click', () => {
+        pendingBookChatInvite = null;
+        sessionStorage.removeItem('pendingBookChatInvite');
+        document.getElementById('book-invite-prompt').style.display = 'none';
+        document.body.classList.remove('book-invite-mode');
+        loadConversations();
+    });
     
     const pendingChallenge = sessionStorage.getItem('pendingGameChallenge');
     if (pendingChallenge) {
         try {
             const parsed = JSON.parse(pendingChallenge);
-            sessionStorage.setItem('chatWithUserId', parsed.recipientId);
-            sessionStorage.setItem('chatWithUserName', parsed.recipientName);
-            sessionStorage.setItem('pendingGameChallengeText', parsed.text || '');
+            if (parsed.recipientId) {
+                sessionStorage.setItem('chatWithUserId', parsed.recipientId);
+                sessionStorage.setItem('chatWithUserName', parsed.recipientName || '');
+                sessionStorage.setItem('pendingGameChallengeText', parsed.text || '');
+                sessionStorage.removeItem('pendingGameChallenge');
+            } else if (parsed.gameName && parsed.text) {
+                pendingGameChallenge = parsed;
+                const challengePrompt = document.getElementById('game-challenge-prompt');
+                if (challengePrompt) challengePrompt.style.display = 'block';
+                document.body.classList.add('game-challenge-mode');
+            } else {
+                throw new Error('Dados do desafio inválidos.');
+            }
         } catch (error) {
-            console.warn('Erro ao carregar desafio do menu:', error);
+            console.error('Não foi possível carregar o desafio do jogo:', error);
+            alert('Não foi possível carregar os dados do desafio.');
+            sessionStorage.removeItem('pendingGameChallenge');
         }
-        sessionStorage.removeItem('pendingGameChallenge');
     }
+
+    document.getElementById('find-game-challenge-contact')?.addEventListener('click', openNewGroupModal);
+    document.getElementById('cancel-game-challenge')?.addEventListener('click', () => {
+        pendingGameChallenge = null;
+        sessionStorage.removeItem('pendingGameChallenge');
+        document.getElementById('game-challenge-prompt').style.display = 'none';
+        document.body.classList.remove('game-challenge-mode');
+        loadConversations();
+    });
 
     // Se aberto de um clique em "Mensagem" do visualizador
     const preOther = sessionStorage.getItem('chatWithUserId');

@@ -9,6 +9,11 @@ let readerTimerInterval = null;
 let readerBookId = null;
 let readerBookProgress = null;
 let readerCurrentPage = 1;
+let pageWrappers = [];
+const renderedPages = new Map();
+const pageRenderPromises = new Map();
+const pageDrawings = new Map();
+let pageRenderRequestId = 0;
 
 // Variáveis de Controle de Zoom e Movimentação (Pan)
 let scale = 1;
@@ -19,15 +24,17 @@ let lastDist = 0;
 
 async function initReader() {
     const url = sessionStorage.getItem('readerUrl');
-    if (!url) return;
+    if (!url) {
+        showReaderError();
+        return;
+    }
     readerBookId = sessionStorage.getItem('readerBookId');
 
     try {
         pdfDoc = await pdfjsLib.getDocument({
             url,
-            disableStream: true,
-            disableAutoFetch: false,
-            rangeChunkSize: 262144
+            disableAutoFetch: true,
+            rangeChunkSize: 524288
         }).promise;
         document.getElementById('page-count').textContent = pdfDoc.numPages;
         if (readerBookId && typeof loadUserBookProgress === 'function') {
@@ -38,8 +45,9 @@ async function initReader() {
             );
             document.getElementById('page-num').textContent = readerCurrentPage;
         }
-        await renderAllPages();
+        createPageSlots();
         setupPageFlip();
+        await renderPagesAround(readerCurrentPage);
         if (typeof loadUserProgressSummary === 'function') {
             loadUserProgressSummary()
                 .then(data => {
@@ -60,32 +68,107 @@ async function initReader() {
 }
 
 function showReaderError() {
-    document.getElementById('loading-overlay').innerHTML = '<p class="reader-error">Não foi possível visualizar este arquivo. Abra o arquivo original para continuar.</p>';
+    const overlay = document.getElementById('loading-overlay');
+    overlay.innerHTML = '<p class="reader-error">Não foi possível visualizar este arquivo. Abra o arquivo original para continuar.</p>';
+    overlay.style.display = 'flex';
 }
 
-async function renderAllPages() {
+function createPageSlots() {
     const container = document.getElementById('pdf-book');
     container.innerHTML = '';
+    pageWrappers = [];
     for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const viewport = page.getViewport({ scale: 2.0 });
         const pageDiv = document.createElement('div');
         pageDiv.className = 'page-wrapper';
-        
-        const canvas = document.createElement('canvas');
-        canvas.className = 'page-canvas';
+        pageWrappers.push(pageDiv);
+        container.appendChild(pageDiv);
+    }
+}
+
+async function renderPage(pageNumber) {
+    const existingPage = renderedPages.get(pageNumber);
+    if (existingPage) {
+        await existingPage.promise;
+        return;
+    }
+
+    const pendingRender = pageRenderPromises.get(pageNumber);
+    if (pendingRender) {
+        await pendingRender;
+        return;
+    }
+
+    const pageWrapper = pageWrappers[pageNumber - 1];
+    const canvas = document.createElement('canvas');
+    canvas.className = 'page-canvas';
+    const drawCanvas = document.createElement('canvas');
+    drawCanvas.className = 'draw-canvas';
+    const renderedPage = { canvas, drawCanvas, promise: null, hasDrawing: false };
+    pageWrapper.replaceChildren(canvas, drawCanvas);
+    renderedPages.set(pageNumber, renderedPage);
+
+    renderedPage.promise = (async () => {
+        const page = await pdfDoc.getPage(pageNumber);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const maxCanvasPixels = 2_000_000;
+        const scale = Math.min(1.5, Math.sqrt(maxCanvasPixels / (baseViewport.width * baseViewport.height)));
+        const viewport = page.getViewport({ scale });
+        const context = canvas.getContext('2d');
+        const drawingContext = drawCanvas.getContext('2d');
+        if (!context || !drawingContext) throw new Error(`Não foi possível criar o canvas da página ${pageNumber}.`);
+
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        
-        const drawCanvas = document.createElement('canvas');
-        drawCanvas.className = 'draw-canvas';
-        drawCanvas.width = canvas.width;
         drawCanvas.height = canvas.height;
-        setupDrawing(drawCanvas);
+        drawCanvas.width = canvas.width;
 
-        pageDiv.append(canvas, drawCanvas);
-        container.appendChild(pageDiv);
+        await page.render({ canvasContext: context, viewport }).promise;
+        page.cleanup();
+
+        const drawing = pageDrawings.get(pageNumber);
+        if (drawing) {
+            const image = new Image();
+            await new Promise((resolve, reject) => {
+                image.onload = resolve;
+                image.onerror = () => reject(new Error(`Não foi possível restaurar as anotações da página ${pageNumber}.`));
+                image.src = drawing;
+            });
+            drawingContext.drawImage(image, 0, 0);
+            pageDrawings.delete(pageNumber);
+        }
+        setupDrawing(drawCanvas, () => { renderedPage.hasDrawing = true; });
+    })().catch(error => {
+        if (renderedPages.get(pageNumber) === renderedPage) {
+            renderedPages.delete(pageNumber);
+            pageWrapper.replaceChildren();
+        }
+        throw error;
+    }).finally(() => {
+        pageRenderPromises.delete(pageNumber);
+    });
+
+    pageRenderPromises.set(pageNumber, renderedPage.promise);
+    await renderedPage.promise;
+}
+
+async function renderPagesAround(pageNumber) {
+    const requestId = ++pageRenderRequestId;
+    const firstPage = Math.max(1, pageNumber - 1);
+    const lastPage = Math.min(pdfDoc.numPages, pageNumber + 1);
+    const pagesToRender = [];
+    for (let page = firstPage; page <= lastPage; page++) {
+        pagesToRender.push(renderPage(page));
+    }
+    await Promise.all(pagesToRender);
+    if (requestId !== pageRenderRequestId) return;
+
+    for (const [renderedPageNumber, renderedPage] of renderedPages) {
+        if (renderedPageNumber >= firstPage && renderedPageNumber <= lastPage) continue;
+        if (renderedPage.hasDrawing) {
+            pageDrawings.set(renderedPageNumber, renderedPage.drawCanvas.toDataURL('image/png'));
+        }
+        pageWrappers[renderedPageNumber - 1].replaceChildren();
+        renderedPages.delete(renderedPageNumber);
     }
 }
 
@@ -107,6 +190,10 @@ function setupPageFlip() {
     pageFlip.on('flip', (e) => {
         readerCurrentPage = e.data + 1;
         document.getElementById('page-num').textContent = readerCurrentPage;
+        renderPagesAround(readerCurrentPage).catch(error => {
+            console.error('Não foi possível renderizar as páginas do PDF:', error);
+            showReaderError();
+        });
         saveCurrentBookProgress();
     });
 }
@@ -184,7 +271,7 @@ async function saveCurrentBookProgress() {
     await saveUserBookProgress(readerBookId, readerCurrentPage, 0, pdfDoc?.numPages);
 }
 
-function setupDrawing(canvas) {
+function setupDrawing(canvas, onDraw = () => {}) {
     const ctx = canvas.getContext('2d');
     const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -196,7 +283,7 @@ function setupDrawing(canvas) {
         };
     };
 
-    canvas.addEventListener('mousedown', (e) => { if(!isDrawingMode) return; isDrawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('mousedown', (e) => { if(!isDrawingMode) return; isDrawing = true; onDraw(); ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
     canvas.addEventListener('mousemove', (e) => {
         if (!isDrawing || !isDrawingMode) return;
         const p = getPos(e);

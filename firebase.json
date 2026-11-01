@@ -1,14 +1,25 @@
 {
-  "hosting": {
-    "public": "Poefo_library",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  },
+  "hosting": [
+    {
+      "target": "CAPTU",
+      "public": "Poefo_library",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ]
+    },
+    {
+      "target": "POEFO",
+      "public": "Poefo_library",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ]
+    }
+  ],
   "functions": {
     "source": "functions"
   }
 }
-

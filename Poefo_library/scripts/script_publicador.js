@@ -852,6 +852,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         sessionStorage.removeItem('pendingShareScore');
     }
+
+    const pendingBookInvite = sessionStorage.getItem('pendingBookPublicationInvite');
+    if (pendingBookInvite) {
+        try {
+            const book = JSON.parse(pendingBookInvite);
+            if (!book || !book.id) throw new Error('Dados do livro inválidos.');
+            const textArea = document.getElementById('post-text-area');
+            if (textArea) {
+                const title = book.titulo || 'este livro';
+                textArea.value = `📚 Convido vocês para ler "${title}"!`;
+            }
+            attachBookToPost(book);
+        } catch (error) {
+            console.error('Não foi possível preparar o convite de leitura:', error);
+            alert('Não foi possível anexar o livro à publicação. Tente novamente.');
+        }
+        sessionStorage.removeItem('pendingBookPublicationInvite');
+    }
     
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons(); 

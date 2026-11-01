@@ -22,139 +22,23 @@ function getBookData() {
     return sessionData ? JSON.parse(sessionData) : null;
 }
 
-const BOOK_LIKES_PATH = 'book_likes';
-const USER_COLLECTIONS_PATH = 'user_collections';
-const BOOK_LIKES_COUNT_PATH = 'livros';
-const BOOK_SAVES_COUNT_PATH = 'livros';
-
-async function loadBookInteractionState(bookId) {
-    if (!db || !bookId) return;
-
-    const likeIcon = document.getElementById('like-icon');
-    const likeCountEl = document.getElementById('like-count');
-    const saveAction = document.getElementById('save-action');
-    const saveCountEl = document.getElementById('save-count');
-
-    try {
-        const likeSnap = await db.ref(`${BOOK_LIKES_PATH}/${bookId}/${currentUserId}`).once('value');
-        if (likeSnap.exists() && likeSnap.val() === true) {
-            if (likeIcon) {
-                likeIcon.classList.replace('fa-regular', 'fa-solid');
-                likeIcon.style.color = '#E0245E';
-            }
-        }
-
-        const saveSnap = await db.ref(`${USER_COLLECTIONS_PATH}/${currentUserId}/${bookId}`).once('value');
-        if (saveSnap.exists() && saveSnap.val() === true) {
-            if (saveAction) {
-                saveAction.classList.add('saved');
-                saveAction.querySelector('.action-label')?.setAttribute('data-label', 'Salvo');
-            }
-        }
-
-        const bookRef = db.ref(`${BOOK_LIKES_COUNT_PATH}/${bookId}`);
-        const bookSnap = await bookRef.once('value');
-        const bookData = bookSnap.val() || {};
-        if (likeCountEl) likeCountEl.textContent = String(bookData.likes || likeCountEl.textContent || '0');
-        if (saveCountEl) saveCountEl.textContent = String(bookData.salvos || saveCountEl.textContent || '0');
-
-    } catch (error) {
-        console.error('Erro ao carregar estado de interações do livro:', error);
-    }
-}
-
-async function toggleBookLike() {
-    if (currentUserId === '-ID-ANONIMO-') {
-        alert('Você precisa estar logado para curtir este livro.');
-        return;
-    }
-    if (!db || !currentBookId) return;
-
-    const likeRef = db.ref(`${BOOK_LIKES_PATH}/${currentBookId}/${currentUserId}`);
-    const likeCountRef = db.ref(`${BOOK_LIKES_COUNT_PATH}/${currentBookId}/likes`);
-    const likeIcon = document.getElementById('like-icon');
-    const likeCountEl = document.getElementById('like-count');
-
-    try {
-        const snap = await likeRef.once('value');
-        let increment;
-
-        if (snap.exists() && snap.val() === true) {
-            await likeRef.remove();
-            increment = -1;
-            if (likeIcon) {
-                likeIcon.classList.replace('fa-solid', 'fa-regular');
-                likeIcon.style.color = 'var(--text-muted)';
-            }
-        } else {
-            await likeRef.set(true);
-            increment = 1;
-            if (likeIcon) {
-                likeIcon.classList.replace('fa-regular', 'fa-solid');
-                likeIcon.style.color = '#E0245E';
-            }
-        }
-
-        await likeCountRef.transaction(current => {
-            current = Number(current) || 0;
-            return Math.max(0, current + increment);
-        });
-
-        const updatedSnap = await likeCountRef.once('value');
-        if (likeCountEl) likeCountEl.textContent = String(updatedSnap.val() || 0);
-    } catch (error) {
-        console.error('Erro ao alternar like do livro:', error);
-    }
-}
-
-async function toggleBookSave() {
-    if (currentUserId === '-ID-ANONIMO-') {
-        alert('Você precisa estar logado para salvar este livro na coleção.');
-        return;
-    }
-    if (!db || !currentBookId) return;
-
-    const saveRef = db.ref(`${USER_COLLECTIONS_PATH}/${currentUserId}/${currentBookId}`);
-    const saveCountRef = db.ref(`${BOOK_SAVES_COUNT_PATH}/${currentBookId}/salvos`);
-    const saveAction = document.getElementById('save-action');
-    const saveCountEl = document.getElementById('save-count');
-
-    try {
-        const snap = await saveRef.once('value');
-        let increment;
-
-        if (snap.exists() && snap.val() === true) {
-            await saveRef.remove();
-            increment = -1;
-            if (saveAction) {
-                saveAction.classList.remove('saved');
-                saveAction.querySelector('.action-label')?.setAttribute('data-label', 'Salvar');
-            }
-        } else {
-            await saveRef.set(true);
-            increment = 1;
-            if (saveAction) {
-                saveAction.classList.add('saved');
-                saveAction.querySelector('.action-label')?.setAttribute('data-label', 'Salvo');
-            }
-        }
-
-        await saveCountRef.transaction(current => {
-            current = Number(current) || 0;
-            return Math.max(0, current + increment);
-        });
-
-        const updatedSnap = await saveCountRef.once('value');
-        if (saveCountEl) saveCountEl.textContent = String(updatedSnap.val() || 0);
-    } catch (error) {
-        console.error('Erro ao alternar salvar na coleção:', error);
-    }
-}
-
 function getClassificationIconPath(classification) {
     const match = String(classification).match(/\d+/);
     const age = match ? match[0] : 'L';
     return `../images/classification_idication_${age}.png`;
+}
+
+function createBookInvitePayload(book) {
+    return {
+        id: String(book.id),
+        titulo: book.titulo || 'Livro',
+        autor: book.autor || '',
+        sinopse: book.sinopse || '',
+        genero: book.genero || '',
+        classificacao: book.classificacao || 'Livre',
+        link_capa: book.link_capa || '',
+        link_acesso: book.link_acesso || ''
+    };
 }
 
 const formatTimeAgo = (timestamp) => {
@@ -384,9 +268,6 @@ function renderBookDetails(book) {
     const author = book.autor || 'Autor Desconhecido';
     const sinopse = book.sinopse || 'Sem sinopse disponível.';
     const genero = book.genero || 'Gênero Não Informado';
-    const likes = book.likes || 0; 
-    const divaCount = book.divas || '0'; 
-    const saveCount = book.salvos || '0';
     const linkAcesso = book.link_acesso || '';
     const classificationValue = book.classificacao || 'Livre';
     const classificationIconPath = getClassificationIconPath(classificationValue);
@@ -402,35 +283,17 @@ function renderBookDetails(book) {
             <h1 class="book-title-detail">${title}</h1>
             <p class="book-author-detail">${authorLine}</p>
             <p class="book-metadata-tags">${genero}</p>
+            <div class="book-classification">
+                <img src="${classificationIconPath}" alt="" class="classification-icon">
+                <span>Classificação indicativa: ${classificationValue}</span>
+            </div>
         </div>
 
         <div class="read-button-container-central">
             <button id="ler-btn-main" class="ler-btn-main ${!linkAcesso ? 'disabled' : ''}" ${!linkAcesso ? 'disabled' : ''}>Ler Livro</button>
-        </div>
-
-        <div class="book-actions-row-simple">
-            
-            <div class="action-item-simple">
-                <i class="fas fa-cloud-download-alt action-icon"></i>
-                <span>Diva</span>
-                <span class="action-count">${divaCount}</span>
-            </div>
-            
-            <div class="action-item-simple">
-                <img src="${classificationIconPath}" alt="Classificação Indicativa" class="classification-icon">
-                <span>Class.</span>
-            </div>
-            
-            <div class="action-item-simple" id="like-action">
-                <i class="far fa-heart action-icon like-icon" id="like-icon" data-liked="false"></i>
-                <span class="action-label">Like</span>
-                <span class="action-count" id="like-count">${likes}</span>
-            </div>
-
-            <div class="action-item-simple" id="save-action">
-                <i class="far fa-bookmark action-icon save-icon"></i>
-                <span class="action-label" data-label="Salvar">Salvar</span>
-                <span class="action-count" id="save-count">${saveCount}</span>
+            <div class="book-invite-actions">
+                <button id="invite-publication-btn" class="book-invite-btn">Convidar para ler</button>
+                <button id="invite-contact-btn" class="book-invite-btn book-invite-btn-secondary">Convidar contato</button>
             </div>
         </div>
 
@@ -461,27 +324,20 @@ function setupEventListeners(book) {
         };
     }
 
+    document.getElementById('invite-publication-btn')?.addEventListener('click', () => {
+        sessionStorage.setItem('pendingBookPublicationInvite', JSON.stringify(createBookInvitePayload(book)));
+        window.location.href = './publicador.html';
+    });
+
+    document.getElementById('invite-contact-btn')?.addEventListener('click', () => {
+        sessionStorage.setItem('pendingBookChatInvite', JSON.stringify(createBookInvitePayload(book)));
+        window.location.href = './chat.html';
+    });
+
     const commentInput = document.querySelector('.bottom-bar .search-input');
     const commentButton = document.querySelector('.bottom-bar .send-icon');
-    const likeAction = document.getElementById('like-action');
-    const saveAction = document.getElementById('save-action');
-
     if (commentInput) {
         commentInput.placeholder = "Adicione seu comentário sobre o livro..."; 
-    }
-    
-    if (likeAction) {
-        likeAction.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleBookLike();
-        });
-    }
-
-    if (saveAction) {
-        saveAction.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleBookSave();
-        });
     }
 
     if (commentInput && commentButton && db) {
@@ -501,10 +357,6 @@ function setupEventListeners(book) {
          if (commentInput) commentInput.disabled = true;
          if (commentButton) commentButton.style.opacity = '0.5';
          if (commentInput) commentInput.placeholder = "Comentários desativados: Conexão Firebase falhou.";
-    }
-
-    if (currentBookId) {
-        loadBookInteractionState(currentBookId);
     }
 }
 

@@ -11,12 +11,12 @@
     <link rel="stylesheet" href="../style/style_theme.css">
     <script src="../scripts/theme.js"></script>
 </head>
-<body>
+<body class="chat-page">
     <div class="app-container">
         <aside class="sidebar">
             <div class="logo-section">
                 <img src="../images/Logo_Poefo.png" alt="Logo" class="logo">
-                <span class="app-title">Poefo Libraly</span>
+                <span class="app-title">Poefo Library</span>
             </div>
             <nav class="nav-menu">
                 <a href="./home.at.html" class="nav-link">Início</a>
@@ -32,13 +32,23 @@
                 
         <div class="conversations-sidebar">
             <div class="sidebar-header">
-                <h1>Mensagens</h1>
+                <h3>Mensagens</h3>
                 <div class="sidebar-actions">
                     <button class="sidebar-btn" onclick="openNewGroupModal()" title="Nova conversa"><i class="fas fa-pen"></i></button>
                 </div>
             </div>
             <div class="sidebar-search">
                 <input type="text" id="search-convs" placeholder="Buscar conversa...">
+            </div>
+            <div id="book-invite-prompt" class="book-invite-prompt" style="display:none;">
+                Escolha uma conversa para enviar o convite de leitura.
+                <button id="find-book-invite-contact" type="button">Buscar contato</button>
+                <button id="cancel-book-invite" type="button">Cancelar</button>
+            </div>
+            <div id="game-challenge-prompt" class="book-invite-prompt" style="display:none;">
+                Escolha uma conversa para enviar o desafio do jogo.
+                <button id="find-game-challenge-contact" type="button">Buscar contato</button>
+                <button id="cancel-game-challenge" type="button">Cancelar</button>
             </div>
             <div class="conversations-list" id="conversations-list">
                 <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
@@ -49,6 +59,9 @@
         <div class="chat-main">
             
             <div class="chat-header">
+                <button class="mobile-chat-back" id="mobile-chat-back" type="button" aria-label="Voltar para conversas">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
                 <div class="header-user" onclick="openSelectedUserProfile()">
                     <div class="header-avatar" id="header-avatar">
                         <i class="fas fa-user"></i>
@@ -77,12 +90,12 @@
             <div id="compose-section" style="display:none;">
                 <div class="compose-input">
                     <input type="text" id="message-input" placeholder="Aa" autocomplete="off">
-                    <button class="compose-icon-btn" onclick="attachImage()" title="Imagem"><i class="fas fa-image"></i></button>
-                    <button class="compose-icon-btn" onclick="toggleAudioRecorder()" title="Áudio"><i class="fas fa-microphone"></i></button>
+                        <button class="compose-icon-btn" id="image-attach-btn" type="button" onclick="attachImage()" title="Enviar imagem" aria-label="Enviar imagem"><i class="fas fa-image"></i></button>
+                        <button class="compose-icon-btn" id="audio-record-btn" type="button" onclick="toggleAudioRecorder()" title="Gravar áudio" aria-label="Gravar áudio"><i class="fas fa-microphone"></i></button>
                     <button class="send-btn" id="send-btn" title="Enviar"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <input type="file" id="image-input" accept="image/*" style="display:none;">
-                <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+                    <div id="media-status" class="media-status" role="status" aria-live="polite" hidden></div>
+                    <input type="file" id="image-input" accept="image/*" style="display:none;">
             </div>
         </div>
     </div>
@@ -105,14 +118,18 @@
     
     <div class="modal-overlay" id="new-group-modal">
         <div class="modal-content">
-            <div class="modal-header">Nova conversa</div>
+            <div class="modal-header">Nova conversa ou grupo</div>
             <div class="modal-search">
                 <input type="text" id="participant-search" placeholder="Buscar usuário...">
             </div>
+            <label class="group-name-field" id="group-name-field" hidden>
+                <span>Nome do grupo (opcional)</span>
+                <input type="text" id="group-name" maxlength="60" placeholder="Ex.: Clube de leitura">
+            </label>
             <div class="modal-body" id="participant-list"></div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeNewGroupModal()">Cancelar</button>
-                <button class="btn-primary" onclick="createNewGroup()">Iniciar conversa</button>
+                <button class="btn-primary" id="submit-new-conversation" onclick="createNewGroup()">Iniciar conversa</button>
             </div>
         </div>
     </div>

@@ -189,20 +189,57 @@
         .leaderboard-user { font-weight: 700; }
         .leaderboard-score { font-weight: 800; color: #111827; }
         .challenge-modal-overlay {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000;
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000;
         }
         .challenge-modal {
-            width: min(560px, 100%); background: white; border-radius: 24px; padding: 24px; box-shadow: var(--shadow-soft);
+            width: min(820px, 100%); max-height: min(88vh, 820px); overflow-y: auto;
+            background: #f8fafc; border: 1px solid rgba(255,255,255,0.8); border-radius: 28px;
+            padding: 30px; box-shadow: 0 28px 90px rgba(15, 23, 42, 0.32);
         }
-        .challenge-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .challenge-modal-body { display: flex; flex-direction: column; gap: 12px; }
+        .challenge-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
+        .challenge-modal-kicker { display: block; margin-bottom: 8px; color: #2563eb; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+        .challenge-modal-header h2 { margin: 0; color: #14212b; font-size: clamp(24px, 4vw, 32px); letter-spacing: -0.8px; }
+        .challenge-modal-subtitle { margin: 8px 0 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+        .challenge-modal-close {
+            flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center;
+            border: 1px solid #e2e8f0; border-radius: 50%; background: white; color: #475569;
+            font-size: 24px; line-height: 1; cursor: pointer; transition: background .2s, color .2s, transform .2s;
+        }
+        .challenge-modal-close:hover { background: #eaf0f8; color: #0f172a; transform: rotate(90deg); }
+        .challenge-modal-body { display: flex; flex-direction: column; gap: 14px; }
+        .challenge-modal-body label { color: #334155; font-size: 13px; font-weight: 800; }
+        .challenge-game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .challenge-game-option {
+            position: relative; min-width: 0; min-height: 112px; display: flex; align-items: flex-start; gap: 14px;
+            padding: 16px; border: 1px solid #e2e8f0; border-radius: 18px; background: #fff;
+            color: #17212b; text-align: left; cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s, background .18s;
+        }
+        .challenge-game-option:hover { transform: translateY(-2px); border-color: #93c5fd; box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08); }
+        .challenge-game-option[aria-pressed="true"] { border-color: #2563eb; background: #eff6ff; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); }
+        .challenge-game-icon {
+            flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center;
+            border-radius: 15px; background: linear-gradient(145deg, #e0f2fe, #dbeafe); font-size: 24px;
+        }
+        .challenge-game-copy { min-width: 0; padding-right: 20px; }
+        .challenge-game-name { display: block; margin: 2px 0 6px; font-size: 15px; font-weight: 800; line-height: 1.3; }
+        .challenge-game-category { display: inline-flex; color: #2563eb; font-size: 10px; font-weight: 800; letter-spacing: .65px; text-transform: uppercase; }
+        .challenge-game-description { display: block; margin-top: 7px; color: #64748b; font-size: 12px; line-height: 1.45; }
+        .challenge-game-check {
+            position: absolute; top: 16px; right: 16px; width: 19px; height: 19px;
+            display: grid; place-items: center; border: 1.5px solid #cbd5e1; border-radius: 50%;
+            color: transparent; font-size: 12px; font-weight: 900;
+        }
+        .challenge-game-option[aria-pressed="true"] .challenge-game-check { border-color: #2563eb; background: #2563eb; color: #fff; }
         .contact-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
         .contact-item { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer; text-align: left; }
         .contact-item.active { border-color: #2563eb; background: #eff6ff; }
         .contact-meta { display: flex; flex-direction: column; gap: 4px; }
         .contact-badge { font-size: 12px; color: #64748b; }
         .modal-input { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0; }
-        .challenge-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+        .challenge-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+        .challenge-footer .action-btn { padding: 12px 20px; }
+        .challenge-footer .action-btn:disabled { opacity: .45; cursor: not-allowed; }
         .score-panel h3 { margin: 0 0 6px; font-size: 1.2rem; }
         .score-panel p { margin: 0; color: rgba(255,255,255,0.82); }
         .score-pill {
@@ -213,6 +250,16 @@
             .hero-card { grid-template-columns: 1fr; text-align: center; }
             .hero-cover { min-height: 220px; }
             .score-panel { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .challenge-modal-overlay { padding: 12px; }
+            .challenge-modal { max-height: 92vh; padding: 22px 16px; border-radius: 22px; }
+            .challenge-modal-header { margin-bottom: 18px; }
+            .challenge-game-grid { grid-template-columns: 1fr; gap: 9px; }
+            .challenge-game-option { min-height: 96px; padding: 13px; }
+            .challenge-game-icon { flex-basis: 42px; width: 42px; height: 42px; font-size: 21px; }
+            .challenge-game-check { top: 13px; right: 13px; }
+            .challenge-footer { position: sticky; bottom: -22px; margin: 16px -16px -22px; padding: 14px 16px 18px; background: #f8fafc; }
         }
     </style>
 </head>
@@ -409,6 +456,26 @@
                     </a>
                 </div>
             </section>
+            <div class="challenge-modal-overlay" id="game-challenge-modal" role="dialog" aria-modal="true" aria-labelledby="game-challenge-title">
+                <div class="challenge-modal">
+                    <div class="challenge-modal-header">
+                        <div>
+                            <span class="challenge-modal-kicker">Arena Poefo · Convite de jogo</span>
+                            <h2 id="game-challenge-title">Qual vai ser o desafio?</h2>
+                            <p class="challenge-modal-subtitle">Escolha um jogo para enviar o convite. Seu contato poderá abrir o jogo direto pela conversa.</p>
+                        </div>
+                        <button type="button" class="challenge-modal-close" id="close-game-challenge" aria-label="Fechar">×</button>
+                    </div>
+                    <div class="challenge-modal-body">
+                        <label id="challenge-game-label">ESCOLHA UM JOGO</label>
+                        <div class="challenge-game-grid" id="challenge-game-grid" role="group" aria-labelledby="challenge-game-label"></div>
+                    </div>
+                    <div class="challenge-footer">
+                        <button type="button" class="action-btn action-btn--secondary" id="cancel-game-challenge">Cancelar</button>
+                        <button type="button" class="action-btn action-btn--primary" id="continue-game-challenge">Escolher contato <span aria-hidden="true">→</span></button>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <a href="./publicador.html" class="fab">
@@ -434,6 +501,7 @@
             const rankingEl = document.getElementById('games-menu-ranking');
             const medalEl = document.getElementById('games-menu-medal');
             const shareScoreButton = document.getElementById('share-score-btn');
+            const challengeButton = document.getElementById('challenge-btn');
             const avatarEl = document.getElementById('games-user-avatar');
 
             const storedAvatar = sessionStorage.getItem('currentUserPic') || localStorage.getItem('currentUserPic');
@@ -537,6 +605,94 @@
             gamesSearch?.addEventListener('input', filterGames);
             document.getElementById('games-filter-btn')?.addEventListener('click', () => {
                 gamesSearch?.focus();
+            });
+
+            const challengeModal = document.getElementById('game-challenge-modal');
+            const gameGrid = document.getElementById('challenge-game-grid');
+            const continueChallengeButton = document.getElementById('continue-game-challenge');
+            const closeChallengeModal = () => {
+                challengeModal.style.display = 'none';
+            };
+            const games = gameCards.map(card => ({
+                name: card.querySelector('h3')?.textContent.trim(),
+                url: card.getAttribute('href'),
+                icon: card.querySelector('.card-icon')?.textContent.trim() || '🎮',
+                description: card.querySelector('p')?.textContent.trim() || '',
+                category: card.querySelector('.game-badge')?.textContent.trim() || 'Desafio'
+            })).filter(game => game.name && game.url);
+            let selectedGame = null;
+            const selectGame = game => {
+                selectedGame = game;
+                gameGrid.querySelectorAll('.challenge-game-option').forEach(option => {
+                    option.setAttribute('aria-pressed', String(option.dataset.gameUrl === game.url));
+                });
+                continueChallengeButton.disabled = !selectedGame;
+            };
+            gameGrid.replaceChildren(...games.map(game => {
+                const option = document.createElement('button');
+                option.type = 'button';
+                option.className = 'challenge-game-option';
+                option.setAttribute('aria-pressed', 'false');
+                option.dataset.gameUrl = game.url;
+
+                const icon = document.createElement('span');
+                icon.className = 'challenge-game-icon';
+                icon.setAttribute('aria-hidden', 'true');
+                icon.textContent = game.icon;
+
+                const copy = document.createElement('span');
+                copy.className = 'challenge-game-copy';
+                const name = document.createElement('span');
+                name.className = 'challenge-game-name';
+                name.textContent = game.name;
+                const category = document.createElement('span');
+                category.className = 'challenge-game-category';
+                category.textContent = game.category;
+                const description = document.createElement('span');
+                description.className = 'challenge-game-description';
+                description.textContent = game.description;
+                copy.append(name, category, description);
+
+                const check = document.createElement('span');
+                check.className = 'challenge-game-check';
+                check.setAttribute('aria-hidden', 'true');
+                check.textContent = '✓';
+                option.append(icon, copy, check);
+                option.addEventListener('click', () => selectGame(game));
+                return option;
+            }));
+            if (games.length) selectGame(games[0]);
+
+            challengeButton?.addEventListener('click', () => {
+                if (!games.length) {
+                    alert('Não há jogos disponíveis para desafiar.');
+                    return;
+                }
+                challengeModal.style.display = 'flex';
+                gameGrid.querySelector('.challenge-game-option')?.focus();
+            });
+            challengeModal?.addEventListener('click', event => {
+                if (event.target === challengeModal) closeChallengeModal();
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && challengeModal.style.display === 'flex') closeChallengeModal();
+            });
+            document.getElementById('close-game-challenge')?.addEventListener('click', closeChallengeModal);
+            document.getElementById('cancel-game-challenge')?.addEventListener('click', closeChallengeModal);
+            document.getElementById('continue-game-challenge')?.addEventListener('click', () => {
+                if (!selectedGame) {
+                    alert('Escolha um jogo para continuar.');
+                    return;
+                }
+                const gameUrl = new URL(selectedGame.url, window.location.href).href;
+                const userName = sessionStorage.getItem('currentUserName') || localStorage.getItem('currentUserName') || 'Um contato';
+                const text = `⚔️ ${userName} desafiou você para jogar ${selectedGame.name}! Vamos jogar? ${gameUrl}`;
+                sessionStorage.setItem('pendingGameChallenge', JSON.stringify({
+                    gameName: selectedGame.name,
+                    gameUrl,
+                    text
+                }));
+                window.location.href = './chat.html';
             });
         });
     </script>

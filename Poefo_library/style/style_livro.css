@@ -157,68 +157,44 @@ body {
     opacity: 0.8;
 }
 
-/* --- Barra de Ações (Likes, Diva, Salvar) --- */
-.book-actions-row-simple {
+.book-invite-actions {
     display: flex;
-    justify-content: space-around;
-    padding: 15px 0;
-    border-bottom: 1px solid var(--border-color);
-    background-color: var(--card-background);
+    gap: 10px;
+    margin-top: 10px;
 }
 
-.action-item-simple {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.book-invite-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    background: var(--card-background);
+    color: var(--primary-color);
+    font-size: 0.95em;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 0.85em;
-    color: var(--secondary-text-color);
-    transition: color 0.2s;
 }
 
-.action-icon {
-    font-size: 1.4em;
-    color: var(--action-icon-color);
-    margin-bottom: 5px;
+.book-invite-btn-secondary {
+    border-color: var(--border-color);
+    color: var(--text-color);
 }
 
 .classification-icon {
-    width: 25px;
-    height: 25px;
+    width: 32px;
+    height: 32px;
     object-fit: contain;
-    margin-bottom: 5px;
+    flex-shrink: 0;
 }
 
-.action-count {
+.book-classification {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 20px;
+    color: var(--secondary-text-color);
     font-size: 0.9em;
-    font-weight: 600;
-    color: var(--primary-color); 
-    margin-top: 2px;
 }
-
-/* ⭐️ Estilos para o Like (CORRIGIDO) ⭐️ */
-#like-action {
-    /* Define o item de ação de like como clicável */
-    cursor: pointer; 
-}
-
-#like-icon {
-    /* Garante que o ícone em si tenha transições suaves */
-    cursor: pointer;
-    transition: color 0.2s ease-in-out, transform 0.1s;
-}
-
-/* CORREÇÃO VISUAL: Usa o ID e a classe 'liked' para máxima especificidade */
-#like-icon.liked {
-    color: var(--like-active-color) !important; /* !important garante que a cor ativa prevaleça sobre qualquer outra regra */
-    transform: scale(1.1);
-}
-
-/* Garante que o ícone de coração preenchido (fas) tenha o peso correto */
-#like-icon.fas {
-    font-weight: 900; 
-}
-/* --- FIM DA CORREÇÃO --- */
 
 /* --- Sinopse e Comentários --- */
 .book-section {

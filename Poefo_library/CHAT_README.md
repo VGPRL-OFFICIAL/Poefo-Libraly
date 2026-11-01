@@ -55,10 +55,12 @@ O sistema de chat utiliza a seguinte estrutura no Firebase Realtime Database:
 
 /chat_media (Storage)
 ├── {convId}/
-│   ├── img_*.jpg|png
-│   ├── audio_*.webm
+│   ├── {userId}/img_*.jpg|png|webp
+│   ├── {userId}/audio_*.webm|ogg|m4a
 │   └── video_*.mp4
 ```
+
+Áudios e imagens são enviados ao Firebase Storage; as mensagens guardam a URL e o tipo do arquivo para exibição ou reprodução. Os arquivos permanecem no Storage enquanto a mensagem existir; não há expiração automática configurada.
 
 ##  Regras do Firebase (Security Rules)
 
@@ -254,7 +256,7 @@ service firebase.storage {
 ##  Funcionalidades Implementadas
 
 **Chat Direto**: Conversa entre dois usuários  
- **Chat em Grupo**: Suporte para múltiplos participantes  
+ **Chat em Grupo**: Selecione dois ou mais contatos e, opcionalmente, informe um nome para o grupo.
   **Mensagens de Texto**: Envio e recebimento de mensagens  
  **Imagens**: Upload e visualização de imagens  
  **Áudio**: Gravação e envio de mensagens de áudio  
@@ -263,7 +265,13 @@ service firebase.storage {
  **Perfil do Usuário**: Visualizar perfil ao clicar no header  
  **Lista de Conversas**: Com último título e mensagem  
 **Design Responsivo**: Desktop e Mobile (Instagram/X inspired)  
- **Modal de Novo Grupo**: Seletor de participantes
+ **Modal de Nova Conversa/Grupo**: Seletor com fotos de perfil dos participantes
+
+As Cloud Functions `indexNewConversation` e `syncConversationOnMessage` criam a conversa na lista de cada participante e mantêm as prévias e contagens de mensagens não lidas atualizadas. Faça o deploy das Functions para habilitar a sincronização entre participantes:
+
+```shell
+firebase deploy --only functions
+```
 
 ##  Como Usar
 

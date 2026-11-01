@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "captu-libraly"
-  }
+  },
+  "targets": {
+    "captu-libraly": {
+      "hosting": {
+        "POEFO": [
+          "poefo-library"
+        ],
+        "CAPTU": [
+          "captu-libraly"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

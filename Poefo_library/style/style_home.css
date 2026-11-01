@@ -83,6 +83,7 @@ body {
     padding: 24px 6% 100px;
     max-width: 1200px;
     margin: 0 auto;
+    min-width: 0;
 }
 
 /* --- Header e Pesquisa estilo Imagem Referência --- */
@@ -220,6 +221,13 @@ body {
     box-shadow: 0 14px 30px rgba(38, 50, 56, 0.16);
 }
 
+.duckdog-poster,
+.floating-hero,
+.promo-redirect-card {
+    width: 113.636364%;
+    margin-inline: -6.818182%;
+}
+
 .duckdog-poster::before {
     content: "";
     position: absolute;
@@ -338,8 +346,7 @@ body {
     z-index: -3;
     background-position: center;
     background-size: cover;
-    filter: blur(18px) saturate(0.7);
-    transform: scale(1.08);
+    filter: saturate(0.8);
 }
 
 .floating-hero::after {
@@ -347,7 +354,80 @@ body {
     position: absolute;
     inset: 0;
     z-index: -2;
-    background: linear-gradient(90deg, rgba(14, 20, 19, 0.97) 0%, rgba(14, 20, 19, 0.82) 46%, rgba(14, 20, 19, 0.68) 100%);
+    background: linear-gradient(90deg, rgba(14, 20, 19, 0.82) 0%, rgba(14, 20, 19, 0.66) 46%, rgba(14, 20, 19, 0.46) 100%);
+}
+
+.promo-redirect-card {
+    --promo-cover: none;
+    --promo-image: none;
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 24px;
+    align-items: center;
+    overflow: hidden;
+    margin-top: 30px;
+    margin-bottom: 40px;
+    padding: 28px;
+    border-radius: 24px;
+    color: #fff;
+    background-color: #1f2937;
+    background-image: linear-gradient(90deg, rgba(17, 24, 39, 0.78) 0%, rgba(17, 24, 39, 0.54) 55%, rgba(17, 24, 39, 0.34) 100%), var(--promo-cover);
+    background-position: center;
+    background-size: cover;
+    box-shadow: var(--shadow-soft);
+}
+
+.promo-redirect-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 55%;
+    z-index: -1;
+    background-image: var(--promo-image);
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-size: 200% auto;
+    opacity: 0.28;
+    pointer-events: none;
+}
+
+.promo-redirect-content {
+    position: relative;
+    min-width: 0;
+}
+
+.promo-redirect-card h2 {
+    margin: 12px 0 10px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.promo-redirect-card p {
+    margin: 0 0 18px;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.promo-redirect-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: #fff;
+    color: #111827;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.promo-redirect-btn:hover {
+    transform: translateY(-2px);
+    background: #f3f4f6;
 }
 
 .hero-poster-glow {
@@ -620,6 +700,12 @@ body {
 @media (max-width: 768px) {
     .sidebar { display: none; }
     .main-content { padding: 16px 16px 90px; }
+    .duckdog-poster,
+    .floating-hero,
+    .promo-redirect-card {
+        width: calc(100% + 32px);
+        margin-inline: -16px;
+    }
     .top-bar-custom { grid-template-columns: 1fr auto; }
     .page-header-title { display: none; }
     .floating-hero {
@@ -629,6 +715,10 @@ body {
         min-height: 0;
         padding: 22px 16px;
         text-align: left;
+    }
+    .promo-redirect-card {
+        grid-template-columns: 1fr;
+        padding: 20px;
     }
     .hero-poster-cover {
         width: 100%;

@@ -28,7 +28,7 @@ const REDIRECT_CARDS_DATA = {
         desc: "Complete desafios literários, acumule pontos e veja sua evolução continuar salva no perfil.",
         btnText: "Abrir games",
         btnUrl: "./games_menu.html",
-        iconOrImg: "🎯" // Pode ser um emoji ou HTML de imagem
+        image: "../images/banner-games.svg"
     },
     // Estrutura do 2º Campo de Redirecionamento (Basta alterar os dados abaixo)
     1: {
@@ -37,7 +37,7 @@ const REDIRECT_CARDS_DATA = {
         desc: "Veja o que outros leitores estão comentando e compartilhe suas opiniões.",
         btnText: "Ver Feed",
         btnUrl: "./feed.html",
-        iconOrImg: "💬"
+        image: "../images/banner-feed.svg"
     },
     // Estrutura do 3º Campo de Redirecionamento (Basta alterar os dados abaixo)
     2: {
@@ -46,7 +46,7 @@ const REDIRECT_CARDS_DATA = {
         desc: "Utilize nosso editor completo para criar novas histórias e compartilhar com a comunidade.",
         btnText: "Criar agora",
         btnUrl: "./editor.html",
-        iconOrImg: "✍️"
+        image: "../images/banner-criacao.svg"
     }
 };
 
@@ -186,6 +186,7 @@ function renderGenreSections(genres) {
     genreSectionsContainer.innerHTML = genres.map((genre, index) => {
         const filtered = allBooksPoefo.filter(b => b.genero === genre);
         if (filtered.length === 0) return '';
+        const latestBook = filtered[filtered.length - 1];
 
         // Pega as configurações de redirecionamento para esta posição ou aplica um padrão editável
         const redirectData = REDIRECT_CARDS_DATA[index] || {
@@ -194,7 +195,7 @@ function renderGenreSections(genres) {
             desc: "Descubra novos títulos, avalie histórias e interaja com os autores.",
             btnText: "Ver categoria",
             btnUrl: "#",
-            iconOrImg: "📚"
+            image: "../images/banner-criacao.svg"
         };
 
         return `
@@ -211,14 +212,13 @@ function renderGenreSections(genres) {
                 </div>
 
                 <!-- CAMPO DE REDIRECIONAMENTO DE CONTEÚDO INTERCALADO -->
-                <div class="promo-redirect-card">
-                    <div>
+                <div class="promo-redirect-card" style="--promo-cover: url('${latestBook.link_capa}'); --promo-image: url('${redirectData.image}')">
+                    <div class="promo-redirect-content">
                         <span class="hero-tag" style="color: #bfdbfe;">${redirectData.tag}</span>
                         <h2>${redirectData.title}</h2>
                         <p>${redirectData.desc}</p>
                         <a href="${redirectData.btnUrl}" class="promo-redirect-btn">${redirectData.btnText}</a>
                     </div>
-                    <div class="promo-redirect-illustration">${redirectData.iconOrImg}</div>
                 </div>
             </div>
         `;

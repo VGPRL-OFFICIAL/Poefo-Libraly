@@ -429,6 +429,8 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 24px;
     font-size: 14px;
+    background: var(--theme-surface);
+    color: var(--theme-text);
 }
 
 .modal-body {

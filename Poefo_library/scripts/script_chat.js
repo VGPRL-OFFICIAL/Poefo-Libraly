@@ -12,6 +12,13 @@ let currentUserAvatar = sessionStorage.getItem('currentUserAvatar') || null;
 
 let currentConvId = null;
 let currentParticipants = [];
+let activeMessagesRef = null;
+let activeMessagesQuery = null;
+let activeMessageAddedHandler = null;
+let activeMessageRemovedHandler = null;
+let activePresenceListeners = [];
+let presenceConnectionRef = null;
+let presenceConnectionHandler = null;
 let allUsers = {};
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -108,6 +115,89 @@ function timeAgo(timestamp) {
     if (diff < 86400000) return `${Math.floor(diff/3600000)}h`;
     const d = new Date(timestamp);
     return d.toLocaleDateString('pt-BR');
+}
+
+function setHeaderPresence(text, online) {
+    const status = document.getElementById('header-status');
+    if (!status) return;
+    status.textContent = text;
+    status.classList.toggle('is-online', Boolean(online));
+    status.classList.toggle('is-offline', !online);
+}
+
+function isConversationVisible(convId) {
+    if (convId !== currentConvId) return false;
+    return window.matchMedia('(min-width: 769px)').matches
+        || document.body.classList.contains('mobile-chat-open');
+}
+
+function clearConversationPresenceListeners() {
+    activePresenceListeners.forEach(({ ref, handler }) => ref.off('value', handler));
+    activePresenceListeners = [];
+}
+
+function watchConversationPresence(participants) {
+    clearConversationPresenceListeners();
+    const conversationId = currentConvId;
+    const otherIds = participants.filter(id => id && id !== currentUserId);
+    if (otherIds.length === 0) {
+        setHeaderPresence('Offline', false);
+        return;
+    }
+
+    const onlineUsers = new Set();
+    const updateStatus = () => {
+        if (otherIds.length === 1) {
+            const online = onlineUsers.has(otherIds[0]);
+            setHeaderPresence(online ? 'Online' : 'Offline', online);
+            return;
+        }
+        const count = onlineUsers.size;
+        setHeaderPresence(count ? `${count} online` : 'Ninguém online', count > 0);
+    };
+
+    otherIds.forEach(userId => {
+        const ref = db.ref(`presence/${userId}/connections`);
+        const handler = snapshot => {
+            if (currentConvId !== conversationId || !currentParticipants.includes(userId)) return;
+            if (snapshot.exists() && Object.keys(snapshot.val() || {}).length > 0) {
+                onlineUsers.add(userId);
+            } else {
+                onlineUsers.delete(userId);
+            }
+            updateStatus();
+        };
+        ref.on('value', handler, error => {
+            console.error(`Não foi possível consultar a presença de ${userId}:`, error);
+            if (currentConvId === conversationId && currentParticipants.includes(userId)) {
+                setHeaderPresence('Status indisponível', false);
+            }
+        });
+        activePresenceListeners.push({ ref, handler });
+    });
+}
+
+function startPresenceTracking() {
+    if (presenceConnectionRef && presenceConnectionHandler) {
+        presenceConnectionRef.off('value', presenceConnectionHandler);
+    }
+    presenceConnectionRef = db.ref('.info/connected');
+    presenceConnectionHandler = snapshot => {
+        if (snapshot.val() !== true || !currentUserId) return;
+        const connectionRef = db.ref(`presence/${currentUserId}/connections`).push();
+        connectionRef.onDisconnect().remove()
+            .then(() => connectionRef.set(true))
+            .catch(error => {
+                console.error('Não foi possível ativar seu status online:', error);
+                if (currentParticipants.length > 0) {
+                    setHeaderPresence('Status indisponível', false);
+                }
+            });
+    };
+    presenceConnectionRef.on('value', presenceConnectionHandler, error => {
+        console.error('Não foi possível acompanhar a conexão do chat:', error);
+        setHeaderPresence('Status indisponível', false);
+    });
 }
 
 async function sendBookInviteToConversation(convId, participants, title) {
@@ -1188,10 +1278,11 @@ function subscribeConversations() {
         Object.entries(data).forEach(([convId, meta]) => {
             const timestamp = Number(meta.lastTimestamp) || 0;
             const previousTimestamp = notificationTimestamps.get(convId);
+            const conversationVisible = isConversationVisible(convId);
             if (
                 previousTimestamp !== undefined
                 && timestamp > previousTimestamp
-                && convId !== currentConvId
+                && !conversationVisible
                 && meta.lastMessage
                 && meta.lastMessageSenderId !== currentUserId
             ) {
@@ -1199,6 +1290,11 @@ function subscribeConversations() {
                 showDesktopNotification(meta.title || 'Nova mensagem', meta.lastMessage, meta.avatar || null);
             }
             notificationTimestamps.set(convId, timestamp);
+            if (conversationVisible && Number(meta.unreadCount) > 0) {
+                db.ref(`chat_users/${currentUserId}/conversations/${convId}/unreadCount`)
+                    .set(0)
+                    .catch(error => console.error('Não foi possível zerar mensagens já lidas:', error));
+            }
         });
         if (Object.keys(data).length === 0) {
             convList.innerHTML = '<div style="padding: 16px; text-align: center; color: #65676b;">Sem conversas</div>';
@@ -1207,12 +1303,25 @@ function subscribeConversations() {
 
         const entries = Object.entries(data).sort((a, b) => (b[1].lastTimestamp || 0) - (a[1].lastTimestamp || 0));
         entries.forEach(([convId, meta]) => {
-            convList.appendChild(createConversationItem(convId, meta));
+            const visibleMeta = isConversationVisible(convId)
+                ? { ...meta, unreadCount: 0 }
+                : meta;
+            convList.appendChild(createConversationItem(convId, visibleMeta));
         });
     });
 }
 
 async function openConversation(convId, participants, title) {
+    if (activeMessagesQuery && activeMessageAddedHandler) {
+        activeMessagesQuery.off('child_added', activeMessageAddedHandler);
+    }
+    if (activeMessagesRef && activeMessageRemovedHandler) {
+        activeMessagesRef.off('child_removed', activeMessageRemovedHandler);
+    }
+    activeMessagesQuery = null;
+    activeMessagesRef = null;
+    activeMessageAddedHandler = null;
+    activeMessageRemovedHandler = null;
     currentConvId = convId;
     conversationBookClub = null;
     renderBookClubPanel(null);
@@ -1224,13 +1333,13 @@ async function openConversation(convId, participants, title) {
         : Object.keys(participants || {});
     
     currentParticipants = participantsArray;
+    watchConversationPresence(participantsArray);
     
     // Mostrar área de mensagens e manter a barra de composição fixa em baixo
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('messages-area').style.display = 'flex';
     document.getElementById('compose-section').style.display = 'flex';
     document.getElementById('header-name').textContent = title || participantsArray.join(', ');
-    document.getElementById('header-status').textContent = 'Online';
     try {
         const metadataSnapshot = await db.ref(`chat_metadata/${convId}`).once('value');
         if (currentConvId !== convId) return;
@@ -1262,11 +1371,11 @@ async function openConversation(convId, participants, title) {
     messagesArea.innerHTML = '';
     
     const messagesRef = db.ref(`chat/${convId}/messages`);
-    messagesRef.off();
     
     // Limpar e recarregar
     const snapshot = await messagesRef.limitToLast(200).once('value');
     if (currentConvId !== convId) return;
+    const messagesQuery = messagesRef.limitToLast(1);
     const renderedMessageIds = new Set();
     if (snapshot.exists()) {
         const msgs = [];
@@ -1276,18 +1385,36 @@ async function openConversation(convId, participants, title) {
         msgs.sort((a, b) => a.message.timestamp - b.message.timestamp);
         msgs.forEach(({ id, message }) => {
             renderedMessageIds.add(id);
-            renderMessage(message, messagesArea);
+            renderMessage(message, messagesArea, id, convId);
         });
     }
     
     // Listener para novas mensagens
-    messagesRef.limitToLast(1).on('child_added', snap => {
+    const messageAddedHandler = snap => {
+        if (currentConvId !== convId || activeMessagesQuery !== messagesQuery) return;
         const msg = snap.val();
         if (msg && !renderedMessageIds.has(snap.key)) {
             renderedMessageIds.add(snap.key);
-            renderMessage(msg, messagesArea);
+            renderMessage(msg, messagesArea, snap.key, convId);
+            if (msg.userId !== currentUserId && isConversationVisible(convId)) {
+                db.ref(`chat_users/${currentUserId}/conversations/${convId}/unreadCount`)
+                    .set(0)
+                    .catch(error => console.error('Não foi possível marcar a mensagem como lida:', error));
+            }
         }
-    });
+    };
+    const messageRemovedHandler = snap => {
+        if (currentConvId !== convId || activeMessagesRef !== messagesRef) return;
+        const messageElement = Array.from(messagesArea.children)
+            .find(element => element.dataset.messageId === snap.key);
+        messageElement?.remove();
+    };
+    activeMessagesRef = messagesRef;
+    activeMessagesQuery = messagesQuery;
+    activeMessageAddedHandler = messageAddedHandler;
+    activeMessageRemovedHandler = messageRemovedHandler;
+    messagesQuery.on('child_added', messageAddedHandler);
+    messagesRef.on('child_removed', messageRemovedHandler);
     // Zerar contador de não lidas para esta conversa ao abrir
     try {
         db.ref(`chat_users/${currentUserId}/conversations/${convId}/unreadCount`).set(0);
@@ -1296,10 +1423,12 @@ async function openConversation(convId, participants, title) {
     messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 
-function renderMessage(msg, container) {
+function renderMessage(msg, container, messageId, convId) {
     const div = document.createElement('div');
     const isSent = msg.userId === currentUserId;
     div.className = 'message ' + (isSent ? 'sent' : 'received');
+    div.dataset.messageId = messageId;
+    div.dataset.conversationId = convId;
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
     if (msg.text) {
@@ -1498,10 +1627,28 @@ function renderMessage(msg, container) {
     }
 
     div.appendChild(bubble);
-    const time = document.createElement('div');
+    const footer = document.createElement('div');
+    footer.className = 'message-footer';
+    const time = document.createElement('span');
     time.className = 'message-time';
     time.textContent = timeAgo(msg.timestamp);
-    div.appendChild(time);
+    footer.appendChild(time);
+    if (isSent) {
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'message-delete-btn';
+        deleteButton.title = 'Apagar mensagem';
+        deleteButton.setAttribute('aria-label', 'Apagar minha mensagem');
+        deleteButton.innerHTML = '<i class="fas fa-trash-alt" aria-hidden="true"></i>';
+        deleteButton.addEventListener('click', () => deleteChatMessage(
+            div.dataset.conversationId,
+            div.dataset.messageId,
+            div,
+            deleteButton
+        ));
+        footer.appendChild(deleteButton);
+    }
+    div.appendChild(footer);
     if (msg.bookAttachment) {
         const book = msg.bookAttachment;
         const card = document.createElement('div');
@@ -1525,6 +1672,30 @@ function renderMessage(msg, container) {
     }
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
+}
+
+async function deleteChatMessage(convId, messageId, messageElement, button) {
+    if (!window.confirm('Deseja apagar esta mensagem? Esta ação não pode ser desfeita.')) return;
+
+    button.disabled = true;
+    try {
+        const auth = firebase.auth();
+        const authUser = auth.currentUser || await new Promise(resolve => {
+            let unsubscribe = () => {};
+            unsubscribe = auth.onAuthStateChanged(user => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
+        if (!authUser) throw new Error('Sua sessão expirou. Entre novamente para apagar a mensagem.');
+        const deleteMessage = firebase.functions().httpsCallable('deleteChatMessage');
+        await deleteMessage({ profileId: currentUserId, convId, msgId: messageId });
+        messageElement.remove();
+    } catch (error) {
+        console.error('Não foi possível apagar a mensagem:', error);
+        alert(`Não foi possível apagar a mensagem: ${error.message || 'tente novamente.'}`);
+        button.disabled = false;
+    }
 }
 
 function escapeHtml(text) {
@@ -1574,6 +1745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentUserId = profile.id;
     currentUserName = profile.data.nome_usuario || profile.data.nome_completo || currentUserName;
     currentUserAvatar = profile.data.foto_perfil || currentUserAvatar;
+    startPresenceTracking();
 
     document.getElementById('mobile-chat-back')?.addEventListener('click', closeMobileConversation);
 

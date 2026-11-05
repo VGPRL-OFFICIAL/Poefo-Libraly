@@ -223,6 +223,26 @@ body {
     display: block;
 }
 
+#header-status::before {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background: #9aa0a6;
+    content: "";
+    vertical-align: 1px;
+}
+
+#header-status.is-online::before {
+    background: #25a55b;
+    box-shadow: 0 0 0 3px rgba(37, 165, 91, .12);
+}
+
+#header-status.is-offline::before {
+    background: #9aa0a6;
+}
+
 .header-actions {
     display: flex;
     gap: 16px;
@@ -267,31 +287,35 @@ body {
 /* Messages Area */
 #messages-area {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     width: 100%;
-    padding-bottom: 110px;
-    /* espaço para a barra fixa */
+    padding-bottom: 16px;
 }
 
 .message {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 85%;
     margin-bottom: 8px;
 }
 
 .message.sent {
-    justify-content: flex-end;
+    align-self: flex-end;
+    align-items: flex-end;
 }
 
 .message.received {
-    justify-content: flex-start;
+    align-self: flex-start;
 }
 
 .message-bubble {
-    max-width: 55%;
+    max-width: 100%;
     padding: 12px 16px;
     border-radius: 18px;
     word-wrap: break-word;
@@ -308,6 +332,44 @@ body {
     background: var(--secondary-background);
     color: var(--secondary-color);
     border-radius: 4px 18px 18px 18px;
+}
+
+.message-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 3px 4px 0;
+}
+
+.message-time {
+    color: var(--text-medium);
+    font-size: 11px;
+}
+
+.message-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-medium);
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.message-delete-btn:hover {
+    color: #b42318;
+    background: rgba(180, 35, 24, .1);
+    transform: translateY(-1px);
+}
+
+.message-delete-btn:disabled {
+    cursor: wait;
+    opacity: .55;
 }
 
 .message-bubble img {
@@ -497,23 +559,26 @@ body {
 #compose-section {
     display: flex;
     flex-direction: column;
+    flex: 0 0 auto;
+    min-width: 0;
     background: var(--background-light);
-    padding: 12px 16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     gap: 12px;
-    position: sticky;
-    bottom: 0;
     z-index: 5;
     box-shadow: var(--shadow-soft);
 }
 
 .compose-input {
     display: flex;
+    width: 100%;
+    min-width: 0;
     gap: 8px;
     align-items: center;
 }
 
 .compose-input input {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 10px 16px;
     border: 1px solid var(--border-color);
     border-radius: 24px;
@@ -526,6 +591,9 @@ body {
 }
 
 .compose-icon-btn {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 40px;
     background: none;
     border: none;
     cursor: pointer;
@@ -538,6 +606,7 @@ body {
 }
 
 .send-btn {
+    flex: 0 0 40px;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -833,6 +902,34 @@ body.feed-post-share-mode .participant-checkbox {
 
 .compose-input #message-input {
     min-width: 0;
+}
+
+@media (max-width: 380px) {
+    #compose-section {
+        padding-right: 8px;
+        padding-left: 8px;
+        gap: 8px;
+    }
+
+    .compose-input {
+        gap: 4px;
+    }
+
+    .compose-input input {
+        padding: 10px 12px;
+    }
+
+    .compose-icon-btn {
+        flex-basis: 32px;
+        width: 32px;
+        font-size: 18px;
+    }
+
+    .send-btn {
+        flex-basis: 36px;
+        width: 36px;
+        height: 36px;
+    }
 }
 
 .compose-icon-btn:disabled {

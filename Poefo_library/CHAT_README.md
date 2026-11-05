@@ -41,6 +41,9 @@ Eu organizo as conversas nesta estrutura do Firebase Realtime Database:
 │   │   └── avatar: string (opcional)
 │   └── ...
 ├── ...
+
+/presence
+├── {userId}/connections/{connectionId}: true
 ```
 
 ### Outras estruturas que eu uso:
@@ -66,9 +69,34 @@ Eu uso Firebase Authentication para o login e mantenho como identificador de per
 │   └── video_*.mp4
 ```
 
-Eu envio áudios e imagens ao Firebase Storage e guardo na mensagem a URL e o tipo de arquivo para exibir ou reproduzir a mídia. Os arquivos permanecem no Storage enquanto a mensagem existir; não configurei expiração automática.
+Eu envio áudios e imagens ao Firebase Storage e guardo na mensagem a URL e o tipo de arquivo para exibir ou reproduzir a mídia. Os arquivos ficam no Storage de forma independente e não configurei expiração automática.
 
 Eu permito vincular um livro do catálogo a conversas e grupos em `chat_metadata/{convId}/bookClub`. O cartão do clube de leitura aparece para os participantes e pode ser alterado ou removido. Também disponibilizo o player de áudio na própria mensagem. Depois da primeira interação do usuário, reproduzo o som das mensagens recebidas na aba aberta, sem depender da permissão para notificações do sistema. Mantenho `lastMessageSenderId` pela Cloud Function para não tocar o alerta das mensagens que o próprio usuário enviou.
+
+Eu permito que cada pessoa apague as próprias mensagens pelo botão de lixeira na conversa. A Cloud Function `deleteChatMessage` valida a conta autenticada, a participação na conversa e a autoria antes de remover o registro. Quando apago a mensagem mais recente, atualizo a prévia e o horário da conversa com a última mensagem restante, sem alterar os contadores de não lidas. A remoção da mensagem não apaga o arquivo de mídia correspondente do Storage.
+
+Para disponibilizar essa ação, publico a função com `firebase deploy --only functions:deleteChatMessage`. A página do chat também carrega o SDK de Cloud Functions usado para chamar essa validação no servidor.
+
+Eu mantenho a caixa de composição no fluxo flexível do chat, com os botões de imagem, áudio e envio sem encolher em telas estreitas. No celular, reduzo os espaçamentos e respeito a área segura inferior do dispositivo.
+
+Eu acompanho cada conexão ativa em `presence/{userId}/connections`. O Firebase remove a conexão automaticamente quando o dispositivo desconecta; o cabeçalho mostra o estado real do contato ou quantas pessoas estão online no grupo. Eu removo os listeners da conversa anterior antes de abrir outra para que mensagens e estados de presença não vazem entre conversas.
+
+Para permitir a leitura do status e limitar cada pessoa às próprias conexões, eu mesclo estas regras dentro de `rules` no Console do Firebase, preservando as outras regras existentes:
+
+```json
+{
+  "presence": {
+    "$profileId": {
+      ".read": "auth != null",
+      "connections": {
+        "$connectionId": {
+          ".write": "auth != null && root.child('usuarios').child($profileId).child('authUid').val() == auth.uid"
+        }
+      }
+    }
+  }
+}
+```
 
 ### Regras que eu uso no Firebase Storage para mídias do chat
 

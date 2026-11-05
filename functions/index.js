@@ -335,3 +335,88 @@ exports.deleteFeedPost = functions.https.onCall(async (data, context) => {
 
   return { deleted: true, postId };
 });
+
+exports.deleteChatMessage = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Entre na sua conta para excluir uma mensagem.');
+  }
+
+  const profileId = String(data && data.profileId || '');
+  const convId = String(data && data.convId || '');
+  const msgId = String(data && data.msgId || '');
+  const invalidDatabaseKey = value =>
+    !value || value.length > 768 || ['.', '#', '$', '[', ']', '/'].some(character => value.includes(character));
+  if (invalidDatabaseKey(profileId) || invalidDatabaseKey(convId) || invalidDatabaseKey(msgId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Os dados da mensagem são inválidos.');
+  }
+  await getAuthenticatedProfileId(context.auth.uid, profileId);
+
+  const db = admin.database();
+  const metadataRef = db.ref(`chat_metadata/${convId}`);
+  const [metadataSnapshot, messageSnapshot] = await Promise.all([
+    metadataRef.once('value'),
+    db.ref(`chat/${convId}/messages/${msgId}`).once('value')
+  ]);
+  const metadata = metadataSnapshot.val();
+  const message = messageSnapshot.val();
+  const participants = metadata && metadata.participants;
+  const isParticipant = Array.isArray(participants)
+    ? participants.includes(profileId)
+    : Boolean(participants && participants[profileId]);
+  if (!metadata || !isParticipant) {
+    throw new functions.https.HttpsError('permission-denied', 'Você não participa desta conversa.');
+  }
+  if (!message) {
+    throw new functions.https.HttpsError('not-found', 'A mensagem não existe mais.');
+  }
+  if (String(message.userId || '') !== profileId) {
+    throw new functions.https.HttpsError('permission-denied', 'Você só pode excluir suas próprias mensagens.');
+  }
+
+  const latestBeforeDelete = await db.ref(`chat/${convId}/messages`)
+    .orderByChild('timestamp')
+    .limitToLast(1)
+    .once('value');
+  let latestMessageId = null;
+  latestBeforeDelete.forEach(child => {
+    latestMessageId = child.key;
+  });
+  await db.ref(`chat/${convId}/messages/${msgId}`).remove();
+
+  if (latestMessageId === msgId) {
+    const remainingMessages = await db.ref(`chat/${convId}/messages`)
+      .orderByChild('timestamp')
+      .limitToLast(1)
+      .once('value');
+    let latestMessage = null;
+    remainingMessages.forEach(child => {
+      latestMessage = child.val();
+    });
+
+    const preview = {
+      lastMessage: latestMessage ? getMessagePreview(latestMessage) : '',
+      lastTimestamp: latestMessage
+        ? Number(latestMessage.timestamp) || 0
+        : Number(metadata.createdAt) || 0,
+      lastMessageSenderId: latestMessage ? latestMessage.userId || null : null
+    };
+    const updates = {};
+    Object.entries(preview).forEach(([key, value]) => {
+      updates[`chat_metadata/${convId}/${key}`] = value;
+    });
+    const participants = getConversationParticipants(metadata);
+    const conversationEntries = await Promise.all(participants.map(async participantId => {
+      const entryRef = db.ref(`chat_users/${participantId}/conversations/${convId}`);
+      const entrySnapshot = await entryRef.once('value');
+      return entrySnapshot.exists() ? participantId : null;
+    }));
+    conversationEntries.filter(Boolean).forEach(participantId => {
+      Object.entries(preview).forEach(([key, value]) => {
+        updates[`chat_users/${participantId}/conversations/${convId}/${key}`] = value;
+      });
+    });
+    await db.ref().update(updates);
+  }
+
+  return { deleted: true, convId, msgId };
+});

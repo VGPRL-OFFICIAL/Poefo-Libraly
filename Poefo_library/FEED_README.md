@@ -1,12 +1,12 @@
-# Como eu organizei o feed do Poefo
+# Como organizei o feed do Poefo
 
-## Como eu implementei o seguimento
+## Como implementei o seguimento
 
-Eu consulto o estado do seguimento pela Cloud Function autenticada `getFollowStatus` e altero a relação com `toggleFollow`. Nas duas funções, valido o vínculo entre o perfil solicitante e o UID autenticado. A função atualiza as relações em `follows` e `followers`; o cliente não grava diretamente nesses caminhos.
+Consultei o estado do seguimento pela Cloud Function autenticada `getFollowStatus` e alterei a relação com `toggleFollow`. Nas duas funções, validei o vínculo entre o perfil solicitante e o UID autenticado. A função atualizou as relações em `follows` e `followers`; o cliente não gravou diretamente nesses caminhos.
 
-Nas páginas de perfil, conto as relações `true` em `follows/{profileId}` para mostrar quem o perfil segue e em `followers/{profileId}` para mostrar quem segue o perfil. Não uso os contadores antigos como fonte. Para exibir os totais, publico regras de leitura para esses caminhos; se o Firebase negar a leitura, mostro `—` em vez de um número incorreto.
+Nas páginas de perfil, contei as relações `true` em `follows/{profileId}` para mostrar quem o perfil seguia e em `followers/{profileId}` para mostrar quem o seguia. Não usei os contadores antigos como fonte. Para exibir os totais, publiquei regras de leitura para esses caminhos; quando o Firebase negou a leitura, mostrei `—` em vez de um número incorreto.
 
-Para permitir que o feed e os perfis leiam essas relações, eu mesclo o bloco abaixo dentro de `"rules"` em Firebase Console > Realtime Database > Rules:
+Para permitir a leitura dessas relações pelo feed e pelos perfis, mesclei o bloco abaixo em `"rules"`, no **Firebase Console > Realtime Database > Rules**:
 
 ```json
 "follows": {
@@ -35,16 +35,16 @@ Para permitir que o feed e os perfis leiam essas relações, eu mesclo o bloco a
 }
 ```
 
-Eu preservo as outras regras e removo permissões de gravação amplas, como `".write": true` na raiz ou em um nó ancestral. No Realtime Database, uma permissão concedida em um nó pai prevalece sobre a negação nos filhos. Como atualizo essas relações pela Cloud Function com Admin SDK, não preciso liberar gravação para o cliente.
+Preservei as outras regras e removi permissões de gravação amplas, como `".write": true` na raiz ou em um nó ancestral. Nas regras adotadas, a permissão concedida em um nó pai prevaleceu sobre a negação nos filhos. Como atualizei essas relações pela Cloud Function com Admin SDK, não precisei liberar gravação para o cliente.
 
-## Como eu compartilho e excluo publicações
+## Como compartilhei e excluí publicações
 
-No menu de três pontos, posso enviar uma publicação a uma conversa ou excluí-la quando ela pertence ao usuário atual. Faço a exclusão pela Cloud Function `deleteFeedPost`, que confere a autoria antes de alterar `livros_json/posts.json` no bucket `captu-libraly.firebasestorage.app`. Por isso, não libero a gravação desse arquivo para os clientes.
+No menu de três pontos, pude enviar uma publicação a uma conversa ou excluí-la quando pertencia ao usuário atual. Fiz a exclusão pela Cloud Function `deleteFeedPost`, que conferiu a autoria antes de alterar `livros_json/posts.json` no bucket `captu-libraly.firebasestorage.app`. Por isso, não liberei a gravação desse arquivo para os clientes.
 
-Depois que publico as regras de leitura, implanto as funções com:
+Depois de publicar as regras de leitura, implantei as funções com:
 
 ```shell
 firebase deploy --only functions
 ```
 
-Faço o deploy no projeto Firebase `captu-libraly`. Se a função de exclusão registrar um erro de permissão no Cloud Storage, concedo à conta de serviço de runtime das Functions a função IAM **Storage Object Admin** somente no bucket `captu-libraly.firebasestorage.app`.
+Fiz o deploy no projeto Firebase `captu-libraly`. Se a função de exclusão registrasse um erro de permissão no Cloud Storage, concederia à conta de serviço de runtime das Functions a função IAM **Storage Object Admin** somente no bucket `captu-libraly.firebasestorage.app`.

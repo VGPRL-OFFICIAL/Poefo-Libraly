@@ -76,6 +76,15 @@ body {
     justify-content: center;
 }
 
+.chat-silent-toggle.is-silent {
+    color: #b42318;
+}
+
+.chat-silent-toggle:disabled {
+    cursor: wait;
+    opacity: .6;
+}
+
 .sidebar-search {
     padding: 12px 8px;
 }
@@ -833,8 +842,8 @@ body.feed-post-share-mode .participant-checkbox {
 
 /* Badge de não lidas */
 .conv-badge {
-    background: var(--badge-background);
-    color: var(--badge-color);
+    background: #d93025;
+    color: #fff;
     min-width: 20px;
     height: 20px;
     padding: 0 6px;
@@ -845,6 +854,12 @@ body.feed-post-share-mode .participant-checkbox {
     font-size: 12px;
     font-weight: 700;
     margin-left: 8px;
+    box-shadow: 0 0 0 3px rgba(217, 48, 37, .14);
+    animation: unread-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes unread-badge-pulse {
+    50% { box-shadow: 0 0 0 5px rgba(217, 48, 37, .08); }
 }
 .book-invite-prompt {
     margin: 10px;
@@ -1334,7 +1349,8 @@ video.message-media {
 @media (prefers-reduced-motion: reduce) {
     .audio-player-shell,
     .audio-player-shell.is-playing .audio-waveform i,
-    .book-club-panel {
+    .book-club-panel,
+    .conv-badge {
         animation: none;
     }
 }

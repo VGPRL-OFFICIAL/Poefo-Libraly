@@ -19,6 +19,25 @@ function getMessagePreview(msg) {
   return msg.mediaUrl ? '[Arquivo]' : '';
 }
 
+async function getUserConversationPresentation(userId, participants) {
+  const otherParticipants = participants.filter(participantId => participantId !== userId);
+  if (otherParticipants.length !== 1) return {};
+
+  const otherUserSnapshot = await admin.database()
+    .ref(`usuarios/${otherParticipants[0]}`)
+    .once('value');
+  const otherUser = otherUserSnapshot.val();
+  if (!otherUser) return {};
+
+  const title = otherUser.nome_usuario || otherUser.nome_completo || otherUser.handle
+    || otherParticipants[0];
+  return {
+    title,
+    otherName: title,
+    avatar: otherUser.foto_perfil || null
+  };
+}
+
 // Eu crio o índice da conversa para cada membro e mantenho chat_users privado por usuário.
 exports.indexNewConversation = functions.database.ref('/chat_metadata/{convId}')
   .onCreate(async (snap, context) => {
@@ -28,6 +47,7 @@ exports.indexNewConversation = functions.database.ref('/chat_metadata/{convId}')
 
     try {
       await Promise.all(participants.map(async uid => {
+        const presentation = await getUserConversationPresentation(uid, participants);
         const conversationRef = admin.database().ref(`chat_users/${uid}/conversations/${context.params.convId}`);
         const result = await conversationRef.transaction(current => {
           const previous = current || {};
@@ -37,6 +57,7 @@ exports.indexNewConversation = functions.database.ref('/chat_metadata/{convId}')
           return {
             ...previous,
             ...meta,
+            ...presentation,
             lastMessage: keepLatestPreview ? previous.lastMessage : meta.lastMessage,
             lastTimestamp: Math.max(previousTimestamp, metadataTimestamp),
             unreadCount: Number(previous.unreadCount) || 0
@@ -80,6 +101,7 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
     });
 
     await Promise.all(participants.map(async uid => {
+      const presentation = await getUserConversationPresentation(uid, participants);
       const conversationRef = admin.database().ref(`chat_users/${uid}/conversations/${convId}`);
       const result = await conversationRef.transaction(current => {
         const previous = current || {};
@@ -88,6 +110,7 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
         return {
           ...previous,
           ...meta,
+          ...presentation,
           lastMessage: keepLatestPreview ? previous.lastMessage : lastMessage,
           lastTimestamp: Math.max(previousTimestamp, lastTimestamp),
           lastMessageSenderId: keepLatestPreview
@@ -123,29 +146,30 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
     for (const uid of participants) {
       if (uid === msg.userId) continue; // não notificar remetente
       try {
-        const tSnap = await admin.database().ref(`/usuarios/${uid}/fcmToken`).once('value');
-        const token = tSnap.exists() ? tSnap.val() : null;
+        const userSnapshot = await admin.database().ref(`/usuarios/${uid}`).once('value');
+        const user = userSnapshot.val();
+        if (user && user.chatSilentMode === true) continue;
+        const token = user && user.fcmToken;
         if (token) tokens.push(token);
       } catch (e) { console.warn('Erro lendo token', uid, e); }
     }
 
     if (tokens.length === 0) return null;
 
+    const body = msg.text
+      ? (msg.text.length > 200 ? msg.text.substring(0, 200) + '...' : msg.text)
+      : msg.mediaType && msg.mediaType.startsWith('audio/')
+        ? 'Novo áudio'
+        : msg.mediaType && msg.mediaType.startsWith('image/')
+          ? 'Nova imagem'
+          : 'Novo anexo';
     const payload = {
-      notification: {
-        title: msg.userName || 'Nova mensagem',
-        body: msg.text
-          ? (msg.text.length > 200 ? msg.text.substring(0,200) + '...' : msg.text)
-          : msg.mediaType && msg.mediaType.startsWith('audio/')
-            ? 'Novo áudio'
-            : msg.mediaType && msg.mediaType.startsWith('image/')
-              ? 'Nova imagem'
-              : 'Novo anexo',
-        icon: '/images/ic_chat.png'
-      },
       data: {
-        convId: convId,
-        senderId: msg.userId || ''
+        convId: String(convId),
+        senderId: String(msg.userId || ''),
+        title: String(msg.userName || 'Nova mensagem'),
+        body: String(body),
+        icon: '/images/ic_chat.png'
       }
     };
 
@@ -157,6 +181,25 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
       return null;
     }
   });
+
+exports.setChatSilentMode = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Entre na sua conta para alterar as notificações.');
+  }
+  if (typeof (data && data.silentMode) !== 'boolean') {
+    throw new functions.https.HttpsError('invalid-argument', 'O modo silencioso precisa ser ativado ou desativado.');
+  }
+
+  const profileId = String(data && data.profileId || '');
+  const invalidDatabaseKey = value =>
+    !value || value.length > 768 || ['.', '#', '$', '[', ']', '/'].some(character => value.includes(character));
+  if (invalidDatabaseKey(profileId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'O perfil informado é inválido.');
+  }
+  await getAuthenticatedProfileId(context.auth.uid, profileId);
+  await admin.database().ref(`usuarios/${profileId}/chatSilentMode`).set(data.silentMode);
+  return { silentMode: data.silentMode };
+});
 
 async function getAuthenticatedProfileId(authUid, profileId) {
   const profileSnapshot = await admin.database().ref(`usuarios/${profileId}`).once('value');

@@ -79,6 +79,20 @@ Para disponibilizar essa ação, publico a função com `firebase deploy --only 
 
 Eu mantenho a caixa de composição no fluxo flexível do chat, com os botões de imagem, áudio e envio sem encolher em telas estreitas. No celular, reduzo os espaçamentos e respeito a área segura inferior do dispositivo.
 
+Eu removo conversas diretas duplicadas pelo mesmo par de participantes ao montar o histórico. Enquanto uma conversa está aberta, mantenho sua posição na lista mesmo quando chega uma mensagem; nas demais conversas, atualizo a prévia, subo a conversa para o topo e mantenho o contador de não lidas até eu abri-la.
+
+Eu envio notificações push com dados para o service worker poder exibi-las mesmo com o chat fechado. Cada conversa usa uma notificação do sistema que é atualizada em vez de duplicada; ao tocar nela, eu abro a conversa correspondente. O botão de volume no cabeçalho da lista ativa ou desativa o modo silencioso, que eu salvo no perfil e aplico aos sons e notificações push.
+
+Para habilitar as notificações com a página fechada, eu configuro a chave pública Web Push em **Firebase Console > Configurações do projeto > Cloud Messaging > Certificados Web Push**. Substituo `COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI` por essa chave em `scripts/firebase-config.js` e `html/chat.html`. Também permito notificações para o site nas configurações do navegador. Sem a chave VAPID e a permissão do navegador, o Firebase não consegue entregar push em segundo plano.
+
+Eu publico o controle de modo silencioso e o envio de push com:
+
+```shell
+firebase deploy --only functions:setChatSilentMode,functions:notifyNewMessage
+```
+
+Também publico o service worker e a interface do chat nos Hosting configurados.
+
 Eu acompanho cada conexão ativa em `presence/{userId}/connections`. O Firebase remove a conexão automaticamente quando o dispositivo desconecta; o cabeçalho mostra o estado real do contato ou quantas pessoas estão online no grupo. Eu removo os listeners da conversa anterior antes de abrir outra para que mensagens e estados de presença não vazem entre conversas.
 
 Para permitir a leitura do status e limitar cada pessoa às próprias conexões, eu mesclo estas regras dentro de `rules` no Console do Firebase, preservando as outras regras existentes:
@@ -327,6 +341,8 @@ Com as Cloud Functions `indexNewConversation` e `syncConversationOnMessage`, cri
 ```shell
 firebase deploy --only functions
 ```
+
+Nas conversas diretas, eu gero o título e a foto de cada item pelo perfil da outra pessoa, sem reutilizar a identidade de quem criou a conversa. Quando uma mensagem chega, atualizo a prévia, a posição da conversa e a contagem de não lidas; notifico apenas quando a conversa não está aberta.
 
 ##  Como eu uso o chat
 

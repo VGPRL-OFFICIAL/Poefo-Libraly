@@ -33,6 +33,8 @@ let pendingFeedPostShare = null;
 let notificationAudioContext = null;
 let lastNotificationSoundAt = 0;
 const notificationTimestamps = new Map();
+const notificationUnreadCounts = new Map();
+let chatSilentMode = false;
 let bookCatalogPromise = null;
 let selectedBookClub = null;
 let conversationBookClub = null;
@@ -55,6 +57,7 @@ function primeNotificationAudio() {
 }
 
 function playNotificationSound() {
+    if (chatSilentMode) return;
     const now = Date.now();
     if (now - lastNotificationSoundAt < 900) return;
     lastNotificationSoundAt = now;
@@ -81,6 +84,7 @@ document.addEventListener('pointerdown', primeNotificationAudio);
 document.addEventListener('keydown', primeNotificationAudio);
 
 function showDesktopNotification(title, body, icon) {
+    if (chatSilentMode) return;
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
         try {
@@ -90,11 +94,97 @@ function showDesktopNotification(title, body, icon) {
     }
 }
 
+function updateSilentModeButton() {
+    const button = document.getElementById('chat-silent-toggle');
+    if (!button) return;
+    button.setAttribute('aria-pressed', String(chatSilentMode));
+    button.title = chatSilentMode ? 'Desativar modo silencioso' : 'Ativar modo silencioso';
+    button.setAttribute('aria-label', button.title);
+    button.innerHTML = `<i class="fas fa-volume-${chatSilentMode ? 'mute' : 'up'}" aria-hidden="true"></i>`;
+    button.classList.toggle('is-silent', chatSilentMode);
+}
+
+async function toggleChatSilentMode() {
+    const nextValue = !chatSilentMode;
+    const button = document.getElementById('chat-silent-toggle');
+    if (button) button.disabled = true;
+    try {
+        const savePreference = firebase.functions().httpsCallable('setChatSilentMode');
+        await savePreference({ profileId: currentUserId, silentMode: nextValue });
+        chatSilentMode = nextValue;
+        localStorage.setItem(`chatSilentMode:${currentUserId}`, String(chatSilentMode));
+        updateSilentModeButton();
+    } catch (error) {
+        console.error('Não foi possível atualizar o modo silencioso:', error);
+        alert(`Não foi possível atualizar o modo silencioso: ${error.message || 'tente novamente.'}`);
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
 // ===== HELPER FUNCTIONS =====
 function getConvIdFromParticipants(arr) {
     const sorted = Array.from(new Set(arr.map(String))).sort();
     if (sorted.length === 2) return `direct_${sorted[0]}_${sorted[1]}`;
     return `group_${sorted.join('_')}`;
+}
+
+function getOtherParticipantId(convId, participants) {
+    const otherIds = participants.filter(id => id && id !== currentUserId);
+    if (otherIds.length === 1) return otherIds[0];
+    if (otherIds.length > 1 || !convId.startsWith('direct_')) return null;
+
+    const directParticipants = convId.slice('direct_'.length);
+    if (directParticipants.startsWith(`${currentUserId}_`)) {
+        return directParticipants.slice(currentUserId.length + 1) || null;
+    }
+    if (directParticipants.endsWith(`_${currentUserId}`)) {
+        return directParticipants.slice(0, -(currentUserId.length + 1)) || null;
+    }
+    return null;
+}
+
+function getParticipantDisplayName(user, fallback) {
+    return user?.nome_usuario || user?.nome_completo || user?.handle || fallback;
+}
+
+function getConversationEntries(data, previousOrder = []) {
+    const conversations = new Map();
+    Object.entries(data).forEach(([convId, meta]) => {
+        const participants = Array.isArray(meta.participants)
+            ? meta.participants
+            : Object.keys(meta.participants || {});
+        const participantIds = participants.filter(Boolean).map(String).sort();
+        const isDirect = convId.startsWith('direct_') && participantIds.length === 2;
+        const key = isDirect ? `direct:${participantIds.join('_')}` : `conversation:${convId}`;
+        const existing = conversations.get(key);
+        if (!existing) {
+            conversations.set(key, { convId, meta });
+            return;
+        }
+
+        const currentIsOpen = convId === currentConvId;
+        const existingIsOpen = existing.convId === currentConvId;
+        const isNewer = Number(meta.lastTimestamp) > Number(existing.meta.lastTimestamp);
+        const candidate = currentIsOpen || (!existingIsOpen && isNewer)
+            ? { convId, meta }
+            : existing;
+        candidate.meta.unreadCount = Math.max(
+            Number(existing.meta.unreadCount) || 0,
+            Number(meta.unreadCount) || 0
+        );
+        conversations.set(key, candidate);
+    });
+
+    const entries = Array.from(conversations.values())
+        .sort((a, b) => (Number(b.meta.lastTimestamp) || 0) - (Number(a.meta.lastTimestamp) || 0));
+    const pinnedIndex = previousOrder.indexOf(currentConvId);
+    const activeIndex = entries.findIndex(entry => entry.convId === currentConvId);
+    if (pinnedIndex >= 0 && activeIndex >= 0 && activeIndex !== pinnedIndex) {
+        const [activeEntry] = entries.splice(activeIndex, 1);
+        entries.splice(Math.min(pinnedIndex, entries.length), 0, activeEntry);
+    }
+    return entries;
 }
 
 async function safeReadRef(path) {
@@ -359,13 +449,16 @@ function createConversationItem(convId, meta) {
     const participantsArr = rawParticipants.filter(id =>
         id && id !== 'null' && id !== 'undefined' && id !== 'NaN'
     );
-    const otherIds = participantsArr.filter(id => id !== currentUserId);
-    const contactIdFromTitle = Object.entries(allUsers).find(([, user]) => {
+    const otherId = getOtherParticipantId(convId, participantsArr);
+    const otherIds = otherId ? [otherId] : [];
+    const contactIdFromTitle = Object.entries(allUsers).find(([userId, user]) => {
         const title = meta.title || meta.otherName;
         const userNames = [user.nome_usuario, user.nome_completo, user.handle]
             .filter(Boolean)
             .map(name => String(name).replace(/^@/, '').toLowerCase());
-        return title && userNames.includes(String(title).replace(/^@/, '').toLowerCase());
+        return title
+            && userId !== currentUserId
+            && userNames.includes(String(title).replace(/^@/, '').toLowerCase());
     })?.[0];
     if (otherIds.length === 0 && contactIdFromTitle && contactIdFromTitle !== currentUserId) {
         otherIds.push(contactIdFromTitle);
@@ -373,10 +466,16 @@ function createConversationItem(convId, meta) {
     }
 
     const otherUser = otherIds.length === 1 ? allUsers[otherIds[0]] : null;
-    const avatar = meta.avatar || otherUser?.foto_perfil || null;
-    const title = [meta.title, meta.otherName].find(value =>
+    const otherUserName = otherUser ? getParticipantDisplayName(otherUser, otherIds[0]) : null;
+    const avatar = otherUser
+        ? (otherUser.foto_perfil || null)
+        : (meta.avatar || null);
+    const metadataTitle = [meta.title, meta.otherName].find(value =>
         value && value !== 'undefined' && value !== 'null'
-    ) || otherUser?.nome_usuario || otherUser?.nome_completo || 'Conversa';
+    );
+    const title = otherId
+        ? (otherUserName || otherId)
+        : (metadataTitle || 'Conversa');
     const unread = Number(meta.unreadCount) || 0;
 
     const avatarElement = document.createElement('div');
@@ -496,7 +595,8 @@ async function registerFcmAndSaveToken() {
 
         // Tentar obter token FCM (usa VAPID key se fornecida em `window.FCM_VAPID_KEY`)
         try {
-            const vapidKey = window.FCM_VAPID_KEY || null;
+            const vapidKey = [window.FCM_VAPID_KEY, window.POEFO_FCM_VAPID_KEY]
+                .find(key => key && !key.startsWith('COLOQUE_SUA_')) || null;
             let currentToken = null;
             if (vapidKey) {
                 // firebase v8 suporta messaging.usePublicVapidKey
@@ -510,7 +610,11 @@ async function registerFcmAndSaveToken() {
                     try { currentToken = await messaging.getToken(); } catch(err2) { throw err2; }
                 }
             } else {
-                try { currentToken = await messaging.getToken(); } catch (e) { console.warn('getToken falhou sem VAPID key', e); }
+                try {
+                    currentToken = await messaging.getToken();
+                } catch (e) {
+                    console.warn('Não foi possível registrar notificações push. Configure a chave pública VAPID no Firebase.', e);
+                }
             }
 
             if (currentToken) {
@@ -554,13 +658,6 @@ async function registerFcmAndSaveToken() {
         } catch (err) { /* ignore */ }
 
         // Mostrar notificações enquanto a aba está aberta (mensagens de foreground)
-        messaging.onMessage(payload => {
-            try {
-                const notif = payload.notification || {};
-                playNotificationSound();
-                showDesktopNotification(notif.title || 'Nova mensagem', notif.body || '', notif.icon || null);
-            } catch (e) { console.warn('onMessage error', e); }
-        });
     } catch (err) {
         console.warn('Registro FCM falhou', err);
     }
@@ -1230,17 +1327,10 @@ async function updateChatMetadata(convId, text, mediaUrl, mediaType) {
                 ? 'Imagem'
                 : 'Arquivo';
         const preview = mediaUrl ? `[${mediaLabel}]` : text;
-        const metadataSnapshot = await db.ref(`chat_metadata/${convId}`).once('value');
-        const metadata = metadataSnapshot.val() || {};
-        const meta = {
-            ...metadata,
+        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({
             lastMessage: preview,
             lastTimestamp: Date.now(),
-            lastMessageSenderId: currentUserId
-        };
-
-        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({
-            ...meta,
+            lastMessageSenderId: currentUserId,
             unreadCount: 0
         });
     } catch (err) {
@@ -1250,6 +1340,9 @@ async function updateChatMetadata(convId, text, mediaUrl, mediaType) {
 
 async function loadConversations() {
     const convList = document.getElementById('conversations-list');
+    const previousOrder = Array.from(convList.children)
+        .map(item => item.dataset.convId)
+        .filter(Boolean);
     convList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
     
     const conversations = await safeReadRef(`chat_users/${currentUserId}/conversations`) || {};
@@ -1260,9 +1353,9 @@ async function loadConversations() {
         return;
     }
 
-    const entries = Object.entries(conversations).sort((a, b) => (b[1].lastTimestamp || 0) - (a[1].lastTimestamp || 0));
+    const entries = getConversationEntries(conversations, previousOrder);
 
-    entries.forEach(([convId, meta]) => {
+    entries.forEach(({ convId, meta }) => {
         convList.appendChild(createConversationItem(convId, meta));
     });
 }
@@ -1271,25 +1364,43 @@ async function loadConversations() {
 function subscribeConversations() {
     const ref = db.ref(`chat_users/${currentUserId}/conversations`);
     ref.off();
+    let hasReceivedInitialSnapshot = false;
     ref.on('value', snap => {
         const data = snap.exists() ? snap.val() : {};
         const convList = document.getElementById('conversations-list');
+        const previousOrder = Array.from(convList.children)
+            .map(item => item.dataset.convId)
+            .filter(Boolean);
         convList.innerHTML = '';
         Object.entries(data).forEach(([convId, meta]) => {
             const timestamp = Number(meta.lastTimestamp) || 0;
+            const unreadCount = Number(meta.unreadCount) || 0;
             const previousTimestamp = notificationTimestamps.get(convId);
+            const previousUnreadCount = notificationUnreadCounts.get(convId);
             const conversationVisible = isConversationVisible(convId);
+            const isNewConversation = hasReceivedInitialSnapshot && previousTimestamp === undefined;
+            const hasNewUnread = previousUnreadCount !== undefined && unreadCount > previousUnreadCount;
+            const hasNewMessage = previousTimestamp !== undefined && timestamp > previousTimestamp;
             if (
-                previousTimestamp !== undefined
-                && timestamp > previousTimestamp
-                && !conversationVisible
+                !conversationVisible
                 && meta.lastMessage
                 && meta.lastMessageSenderId !== currentUserId
+                && (hasNewMessage || hasNewUnread || (isNewConversation && unreadCount > 0))
             ) {
                 playNotificationSound();
-                showDesktopNotification(meta.title || 'Nova mensagem', meta.lastMessage, meta.avatar || null);
+                const participants = Array.isArray(meta.participants)
+                    ? meta.participants
+                    : Object.keys(meta.participants || {});
+                const otherId = getOtherParticipantId(convId, participants);
+                const otherUser = otherId ? allUsers[otherId] : null;
+                showDesktopNotification(
+                    otherUser ? getParticipantDisplayName(otherUser, otherId) : meta.title || 'Nova mensagem',
+                    meta.lastMessage,
+                    otherUser ? otherUser.foto_perfil || null : meta.avatar || null
+                );
             }
             notificationTimestamps.set(convId, timestamp);
+            notificationUnreadCounts.set(convId, unreadCount);
             if (conversationVisible && Number(meta.unreadCount) > 0) {
                 db.ref(`chat_users/${currentUserId}/conversations/${convId}/unreadCount`)
                     .set(0)
@@ -1297,17 +1408,19 @@ function subscribeConversations() {
             }
         });
         if (Object.keys(data).length === 0) {
+            hasReceivedInitialSnapshot = true;
             convList.innerHTML = '<div style="padding: 16px; text-align: center; color: #65676b;">Sem conversas</div>';
             return;
         }
 
-        const entries = Object.entries(data).sort((a, b) => (b[1].lastTimestamp || 0) - (a[1].lastTimestamp || 0));
-        entries.forEach(([convId, meta]) => {
+        const entries = getConversationEntries(data, previousOrder);
+        entries.forEach(({ convId, meta }) => {
             const visibleMeta = isConversationVisible(convId)
                 ? { ...meta, unreadCount: 0 }
                 : meta;
             convList.appendChild(createConversationItem(convId, visibleMeta));
         });
+        hasReceivedInitialSnapshot = true;
     });
 }
 
@@ -1328,10 +1441,13 @@ async function openConversation(convId, participants, title) {
     document.body.classList.add('mobile-chat-open');
     
     // Converter participants para array se for objeto
-    let participantsArray = Array.isArray(participants) 
+    let participantsArray = Array.isArray(participants)
         ? participants 
         : Object.keys(participants || {});
-    
+    const inferredOtherId = getOtherParticipantId(convId, participantsArray);
+    if (inferredOtherId && !participantsArray.includes(inferredOtherId)) {
+        participantsArray = [...participantsArray, inferredOtherId];
+    }
     currentParticipants = participantsArray;
     watchConversationPresence(participantsArray);
     
@@ -1339,7 +1455,12 @@ async function openConversation(convId, participants, title) {
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('messages-area').style.display = 'flex';
     document.getElementById('compose-section').style.display = 'flex';
-    document.getElementById('header-name').textContent = title || participantsArray.join(', ');
+    const otherId = getOtherParticipantId(convId, participantsArray);
+    const otherUser = otherId ? allUsers[otherId] : null;
+    const displayTitle = otherUser
+        ? getParticipantDisplayName(otherUser, otherId)
+        : title || participantsArray.join(', ');
+    document.getElementById('header-name').textContent = displayTitle;
     try {
         const metadataSnapshot = await db.ref(`chat_metadata/${convId}`).once('value');
         if (currentConvId !== convId) return;
@@ -1350,10 +1471,8 @@ async function openConversation(convId, participants, title) {
     }
     
     // Atualizar avatares no header
-    const otherIds = participantsArray.filter(id => id !== currentUserId);
-    const otherUser = otherIds.length > 0 ? (allUsers[otherIds[0]] || {}) : {};
     const avatarEl = document.getElementById('header-avatar');
-    if (otherUser.foto_perfil) {
+    if (otherUser?.foto_perfil) {
         avatarEl.innerHTML = `<img src="${otherUser.foto_perfil}" alt="avatar">`;
     } else {
         avatarEl.innerHTML = '<i class="fas fa-user"></i>';
@@ -1745,6 +1864,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentUserId = profile.id;
     currentUserName = profile.data.nome_usuario || profile.data.nome_completo || currentUserName;
     currentUserAvatar = profile.data.foto_perfil || currentUserAvatar;
+    const storedSilentMode = localStorage.getItem(`chatSilentMode:${currentUserId}`);
+    chatSilentMode = typeof profile.data.chatSilentMode === 'boolean'
+        ? profile.data.chatSilentMode
+        : storedSilentMode === 'true';
+    updateSilentModeButton();
+    document.getElementById('chat-silent-toggle')?.addEventListener('click', toggleChatSilentMode);
     startPresenceTracking();
 
     document.getElementById('mobile-chat-back')?.addEventListener('click', closeMobileConversation);
@@ -1856,7 +1981,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         participants.forEach(uid => participantsObj[uid] = true);
         
         // Criar/atualizar entry se não existir
-        const meta = {
+        const proposedMeta = {
             title: finalName,
             participants: participantsObj,
             createdBy: currentUserId,
@@ -1867,7 +1992,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         
         try {
-            await db.ref(`chat_metadata/${convId}`).set(meta);
+            const metaRef = db.ref(`chat_metadata/${convId}`);
+            const existingMeta = await metaRef.once('value');
+            const meta = existingMeta.val() || proposedMeta;
+            if (!existingMeta.exists()) await metaRef.set(meta);
             // Adicionar apenas para o usuário autenticado
             await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).set({ ...meta, unreadCount: 0 });
             // O outro usuário verá a conversa quando abrir o chat (síncrona via listeners)
@@ -1896,6 +2024,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         // Se não vindo do visualizador, inscrever e carregar conversas em tempo real
         subscribeConversations();
+    }
+
+    const notificationConversationId = new URLSearchParams(window.location.search).get('conversation');
+    if (!preOther && notificationConversationId) {
+        const conversationSnapshot = await db.ref(
+            `chat_users/${currentUserId}/conversations/${notificationConversationId}`
+        ).once('value');
+        const conversation = conversationSnapshot.val();
+        if (conversation) {
+            const participants = Array.isArray(conversation.participants)
+                ? conversation.participants
+                : Object.keys(conversation.participants || {});
+            await openConversation(
+                notificationConversationId,
+                participants,
+                conversation.title || conversation.otherName
+            );
+        }
     }
     
     // Search

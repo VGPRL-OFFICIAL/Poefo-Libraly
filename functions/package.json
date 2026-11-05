@@ -6,7 +6,7 @@
     "start": "firebase emulators:start --only functions"
   },
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "dependencies": {
     "debug": "^4.3.4",

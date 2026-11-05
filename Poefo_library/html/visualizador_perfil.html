@@ -35,6 +35,8 @@
     <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
     <script>
         if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
         const db = firebase.database();
@@ -53,6 +55,73 @@
                 }
                 console.error('Erro ao ler RTDB:', path, err);
                 return null;
+            }
+        }
+
+        async function readRelationshipCount(path) {
+            try {
+                const snapshot = await db.ref(path).once('value');
+                const relationships = snapshot.val() || {};
+                return Object.values(relationships).filter(isFollowing => isFollowing === true).length;
+            } catch (error) {
+                console.warn(`Não foi possível carregar a contagem em ${path}:`, error);
+                return null;
+            }
+        }
+
+        function formatReadingDuration(totalSeconds) {
+            const totalMinutes = Math.floor(Math.max(0, Number(totalSeconds) || 0) / 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            if (hours === 0) return `${minutes} min`;
+            return minutes ? `${hours}h ${minutes}min` : `${hours}h`;
+        }
+
+        function waitForAuthUser() {
+            const auth = firebase.auth();
+            if (auth.currentUser) return Promise.resolve(auth.currentUser);
+
+            return new Promise((resolve, reject) => {
+                let unsubscribe = () => {};
+                unsubscribe = auth.onAuthStateChanged(
+                    user => {
+                        unsubscribe();
+                        resolve(user);
+                    },
+                    error => {
+                        unsubscribe();
+                        reject(error);
+                    }
+                );
+            });
+        }
+
+        async function resolveViewerProfileId(authUser) {
+            const storedProfileId = sessionStorage.getItem('currentUserId')
+                || localStorage.getItem('currentUserId');
+            const storedAuthUid = sessionStorage.getItem('currentUserAuthUid')
+                || localStorage.getItem('currentUserAuthUid');
+            if (storedProfileId && storedAuthUid === authUser.uid) return storedProfileId;
+
+            const profiles = await db.ref('usuarios')
+                .orderByChild('authUid')
+                .equalTo(authUser.uid)
+                .limitToFirst(1)
+                .once('value');
+            const profileId = Object.keys(profiles.val() || {})[0];
+            if (!profileId) throw new Error('Não encontramos um perfil vinculado à sua conta. Entre novamente.');
+            return profileId;
+        }
+
+        function updateFollowStats(result, button) {
+            button.textContent = result.following ? 'Seguindo' : 'Seguir';
+            const followersCount = document.getElementById('stat-followers');
+            if (followersCount && Number.isFinite(result.followersCount)) {
+                followersCount.textContent = result.followersCount;
+            }
+            const followingCount = document.getElementById('stat-following');
+            if (followingCount && Number.isFinite(result.followingCount)) {
+                followingCount.textContent = result.followingCount;
             }
         }
 
@@ -75,21 +144,19 @@
                     return;
                 }
 
-                const viewerUid = sessionStorage.getItem('currentUserId') || null;
+                const viewerUid = sessionStorage.getItem('currentUserId')
+                    || localStorage.getItem('currentUserId')
+                    || null;
                 const isOwnProfile = viewerUid && viewerUid === String(targetUid);
 
-                const totalFollowersVal = await safeReadRef(`followers_count/${targetUid}`);
-                const totalFollowingVal = await safeReadRef(`following_count/${targetUid}`);
-                const totalFollowers = (typeof totalFollowersVal === 'number') ? totalFollowersVal : 0;
-                const totalFollowing = (typeof totalFollowingVal === 'number') ? totalFollowingVal : 0;
+                const [totalFollowers, totalFollowing] = await Promise.all([
+                    readRelationshipCount(`followers/${targetUid}`),
+                    readRelationshipCount(`follows/${targetUid}`)
+                ]);
 
-                let isFollowing = false;
-                if (viewerUid) {
-                    const fVal = await safeReadRef(`follows/${viewerUid}/${targetUid}`);
-                    isFollowing = fVal === true;
-                }
-
-                const followBtnText = isFollowing ? 'Seguindo' : 'Seguir';
+                const followBtnText = 'Seguir';
+                const score = Math.max(0, Number(data.pontuacao_total) || 0);
+                const readingDuration = formatReadingDuration(data.horas_lidas_segundos);
 
                 // Renderiza o novo esqueleto estético baseado no arquivo style_perfil.css
                 const profileHtml = `
@@ -108,7 +175,7 @@
                         </section>
 
                         
-                        <section class="estatisticas-container">
+                        <section class="estatisticas-container perfil-social-stats" aria-label="Estatísticas do perfil">
                             <div class="stat-box">
                                 <span class="stat-numero" id="stat-posts">0</span>
                                 <span class="stat-label">Posts</span>
@@ -118,24 +185,37 @@
                                 <span class="stat-label">Curtidas</span>
                             </div>
                             <div class="stat-box">
-                                <span class="stat-numero">${totalFollowers}</span>
-                                <span class="stat-label">Fans</span>
+                                <span class="stat-numero" id="stat-followers">${totalFollowers === null ? '—' : totalFollowers.toLocaleString('pt-BR')}</span>
+                                <span class="stat-label">Seguidores</span>
                             </div>
                             <div class="stat-box">
-                                <span class="stat-numero">${totalFollowing}</span>
+                                <span class="stat-numero" id="stat-following">${totalFollowing === null ? '—' : totalFollowing.toLocaleString('pt-BR')}</span>
                                 <span class="stat-label">Seguindo</span>
                             </div>
                         </section>
 
-                        
-                        <section class="estatisticas-container" style="margin-top: -20px; margin-bottom: 25px; border-bottom: 1px solid #F2F2F7; padding-bottom: 15px;">
-                            <div class="stat-box">
-                                <span class="stat-numero" id="stat-score">0</span>
-                                <span class="stat-label">Pontos</span>
+                        <section class="perfil-progress-section" aria-label="Progresso de leitura">
+                            <div class="perfil-progress-heading">
+                                <span class="perfil-progress-eyebrow">JORNADA DE LEITURA</span>
+                                <h2>Progresso</h2>
                             </div>
-                            <div class="stat-box">
-                                <span class="stat-numero" id="stat-hours">0h 0m</span>
-                                <span class="stat-label">Lido</span>
+                            <div class="perfil-progress-grid">
+                                <article class="perfil-progress-card perfil-progress-card--time">
+                                    <span class="perfil-progress-icon" aria-hidden="true"><i class="fas fa-book-open"></i></span>
+                                    <div class="perfil-progress-copy">
+                                        <span class="perfil-progress-label">Tempo de leitura</span>
+                                        <strong class="perfil-progress-value" id="stat-hours">${readingDuration}</strong>
+                                        <span class="perfil-progress-note">Tempo total na plataforma</span>
+                                    </div>
+                                </article>
+                                <article class="perfil-progress-card perfil-progress-card--score">
+                                    <span class="perfil-progress-icon" aria-hidden="true"><i class="fas fa-star"></i></span>
+                                    <div class="perfil-progress-copy">
+                                        <span class="perfil-progress-label">Pontos acumulados</span>
+                                        <strong class="perfil-progress-value" id="stat-score">${score.toLocaleString('pt-BR')}</strong>
+                                        <span class="perfil-progress-note">Evolução no Poefo</span>
+                                    </div>
+                                </article>
                             </div>
                         </section>
 
@@ -168,33 +248,52 @@
                     });
                 }
 
-                // Handler Interativo de Seguimento (Follow/Unfollow) via RTDB
-                if (!isOwnProfile && viewerUid) {
+                if (!isOwnProfile) {
                     const btn = document.getElementById('btn-seguir');
-                    btn && btn.addEventListener('click', async () => {
-                        try {
-                            btn.disabled = true;
-                            const currently = (await safeReadRef(`follows/${viewerUid}/${targetUid}`)) === true;
-                            if (currently) {
-                                await db.ref(`follows/${viewerUid}/${targetUid}`).remove();
-                                await db.ref(`followers/${targetUid}/${viewerUid}`).remove();
-                                await db.ref(`followers_count/${targetUid}`).transaction(curr => (typeof curr === 'number' && curr > 0) ? curr - 1 : 0);
-                                await db.ref(`following_count/${viewerUid}`).transaction(curr => (typeof curr === 'number' && curr > 0) ? curr - 1 : 0);
-                                btn.textContent = 'Seguir';
-                            } else {
-                                await db.ref(`follows/${viewerUid}/${targetUid}`).set(true);
-                                await db.ref(`followers/${targetUid}/${viewerUid}`).set(true);
-                                await db.ref(`followers_count/${targetUid}`).transaction(curr => (typeof curr === 'number') ? curr + 1 : 1);
-                                await db.ref(`following_count/${viewerUid}`).transaction(curr => (typeof curr === 'number') ? curr + 1 : 1);
-                                btn.textContent = 'Seguindo';
-                            }
-                        } catch (err) {
-                            console.error('Erro toggle follow:', err);
-                        } finally {
-                            btn.disabled = false;
-                        }
-                    });
+                    if (btn) {
+                        const getFollowStatus = async () => {
+                            const authUser = await waitForAuthUser();
+                            if (!authUser) return null;
+                            const followerId = await resolveViewerProfileId(authUser);
+                            const response = await firebase.functions().httpsCallable('getFollowStatus')({
+                                followerUserId: followerId,
+                                targetUserId: String(targetUid)
+                            });
+                            return { followerId, ...response.data };
+                        };
 
+                        getFollowStatus().then(status => {
+                            if (status) updateFollowStats(status, btn);
+                        }).catch(error => {
+                            console.warn('Não foi possível carregar o estado do seguimento:', error);
+                        });
+
+                        btn.addEventListener('click', async () => {
+                            try {
+                                btn.disabled = true;
+                                const status = await getFollowStatus();
+                                if (!status) {
+                                    throw new Error('Entre na sua conta para seguir este perfil.');
+                                }
+                                const response = await firebase.functions().httpsCallable('toggleFollow')({
+                                    followerUserId: status.followerId,
+                                    targetUserId: String(targetUid),
+                                    following: !status.following
+                                });
+                                updateFollowStats(response.data, btn);
+                            } catch (err) {
+                                console.error('Erro ao atualizar seguimento:', err);
+                                const detail = err.message || 'Verifique sua conexão e tente novamente.';
+                                alert(`Não foi possível atualizar o seguimento: ${detail}`);
+                            } finally {
+                                btn.disabled = false;
+                            }
+                        });
+                    }
+
+                }
+
+                if (!isOwnProfile && viewerUid) {
                     const msgBtn = document.getElementById('btn-mensagem');
                     msgBtn && msgBtn.addEventListener('click', () => {
                         sessionStorage.setItem('chatWithUserId', targetUid);
@@ -227,16 +326,6 @@
                 
                 const likesEl = document.getElementById('stat-likes');
                 if (likesEl) likesEl.textContent = totalLikes;
-
-                const scoreVal = data.pontuacao_total || 0;
-                const scoreEl = document.getElementById('stat-score');
-                if (scoreEl) scoreEl.textContent = scoreVal;
-
-                const totalSeconds = data.horas_lidas_segundos || 0;
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const hoursEl = document.getElementById('stat-hours');
-                if (hoursEl) hoursEl.textContent = `${hours}h ${minutes}m`;
 
                 if (userPosts.length === 0) {
                     grid.innerHTML = '<div class="post-item placeholder"><span>Sem publicações.</span></div>';

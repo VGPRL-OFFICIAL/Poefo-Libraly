@@ -22,6 +22,7 @@ let recordingConvId = null;
 let selectedParticipantIds = new Set();
 let pendingBookChatInvite = null;
 let pendingGameChallenge = null;
+let pendingFeedPostShare = null;
 let notificationAudioContext = null;
 let lastNotificationSoundAt = 0;
 const notificationTimestamps = new Map();
@@ -143,6 +144,56 @@ async function sendGameChallengeToConversation(convId, participants, title) {
     if (challengePrompt) challengePrompt.style.display = 'none';
     loadConversations();
     return true;
+}
+
+async function sendFeedPostToConversation(convId, participants, title) {
+    if (!pendingFeedPostShare) return false;
+    await openConversation(convId, participants, title);
+    const share = pendingFeedPostShare;
+    const text = `📨 ${share.authorName || 'Um leitor'} compartilhou uma publicação:\n${share.text || 'Confira esta publicação.'}`;
+    const imageUrl = share.attachment?.type === 'image' ? share.attachment.url : null;
+    const book = share.attachment?.type === 'book' ? share.attachment.book : null;
+    const sent = await sendMessage(text, imageUrl, imageUrl ? 'image/jpeg' : null, book);
+    if (!sent) return false;
+
+    pendingFeedPostShare = null;
+    sessionStorage.removeItem('pendingFeedPostShare');
+    document.body.classList.remove('feed-post-share-mode');
+    const prompt = document.getElementById('feed-post-share-prompt');
+    if (prompt) prompt.style.display = 'none';
+    loadConversations();
+    return true;
+}
+
+async function shareFeedPostToContact(userId, userName) {
+    if (!currentUserId) {
+        alert('Entre na sua conta para compartilhar uma publicação.');
+        return;
+    }
+
+    const participants = [currentUserId, userId];
+    const convId = getConvIdFromParticipants(participants);
+    try {
+        const metaRef = db.ref(`chat_metadata/${convId}`);
+        const existingMeta = await metaRef.once('value');
+        const meta = existingMeta.val() || {
+            title: userName,
+            participants: { [currentUserId]: true, [userId]: true },
+            createdBy: currentUserId,
+            createdAt: Date.now(),
+            lastMessage: '',
+            lastTimestamp: Date.now(),
+            avatar: allUsers[userId]?.foto_perfil || null
+        };
+        if (!existingMeta.exists()) await metaRef.set(meta);
+        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({ ...meta, unreadCount: 0 });
+        closeNewGroupModal();
+        const sent = await sendFeedPostToConversation(convId, meta.participants || participants, meta.title || userName);
+        if (!sent) throw new Error('A publicação não foi enviada.');
+    } catch (error) {
+        console.error('Não foi possível compartilhar a publicação:', error);
+        alert(`Não foi possível compartilhar a publicação: ${error.message}`);
+    }
 }
 
 async function inviteBookToContact(userId, userName) {
@@ -317,6 +368,25 @@ function createConversationItem(convId, meta) {
             }
         });
         item.appendChild(challengeButton);
+    }
+    if (pendingFeedPostShare) {
+        const shareButton = document.createElement('button');
+        shareButton.type = 'button';
+        shareButton.className = 'send-feed-post-share';
+        shareButton.textContent = 'Enviar publicação';
+        shareButton.addEventListener('click', async event => {
+            event.stopPropagation();
+            shareButton.disabled = true;
+            try {
+                const sent = await sendFeedPostToConversation(convId, meta.participants || participantsArr, title);
+                if (!sent) shareButton.disabled = false;
+            } catch (error) {
+                console.error('Não foi possível compartilhar a publicação na conversa:', error);
+                alert(`Não foi possível compartilhar a publicação: ${error.message}`);
+                shareButton.disabled = false;
+            }
+        });
+        item.appendChild(shareButton);
     }
     return item;
 }
@@ -654,7 +724,7 @@ function closeNewGroupModal() {
 }
 
 function updateGroupSelectionUI() {
-    const isSpecialMode = Boolean(pendingBookChatInvite || pendingGameChallenge);
+    const isSpecialMode = Boolean(pendingBookChatInvite || pendingGameChallenge || pendingFeedPostShare);
     const groupNameField = document.getElementById('group-name-field');
     const submitButton = document.getElementById('submit-new-conversation');
     groupNameField.hidden = isSpecialMode || selectedParticipantIds.size < 2;
@@ -729,7 +799,7 @@ function renderParticipantList(users) {
         item.append(avatar, info, checkbox);
         item.classList.toggle('selected', checkbox.checked);
         item.addEventListener('click', event => {
-            if (event.target.closest('input, button') || pendingBookChatInvite || pendingGameChallenge) return;
+            if (event.target.closest('input, button') || pendingBookChatInvite || pendingGameChallenge || pendingFeedPostShare) return;
             checkbox.checked = !checkbox.checked;
             checkbox.dispatchEvent(new Event('change', { bubbles: true }));
         });
@@ -749,6 +819,14 @@ function renderParticipantList(users) {
             challengeButton.textContent = 'Enviar desafio';
             challengeButton.addEventListener('click', () => challengeContact(user.id, user.name));
             item.appendChild(challengeButton);
+        }
+        if (pendingFeedPostShare) {
+            const shareButton = document.createElement('button');
+            shareButton.type = 'button';
+            shareButton.className = 'send-feed-post-share';
+            shareButton.textContent = 'Enviar publicação';
+            shareButton.addEventListener('click', () => shareFeedPostToContact(user.id, user.name));
+            item.appendChild(shareButton);
         }
         participantList.appendChild(item);
     });
@@ -1557,6 +1635,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessionStorage.removeItem('pendingGameChallenge');
         document.getElementById('game-challenge-prompt').style.display = 'none';
         document.body.classList.remove('game-challenge-mode');
+        loadConversations();
+    });
+
+    const pendingFeedPost = sessionStorage.getItem('pendingFeedPostShare');
+    if (pendingFeedPost) {
+        try {
+            pendingFeedPostShare = JSON.parse(pendingFeedPost);
+            if (!pendingFeedPostShare?.postId) throw new Error('Dados da publicação inválidos.');
+            const prompt = document.getElementById('feed-post-share-prompt');
+            if (prompt) prompt.style.display = 'block';
+            document.body.classList.add('feed-post-share-mode');
+        } catch (error) {
+            console.error('Não foi possível carregar a publicação para compartilhar:', error);
+            alert('Não foi possível carregar os dados da publicação.');
+            sessionStorage.removeItem('pendingFeedPostShare');
+        }
+    }
+    document.getElementById('find-feed-post-contact')?.addEventListener('click', openNewGroupModal);
+    document.getElementById('cancel-feed-post-share')?.addEventListener('click', () => {
+        pendingFeedPostShare = null;
+        sessionStorage.removeItem('pendingFeedPostShare');
+        document.getElementById('feed-post-share-prompt').style.display = 'none';
+        document.body.classList.remove('feed-post-share-mode');
         loadConversations();
     });
 

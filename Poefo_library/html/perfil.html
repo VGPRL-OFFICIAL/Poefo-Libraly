@@ -60,15 +60,44 @@
             <section class="estatisticas-container">
                 <div class="stat-box">
                     <span class="stat-numero" id="stat-seguidores">0</span>
-                    <span class="stat-label">Fans</span>
+                    <span class="stat-label">Seguidores</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-numero" id="stat-likes">0</span>
-                    <span class="stat-label">Following</span>
+                    <span class="stat-numero" id="stat-following">0</span>
+                    <span class="stat-label">Seguindo</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-numero" id="stat-posts">0</span>
                     <span class="stat-label">Posts</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-numero" id="stat-likes">0</span>
+                    <span class="stat-label">Curtidas</span>
+                </div>
+            </section>
+
+            <section class="perfil-progress-section" aria-label="Seu progresso de leitura">
+                <div class="perfil-progress-heading">
+                    <span class="perfil-progress-eyebrow">SUA JORNADA</span>
+                    <h2>Progresso de leitura</h2>
+                </div>
+                <div class="perfil-progress-grid">
+                    <article class="perfil-progress-card perfil-progress-card--time">
+                        <span class="perfil-progress-icon" aria-hidden="true"><i class="fas fa-book-open"></i></span>
+                        <div class="perfil-progress-copy">
+                            <span class="perfil-progress-label">Tempo de leitura</span>
+                            <strong class="perfil-progress-value" id="stat-hours">0 min</strong>
+                            <span class="perfil-progress-note">Tempo total na sua conta</span>
+                        </div>
+                    </article>
+                    <article class="perfil-progress-card perfil-progress-card--score">
+                        <span class="perfil-progress-icon" aria-hidden="true"><i class="fas fa-star"></i></span>
+                        <div class="perfil-progress-copy">
+                            <span class="perfil-progress-label">Pontos acumulados</span>
+                            <strong class="perfil-progress-value" id="stat-score">0</strong>
+                            <span class="perfil-progress-note">Sua evolução no Poefo</span>
+                        </div>
+                    </article>
                 </div>
             </section>
 
@@ -140,6 +169,32 @@
     const statPosts = document.getElementById('stat-posts');
     const statLikes = document.getElementById('stat-likes');
     const statSeguidores = document.getElementById('stat-seguidores');
+    const statFollowing = document.getElementById('stat-following');
+    const statHours = document.getElementById('stat-hours');
+    const statScore = document.getElementById('stat-score');
+
+    function countRelationships(snapshot) {
+        const relationships = snapshot.val() || {};
+        return Object.values(relationships).filter(isFollowing => isFollowing === true).length;
+    }
+
+    async function loadRelationshipCount(path, element) {
+        try {
+            const snapshot = await database.ref(path).once('value');
+            element.textContent = countRelationships(snapshot).toLocaleString('pt-BR');
+        } catch (error) {
+            console.error(`Não foi possível carregar a contagem em ${path}:`, error);
+            element.textContent = '—';
+        }
+    }
+
+    function formatReadingDuration(totalSeconds) {
+        const totalMinutes = Math.floor(Math.max(0, Number(totalSeconds) || 0) / 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        if (hours === 0) return `${minutes} min`;
+        return minutes ? `${hours}h ${minutes}min` : `${hours}h`;
+    }
 
     /**
      * Exibe um modal customizado no lugar de alert().
@@ -189,8 +244,12 @@
             displayBio.textContent = userData.bio && userData.bio.trim() !== '' ? userData.bio : 'Localização não definida';
             profilePic.src = userData.foto_perfil || DEFAULT_PROFILE_PIC;
             
-            // Atribuição de Fans / Seguidores vindos do banco de dados (chave real)
-            statSeguidores.textContent = userData.seguidores_count || userData.fans || '0';
+            statScore.textContent = (Number(userData.pontuacao_total) || 0).toLocaleString('pt-BR');
+            statHours.textContent = formatReadingDuration(userData.horas_lidas_segundos);
+            await Promise.all([
+                loadRelationshipCount(`followers/${currentUserId}`, statSeguidores),
+                loadRelationshipCount(`follows/${currentUserId}`, statFollowing)
+            ]);
             
             // Preencher inputs de edição
             editNomeCompleto.value = userData.nome_completo || '';

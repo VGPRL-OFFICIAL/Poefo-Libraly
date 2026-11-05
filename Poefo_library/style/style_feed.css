@@ -26,6 +26,92 @@
     --navbar-text-active: #333;
 }
 
+.post-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.post-header-row .post-header-info {
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.post-menu {
+    position: relative;
+    flex: 0 0 auto;
+    margin: -7px -8px 0 0;
+}
+
+.post-menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.post-menu-toggle:hover,
+.post-menu-toggle[aria-expanded="true"] {
+    transform: rotate(90deg);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.post-menu-popover {
+    position: absolute;
+    top: 38px;
+    right: 0;
+    z-index: 15;
+    display: grid;
+    min-width: 205px;
+    gap: 3px;
+    padding: 6px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 14px;
+    background: var(--color-bg-primary);
+    box-shadow: 0 12px 30px rgba(15, 20, 25, .16);
+    animation: post-menu-appear .16s ease-out both;
+}
+
+.post-menu-popover[hidden] {
+    display: none;
+}
+
+.post-menu-popover button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+}
+
+.post-menu-popover button:hover {
+    background: var(--color-bg-secondary);
+}
+
+.post-menu-popover .post-delete-action {
+    color: #b42318;
+}
+
+@keyframes post-menu-appear {
+    from { opacity: 0; transform: translateY(-4px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ========================================================================= */
 /* 2. RESET GERAL E BASE */
 /* ========================================================================= */
@@ -39,6 +125,66 @@
     font-weight: 700;
     font-size: 20px;
     letter-spacing: -0.5px;
+}
+
+.main-content > .top-bar-custom .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: auto;
+    min-width: 42px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 999px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.main-content > .top-bar-custom .filter-btn:hover {
+    transform: translateY(-1px);
+    border-color: #b8a2e8;
+    color: #6741a5;
+    box-shadow: 0 5px 14px rgba(103, 65, 165, .12);
+}
+
+.main-content > .top-bar-custom .filter-btn.is-active {
+    border-color: #7047b5;
+    background: linear-gradient(135deg, #7652bd, #573691);
+    color: #fff;
+    box-shadow: 0 5px 15px rgba(87, 54, 145, .24);
+}
+
+.main-content > .top-bar-custom .filter-btn svg {
+    flex: 0 0 auto;
+}
+
+.trends-control {
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 14px;
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-subtle);
+}
+
+.trends-control label {
+    margin: 0 !important;
+    color: var(--color-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.trends-control input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #7047b5;
 }
 
 body {
@@ -207,23 +353,24 @@ input[type="text"] {
 
 /* --- Anexo de Imagem (ATUALIZADO para exibir em tamanho grande) --- */
 .image-attachment {
+    display: inline-flex;
+    align-items: flex-start;
+    width: fit-content;
     max-width: 100%;
-    /* Define uma altura máxima baseada na tela para que a imagem seja proeminente, mas não ocupe a tela inteira */
-    max-height: 70vh; 
+    max-height: 70vh;
     margin-top: 10px;
-    /* Adicionada box-shadow ao redor da imagem */
     border: 1px solid var(--color-border-subtle);
     box-shadow: var(--shadow-subtle);
     border-radius: 12px;
-    overflow: hidden; 
-    display: block;
+    overflow: hidden;
 }
 .image-attachment img {
-    width: 100%; 
-    height: 100%; /* Permite que o <img> utilize toda a altura do container (.image-attachment) */
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 70vh;
     display: block;
-    /* max-height: 400px; foi removida/ajustada para permitir um tamanho maior */
-    object-fit: contain; /* Garante que a imagem inteira seja visível dentro do container, sem cortes */
+    object-fit: contain;
 }
 
 
@@ -728,6 +875,17 @@ input[type="text"] {
     .main-content > .top-bar-custom .avatar {
         width: 34px;
         height: 34px;
+    }
+
+    .main-content > .top-bar-custom .filter-btn {
+        min-width: 36px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+    }
+
+    .main-content > .top-bar-custom .filter-btn span {
+        display: none;
     }
 
     .fab {

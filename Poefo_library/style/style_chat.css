@@ -677,6 +677,9 @@ body.book-invite-mode .participant-checkbox {
 body.game-challenge-mode .participant-checkbox {
     display: none;
 }
+body.feed-post-share-mode .participant-checkbox {
+    display: none;
+}
 
 .participant-item .send-book-invite {
     flex-shrink: 0;
@@ -785,7 +788,8 @@ body.game-challenge-mode .participant-checkbox {
 
 .book-invite-prompt button,
 .send-book-invite,
-.send-game-challenge {
+.send-game-challenge,
+.send-feed-post-share {
     margin-top: 8px;
     padding: 7px 10px;
     border: 0;
@@ -795,7 +799,8 @@ body.game-challenge-mode .participant-checkbox {
     cursor: pointer;
 }
 .send-book-invite:disabled,
-.send-game-challenge:disabled {
+.send-game-challenge:disabled,
+.send-feed-post-share:disabled {
     cursor: wait;
     opacity: 0.65;
 }

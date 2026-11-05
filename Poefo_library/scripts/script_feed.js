@@ -12,9 +12,10 @@ const noResultsMessage = document.getElementById('no-results-message');
 let booksMap = new Map();
 let allPostsData = [];
 let followingSet = new Set();
+let currentSearchTerm = '';
+let followingLoadError = false;
 
-// ⭐️ Ajuste para carregar/simular o ID do usuário logado
-let currentUserId = sessionStorage.getItem('currentUserId') || '-OeT4DY1NaRs1sguTS36'; // ID de Exemplo do JSON
+let currentUserId = sessionStorage.getItem('currentUserId') || null;
 let currentUserName = sessionStorage.getItem('currentUserName') || 'Leitor Anônimo';
 let currentUserPic = sessionStorage.getItem('currentUserPic') || '../images/user_ic.png';
 
@@ -156,7 +157,7 @@ function openBookDetails(bookId) {
  */
 async function loadCurrentUserProfile() {
     // Se o usuário for anônimo (ID de fallback sem o formato RTDB), ignora a busca
-    if (currentUserId.includes('ANONIMO')) {
+    if (!currentUserId || currentUserId.includes('ANONIMO')) {
         return;
     }
 
@@ -194,12 +195,15 @@ async function loadCurrentUserProfile() {
 async function loadFollowingSet() {
     followingSet = new Set();
     try {
-        if (!currentUserId || typeof db === 'undefined') return followingSet;
+        if (!currentUserId || currentUserId.includes('ANONIMO') || typeof db === 'undefined') return followingSet;
         const snap = await db.ref(`follows/${currentUserId}`).once('value');
         const val = snap.val() || {};
         Object.keys(val).forEach(k => { if (val[k] === true) followingSet.add(k); });
     } catch (err) {
+        followingLoadError = true;
         console.error('Erro ao carregar lista de seguidos:', err);
+        const filterButton = document.getElementById('feed-filter-btn');
+        if (filterButton) filterButton.title = 'Não foi possível carregar sua lista de seguidos.';
     }
     return followingSet;
 }
@@ -213,6 +217,85 @@ function applyFollowFilter(posts) {
     });
 }
 
+function filterPostsBySearch(posts) {
+    const term = currentSearchTerm.toLocaleLowerCase('pt-BR');
+    if (!term) return posts;
+    return posts.filter(post => {
+        if (post.content && post.content.toLocaleLowerCase('pt-BR').includes(term)) return true;
+        const authorFields = [
+            post.author?.userName,
+            post.author?.fullName,
+            post.author?.nome_usuario,
+            post.author?.nome_completo,
+            post.userName,
+            post.nome_usuario,
+            post.nome_completo
+        ];
+        if (authorFields.some(value => String(value || '').toLocaleLowerCase('pt-BR').includes(term))) return true;
+        if (post.attachment?.type === 'book_attachment') {
+            const book = booksMap.get(String(post.attachment.bookId));
+            if (`${book?.titulo || ''} ${book?.autor || ''}`.toLocaleLowerCase('pt-BR').includes(term)) return true;
+        }
+        return false;
+    });
+}
+
+function renderCurrentFeed() {
+    renderFilteredFeed(applyFollowFilter(filterPostsBySearch(allPostsData)));
+}
+
+function shareFeedPost(post) {
+    const attachment = post.attachment?.type === 'image'
+        ? { type: 'image', url: post.attachment.url }
+        : post.attachment?.type === 'book_attachment'
+            ? {
+                type: 'book',
+                book: (() => {
+                    const book = booksMap.get(String(post.attachment.bookId));
+                    return book ? {
+                        id: String(book.id),
+                        titulo: book.titulo || 'Livro',
+                        autor: book.autor || '',
+                        link_capa: book.link_capa || '',
+                        link_acesso: book.link_acesso || ''
+                    } : null;
+                })()
+            }
+            : null;
+    sessionStorage.setItem('pendingFeedPostShare', JSON.stringify({
+        postId: String(post.id),
+        authorName: post.author?.userName || 'Um leitor',
+        text: String(post.content || '').slice(0, 1000),
+        attachment
+    }));
+    window.location.href = './chat.html';
+}
+
+async function deleteFeedPost(post) {
+    if (!currentUserId || currentUserId.includes('ANONIMO')) {
+        alert('Entre na sua conta para excluir uma publicação.');
+        return;
+    }
+    if (!window.confirm('Deseja excluir esta publicação? Esta ação não pode ser desfeita.')) return;
+
+    try {
+        const auth = firebase.auth();
+        const authUser = auth.currentUser || await new Promise(resolve => {
+            const unsubscribe = auth.onAuthStateChanged(user => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
+        if (!authUser) throw new Error('Sua sessão expirou. Entre novamente para excluir a publicação.');
+        const deletePost = firebase.functions().httpsCallable('deleteFeedPost');
+        await deletePost({ profileId: currentUserId, postId: String(post.id) });
+        allPostsData = allPostsData.filter(item => String(item.id) !== String(post.id));
+        renderCurrentFeed();
+    } catch (error) {
+        console.error('Não foi possível excluir a publicação:', error);
+        alert(`Não foi possível excluir a publicação: ${error.message || 'tente novamente.'}`);
+    }
+}
 
 // ----------------------------------------------------------------------
 // FUNÇÃO: ATUALIZA O posts.json NO FIREBASE STORAGE
@@ -268,7 +351,7 @@ async function updatePostJson(postId, updateType, value) {
 // FUNÇÕES DE AÇÕES DO POST
 // ----------------------------------------------------------------------
 function handleLike(postId, likeIcon, likeCountElement) {
-    if (currentUserId.includes('ANONIMO')) {
+    if (!currentUserId || currentUserId.includes('ANONIMO')) {
         alert("Você precisa estar logado para curtir! (Usuário: USER_ANONIMO_001)");
         return;
     }
@@ -312,7 +395,7 @@ function handleComment(postId, inputElement) {
     const commentText = inputElement.value.trim();
     if (!commentText) return;
 
-    if (currentUserId.includes('ANONIMO')) {
+    if (!currentUserId || currentUserId.includes('ANONIMO')) {
         alert("Você precisa estar logado para comentar! (Usuário: USER_ANONIMO_001)");
         return;
     }
@@ -373,34 +456,8 @@ function goToProfile(userId) {
 // ----------------------------------------------------------------------
 
 async function filterPosts(searchTerm) {
-    const term = searchTerm.toLowerCase().trim();
-
-    if (term === '') {
-        renderFilteredFeed(applyFollowFilter(allPostsData));
-        return;
-    }
-
-    const filteredPosts = allPostsData.filter(post => {
-        if (post.content && post.content.toLowerCase().includes(term)) return true;
-        if (post.author && post.author.userName && post.author.userName.toLowerCase().includes(term)) return true;
-        if (post.author && post.author.fullName && post.author.fullName.toLowerCase().includes(term)) return true;
-        if (post.author && post.author.nome_usuario && post.author.nome_usuario.toLowerCase().includes(term)) return true;
-        if (post.author && post.author.nome_completo && post.author.nome_completo.toLowerCase().includes(term)) return true;
-        if (post.userName && post.userName.toLowerCase().includes(term)) return true;
-        if (post.nome_usuario && post.nome_usuario.toLowerCase().includes(term)) return true;
-        if (post.nome_completo && post.nome_completo.toLowerCase().includes(term)) return true;
-        
-        if (post.attachment && post.attachment.type === 'book_attachment') {
-            const book = booksMap.get(String(post.attachment.bookId));
-            if (book) {
-                if (book.titulo && book.titulo.toLowerCase().includes(term)) return true;
-                if (book.autor && book.autor.toLowerCase().includes(term)) return true;
-            }
-        }
-        return false;
-    });
-
-    renderFilteredFeed(applyFollowFilter(filteredPosts));
+    currentSearchTerm = String(searchTerm || '').trim();
+    renderCurrentFeed();
 }
 
 function renderFilteredFeed(posts) {
@@ -441,6 +498,7 @@ function createPostElement(post) {
     const postProfilePic = author.userProfilePic || '../images/user_ic.png';
     
     const postHandle = (postUserName.replace(/\s/g, '').toLowerCase() + postAuthorId.slice(-4));
+    const isOwnPost = Boolean(currentUserId && String(postAuthorId) === String(currentUserId));
 
     let attachmentHTML = '';
     let book = null;
@@ -493,10 +551,21 @@ function createPostElement(post) {
                  alt="Foto de Perfil" class="avatar profile-link" data-user-id="${postAuthorId}" title="Ver Perfil">
 
             <div class="post-content-wrapper">
-                <div class="post-header-info profile-link" data-user-id="${postAuthorId}">
-                    <span class="username">${postUserName}</span>
-                    <span class="handle">@${postHandle}</span>
-                    <span class="time">· ${formatTimeAgo(post.timestamp)}</span>
+                <div class="post-header-row">
+                    <div class="post-header-info profile-link" data-user-id="${postAuthorId}">
+                        <span class="username">${postUserName}</span>
+                        <span class="handle">@${postHandle}</span>
+                        <span class="time">· ${formatTimeAgo(post.timestamp)}</span>
+                    </div>
+                    <div class="post-menu">
+                        <button class="post-menu-toggle" type="button" aria-label="Mais opções da publicação" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis"></i>
+                        </button>
+                        <div class="post-menu-popover" hidden>
+                            <button class="post-share-action" type="button"><i class="fa-solid fa-paper-plane"></i> Enviar para contato</button>
+                            ${isOwnPost ? '<button class="post-delete-action" type="button"><i class="fa-regular fa-trash-can"></i> Excluir publicação</button>' : ''}
+                        </div>
+                    </div>
                 </div>
 
                 <p class="post-text">${post.content}</p>
@@ -527,6 +596,18 @@ function createPostElement(post) {
             </div>
         </div>
     `;
+
+    const menuToggle = postDiv.querySelector('.post-menu-toggle');
+    const menuPopover = postDiv.querySelector('.post-menu-popover');
+    menuToggle.addEventListener('click', event => {
+        event.stopPropagation();
+        const expanded = menuToggle.getAttribute('aria-expanded') === 'true';
+        menuToggle.setAttribute('aria-expanded', String(!expanded));
+        menuPopover.hidden = expanded;
+    });
+    menuPopover.addEventListener('click', event => event.stopPropagation());
+    postDiv.querySelector('.post-share-action').addEventListener('click', () => shareFeedPost(post));
+    postDiv.querySelector('.post-delete-action')?.addEventListener('click', () => deleteFeedPost(post));
 
     // 1. Listeners de Likes, Comentários, etc. (Mantidos)
     const likeButton = postDiv.querySelector(`.action.like`);
@@ -622,8 +703,8 @@ async function loadFeed() {
 
     try {
         const [booksResponse, postsResponse] = await Promise.all([
-            fetch(ALL_BOOKS_DATA_URL),
-            fetch(ALL_POSTS_DATA_URL)
+            fetch(ALL_BOOKS_DATA_URL, { cache: 'no-store' }),
+            fetch(ALL_POSTS_DATA_URL, { cache: 'no-store' })
         ]);
 
         if (!booksResponse.ok) throw new Error("Falha ao carregar Livros.");
@@ -645,7 +726,7 @@ async function loadFeed() {
             return;
         }
 
-        renderFilteredFeed(applyFollowFilter(allPostsData));
+        renderCurrentFeed();
 
     } catch (error) {
         console.error("Erro ao carregar o Feed:", error);
@@ -676,9 +757,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const followCheckbox = document.getElementById('follow-filter-checkbox');
+    const filterButton = document.getElementById('feed-filter-btn');
+    const syncFollowFilterButton = () => {
+        const active = Boolean(followCheckbox?.checked);
+        filterButton?.classList.toggle('is-active', active);
+        filterButton?.setAttribute('aria-pressed', String(active));
+        if (filterButton) filterButton.title = active ? 'Mostrando apenas seguidos' : 'Mostrar apenas seguidos';
+    };
+    filterButton?.addEventListener('click', () => {
+        if (!currentUserId || currentUserId.includes('ANONIMO')) {
+            alert('Entre na sua conta para filtrar as publicações de quem você segue.');
+            return;
+        }
+        if (followCheckbox) {
+            if (!followCheckbox.checked && followingLoadError) {
+                alert('Não foi possível carregar sua lista de pessoas seguidas. Verifique as regras de leitura do Realtime Database.');
+                return;
+            }
+            followCheckbox.checked = !followCheckbox.checked;
+            followCheckbox.dispatchEvent(new Event('change'));
+        }
+    });
     if (followCheckbox) {
         followCheckbox.addEventListener('change', () => {
-            renderFilteredFeed(applyFollowFilter(allPostsData));
+            syncFollowFilterButton();
+            renderCurrentFeed();
         });
     }
+    document.addEventListener('click', event => {
+        document.querySelectorAll('.post-menu').forEach(menu => {
+            if (menu.contains(event.target)) return;
+            const toggle = menu.querySelector('.post-menu-toggle');
+            const popover = menu.querySelector('.post-menu-popover');
+            if (toggle && popover) {
+                toggle.setAttribute('aria-expanded', 'false');
+                popover.hidden = true;
+            }
+        });
+    });
+    syncFollowFilterButton();
 });

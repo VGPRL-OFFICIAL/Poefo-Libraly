@@ -44,6 +44,7 @@
                 <div class="header-actions">
                     <button class="filter-btn" type="button" title="Mostrar apenas seguidos" id="feed-filter-btn" aria-label="Mostrar apenas seguidos">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        <span>Seguindo</span>
                     </button>
                     <a href="./perfil.html" class="user-avatar-link">
                         <img src="../images/user_ic.png" alt="Perfil" class="avatar" id="mobile-profile-pic">
@@ -103,6 +104,8 @@
     <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
 
     <script>
         if (!firebase.apps.length) {
@@ -113,15 +116,6 @@
         const db = firebase.database();
     </script>
     <script src="../scripts/script_feed.js"></script>
-    <script>
-        document.getElementById('feed-filter-btn')?.addEventListener('click', () => {
-            const followFilter = document.getElementById('follow-filter-checkbox');
-            if (followFilter) {
-                followFilter.checked = !followFilter.checked;
-                followFilter.dispatchEvent(new Event('change'));
-            }
-        });
-    </script>
 
 </body>
 

@@ -1,7 +1,9 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
-admin.initializeApp();
+admin.initializeApp({
+  databaseURL: 'https://captu-libraly-default-rtdb.firebaseio.com'
+});
 
 function getConversationParticipants(meta) {
   const participants = meta && meta.participants;
@@ -155,3 +157,181 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
       return null;
     }
   });
+
+async function getAuthenticatedProfileId(authUid, profileId) {
+  const profileSnapshot = await admin.database().ref(`usuarios/${profileId}`).once('value');
+  const profile = profileSnapshot.val();
+  if (!profile || profile.authUid !== authUid) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Não encontramos um perfil vinculado à sua conta autenticada.'
+    );
+  }
+  return profileId;
+}
+
+function validateFollowRequest(data, context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Entre na sua conta para seguir pessoas.');
+  }
+
+  const followerId = String(data && data.followerUserId || '');
+  const followedId = String(data && data.targetUserId || '');
+  const invalidDatabaseKey = value =>
+    !value || value.length > 768 || ['.', '#', '$', '[', ']', '/'].some(character => value.includes(character));
+  if (invalidDatabaseKey(followerId) || invalidDatabaseKey(followedId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Os dados para seguir este perfil são inválidos.');
+  }
+  if (followerId === followedId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Não é possível seguir o próprio perfil.');
+  }
+  return { followerId, followedId };
+}
+
+function countRelationships(snapshot) {
+  const relationships = snapshot.val() || {};
+  return Object.values(relationships).filter(isFollowing => isFollowing === true).length;
+}
+
+async function validateFollowProfiles(db, authUid, followerId, followedId) {
+  const [authenticatedProfileId, targetSnapshot] = await Promise.all([
+    getAuthenticatedProfileId(authUid, followerId),
+    db.ref(`usuarios/${followedId}`).once('value')
+  ]);
+  if (!targetSnapshot.exists()) {
+    throw new functions.https.HttpsError('not-found', 'O perfil que você tentou seguir não existe.');
+  }
+  return authenticatedProfileId;
+}
+
+exports.getFollowStatus = functions.https.onCall(async (data, context) => {
+  const { followerId, followedId } = validateFollowRequest(data, context);
+  const db = admin.database();
+  await validateFollowProfiles(db, context.auth.uid, followerId, followedId);
+
+  const [relationshipSnapshot, followersSnapshot, followingSnapshot] = await Promise.all([
+    db.ref(`follows/${followerId}/${followedId}`).once('value'),
+    db.ref(`followers/${followedId}`).once('value'),
+    db.ref(`follows/${followerId}`).once('value')
+  ]);
+  return {
+    following: relationshipSnapshot.val() === true,
+    followersCount: countRelationships(followersSnapshot),
+    followingCount: countRelationships(followingSnapshot)
+  };
+});
+
+exports.toggleFollow = functions.https.onCall(async (data, context) => {
+  const { followerId, followedId } = validateFollowRequest(data, context);
+  const shouldFollow = data && data.following;
+  if (typeof shouldFollow !== 'boolean') {
+    throw new functions.https.HttpsError('invalid-argument', 'A ação de seguimento é inválida.');
+  }
+
+  const db = admin.database();
+  await validateFollowProfiles(db, context.auth.uid, followerId, followedId);
+
+  const relationshipRef = db.ref(`follows/${followerId}/${followedId}`);
+  let changed = false;
+  const result = await relationshipRef.transaction(current => {
+    const currentlyFollowing = current === true;
+    changed = currentlyFollowing !== shouldFollow;
+    if (!changed) return current;
+    return shouldFollow ? true : null;
+  }, undefined, false);
+  if (!result.committed) {
+    throw new functions.https.HttpsError('aborted', 'Não foi possível atualizar o vínculo. Tente novamente.');
+  }
+
+  if (changed) {
+    const delta = shouldFollow ? 1 : -1;
+    await db.ref().update({
+      [`followers/${followedId}/${followerId}`]: shouldFollow ? true : null
+    });
+    await Promise.all([
+      db.ref(`followers_count/${followedId}`).transaction(current =>
+        Math.max(0, (Number(current) || 0) + delta), undefined, false
+      ),
+      db.ref(`following_count/${followerId}`).transaction(current =>
+        Math.max(0, (Number(current) || 0) + delta), undefined, false
+      )
+    ]);
+  }
+
+  const [followersSnapshot, followingSnapshot] = await Promise.all([
+    db.ref(`followers/${followedId}`).once('value'),
+    db.ref(`follows/${followerId}`).once('value')
+  ]);
+  return {
+    following: shouldFollow,
+    followersCount: countRelationships(followersSnapshot),
+    followingCount: countRelationships(followingSnapshot)
+  };
+});
+
+exports.deleteFeedPost = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Entre na sua conta para excluir uma publicação.');
+  }
+
+  const profileId = String(data && data.profileId || '');
+  const postId = String(data && data.postId || '');
+  const invalidDatabaseKey = value =>
+    !value || value.length > 768 || ['.', '#', '$', '[', ']', '/'].some(character => value.includes(character));
+  if (invalidDatabaseKey(profileId) || invalidDatabaseKey(postId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'O identificador da publicação é inválido.');
+  }
+  const authenticatedProfileId = await getAuthenticatedProfileId(context.auth.uid, profileId);
+  if (authenticatedProfileId !== profileId) {
+    throw new functions.https.HttpsError('permission-denied', 'O perfil ativo não corresponde à conta autenticada.');
+  }
+
+  const postFile = admin.storage().bucket('captu-libraly.firebasestorage.app').file('livros_json/posts.json');
+  let metadata;
+  let posts;
+  try {
+    [metadata] = await postFile.getMetadata();
+    const [contents] = await postFile.download();
+    posts = JSON.parse(contents.toString('utf8'));
+  } catch (error) {
+    console.error('Não foi possível ler o catálogo de publicações:', error);
+    throw new functions.https.HttpsError('internal', 'Não foi possível carregar as publicações.');
+  }
+  if (!Array.isArray(posts)) {
+    throw new functions.https.HttpsError('internal', 'O arquivo de publicações possui um formato inválido.');
+  }
+
+  const postIndex = posts.findIndex(post => String(post && (post.id ?? post.postId) || '') === postId);
+  if (postIndex < 0) {
+    throw new functions.https.HttpsError('not-found', 'A publicação não existe mais.');
+  }
+  const post = posts[postIndex];
+  const authorId = post.userId || post.userID || post.authorId
+    || post.author?.userId || post.author?.userID
+    || post.autor?.userId || post.autor?.userID;
+  if (String(authorId || '') !== profileId) {
+    throw new functions.https.HttpsError('permission-denied', 'Você só pode excluir suas próprias publicações.');
+  }
+
+  posts.splice(postIndex, 1);
+  try {
+    await postFile.save(JSON.stringify(posts, null, 2), {
+      resumable: false,
+      metadata: {
+        contentType: 'application/json',
+        cacheControl: 'no-cache, max-age=0',
+        metadata: metadata.metadata || {}
+      },
+      preconditionOpts: { ifGenerationMatch: metadata.generation }
+    });
+    await admin.database().ref().update({
+      [`post_stats/${postId}`]: null,
+      [`post_likes/${postId}`]: null
+    });
+  } catch (error) {
+    console.error('Não foi possível salvar a exclusão da publicação:', error);
+    throw new functions.https.HttpsError('internal', 'Não foi possível salvar a exclusão. Tente novamente.');
+  }
+
+  return { deleted: true, postId };
+});

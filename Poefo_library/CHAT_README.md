@@ -212,6 +212,7 @@ Durante o desenvolvimento, usei estas regras apenas para testes sem autenticaç�
 }
 ```
 
+
 **Aviso:** estas regras liberaram o acesso a todos e não foram usadas em produção.
 
 ### Opção 3: Validação durante o desenvolvimento

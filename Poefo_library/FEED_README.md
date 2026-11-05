@@ -41,10 +41,11 @@ Preservei as outras regras e removi permissões de gravação amplas, como `".wr
 
 No menu de três pontos, pude enviar uma publicação a uma conversa ou excluí-la quando pertencia ao usuário atual. Fiz a exclusão pela Cloud Function `deleteFeedPost`, que conferiu a autoria antes de alterar `livros_json/posts.json` no bucket `captu-libraly.firebasestorage.app`. Por isso, não liberei a gravação desse arquivo para os clientes.
 
-Depois de publicar as regras de leitura, implantei as funções com:
+Depois de publicar as regras de leitura, implantei as funções com: 
 
 ```shell
 firebase deploy --only functions
 ```
+
 
 Fiz o deploy no projeto Firebase `captu-libraly`. Se a função de exclusão registrasse um erro de permissão no Cloud Storage, concederia à conta de serviço de runtime das Functions a função IAM **Storage Object Admin** somente no bucket `captu-libraly.firebasestorage.app`.

@@ -272,12 +272,6 @@ Para validar as regras durante o desenvolvimento, usei esta configuração:
 
 ## Como publiquei as regras
 
-1. Acessei o [Firebase Console](https://console.firebase.google.com).
-2. Abri o projeto `captu-libraly`.
-3. No menu, selecionei **Realtime Database**.
-4. Abri a aba **Rules**.
-5. Publiquei as regras escolhidas.
-6. Cliquei em **Publish**.
 
 ```json
     "follows": {

@@ -194,6 +194,14 @@
                             </div>
                         </section>
 
+                        <section class="botoes-acao-wrapper">
+                            ${isOwnProfile ?
+                                `<button id="btn-editar" class="btn-gradiente btn-follow">Seu Perfil</button>` :
+                                `<button id="btn-seguir" class="btn-gradiente btn-follow">${followBtnText}</button>
+                                 <button id="btn-mensagem" class="btn-gradiente btn-message">Mensagem</button>`
+                            }
+                        </section>
+
                         <section class="perfil-progress-section" aria-label="Progresso de leitura">
                             <div class="perfil-progress-heading">
                                 <span class="perfil-progress-eyebrow">JORNADA DE LEITURA</span>
@@ -217,15 +225,6 @@
                                     </div>
                                 </article>
                             </div>
-                        </section>
-
-                        
-                        <section class="botoes-acao-wrapper">
-                            ${isOwnProfile ? 
-                                `<button id="btn-editar" class="btn-gradiente btn-follow">Seu Perfil</button>` : 
-                                `<button id="btn-seguir" class="btn-gradiente btn-follow">${followBtnText}</button>
-                                 <button id="btn-mensagem" class="btn-gradiente btn-message">Mensagem</button>`
-                            }
                         </section>
 
                         <nav class="nav-abas-perfil">

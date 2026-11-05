@@ -10,21 +10,39 @@ body {
     font-family: 'Montserrat', sans-serif;
     background-color: #FFFFFF;
     color: #1A1A1A;
-    display: flex;
-    justify-content: center;
     min-height: 100vh;
 }
 
-/* Container que simula e centraliza a tela do aplicativo */
 .app-screen {
     width: 100%;
-    max-width: 480px;
+    max-width: none;
     background-color: #FFFFFF;
     min-height: 100vh;
-    padding: 20px 24px;
+    padding: 20px clamp(16px, 4vw, 64px);
     display: flex;
     flex-direction: column;
     position: relative;
+}
+
+#profile-main,
+.perfil-card-container {
+    width: 100%;
+}
+
+.perfil-header-block {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.estatisticas-container,
+.perfil-progress-section,
+.botoes-acao-wrapper,
+.nav-abas-perfil,
+.grid-galeria-posts {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
 }
 
 /* Seta de Voltar da referência */
@@ -297,12 +315,28 @@ html.dark-theme .perfil-progress-note {
 }
 
 @media (max-width: 360px) {
+    .app-screen {
+        padding-right: 14px;
+        padding-left: 14px;
+    }
+
     .perfil-progress-section {
         padding: 16px 12px;
     }
 
     .perfil-progress-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .grid-galeria-posts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .perfil-header-block {
+        gap: 16px;
     }
 }
 
@@ -372,7 +406,7 @@ html.dark-theme .perfil-progress-note {
 /* Grid Assimétrico e fluido de posts (Estilo Pinterest / Instagram mesclado) */
 .grid-galeria-posts {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 16px;
 }
 

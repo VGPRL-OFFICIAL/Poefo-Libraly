@@ -212,7 +212,7 @@ exports.getFollowStatus = functions.https.onCall(async (data, context) => {
   const [relationshipSnapshot, followersSnapshot, followingSnapshot] = await Promise.all([
     db.ref(`follows/${followerId}/${followedId}`).once('value'),
     db.ref(`followers/${followedId}`).once('value'),
-    db.ref(`follows/${followerId}`).once('value')
+    db.ref(`follows/${followedId}`).once('value')
   ]);
   return {
     following: relationshipSnapshot.val() === true,
@@ -260,7 +260,7 @@ exports.toggleFollow = functions.https.onCall(async (data, context) => {
 
   const [followersSnapshot, followingSnapshot] = await Promise.all([
     db.ref(`followers/${followedId}`).once('value'),
-    db.ref(`follows/${followerId}`).once('value')
+    db.ref(`follows/${followedId}`).once('value')
   ]);
   return {
     following: shouldFollow,

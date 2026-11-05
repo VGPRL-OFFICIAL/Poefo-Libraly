@@ -14,6 +14,8 @@
     <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="../scripts/auth-profile.js"></script>
 </head>
 <body>
 
@@ -137,7 +139,7 @@
             feedback.textContent = 'Iniciando cadastro...';
             
             const file = inputFoto.files[0];
-            const email = document.getElementById('email').value.trim();
+            const email = document.getElementById('email').value.trim().toLowerCase();
             const nome_completo = document.getElementById('nome_completo').value.trim();
             // Normaliza o nome de usuário para minúsculas para uma verificação de duplicidade mais robusta
             const nome_usuario = document.getElementById('nome_usuario').value.trim().toLowerCase(); 
@@ -173,36 +175,36 @@
                     foto_url = await uploadImage(file, nome_usuario);
                 }
 
-                // 3. ADICIONAR NOVO PERFIL AO RTDB
-                feedback.textContent = '💾 Salvando novo usuário no banco de dados...';
-                
-                // .push() cria um nó com uma chave única (ID) no nó 'usuarios'
-                const novoUsuarioRef = database.ref('usuarios').push(); 
-                
+                feedback.textContent = 'Criando sua conta protegida...';
+                const credential = await firebase.auth().createUserWithEmailAndPassword(email, senha);
+                const novoUsuarioRef = database.ref('usuarios').push();
                 const novoUsuario = {
-                    // ID do usuário será a chave gerada automaticamente
-                    email: email,
-                    nome_completo: nome_completo,
-                    // Salva em minúsculas para facilitar futuras pesquisas
-                    nome_usuario: nome_usuario, 
-                    senha: senha, 
+                    authUid: credential.user.uid,
+                    email,
+                    nome_completo,
+                    nome_usuario,
                     foto_perfil: foto_url,
-                    criadoEm: firebase.database.ServerValue.TIMESTAMP // Adiciona timestamp do servidor
+                    criadoEm: firebase.database.ServerValue.TIMESTAMP
                 };
 
-                // Salva os dados
-                await novoUsuarioRef.set(novoUsuario);
+                try {
+                    await novoUsuarioRef.set(novoUsuario);
+                } catch (databaseError) {
+                    try {
+                        await credential.user.delete();
+                    } catch (rollbackError) {
+                        console.error('Não foi possível desfazer a conta Auth após falha ao salvar o perfil:', rollbackError);
+                    }
+                    throw databaseError;
+                }
                 
                 // Sucesso
+                const profile = await PoefoAuthProfile.attachAuthUser({ id: novoUsuarioRef.key, data: novoUsuario }, credential.user);
+                PoefoAuthProfile.saveSession(profile, credential.user);
                 feedback.textContent = `✅ Sucesso! Perfil ${nome_usuario} criado. Redirecionando...`;
-                // Reabilita o botão (caso o redirecionamento falhe)
-                btnCadastro.disabled = false;
-               
                 setTimeout(() => {
-                    
-                    // Redirecione para a página de login
-                     history.back(); 
-                }, 1500);
+                    window.location.href = './splash.html';
+                }, 800);
 
             } catch (error) {
                 console.error("Erro no cadastro:", error);

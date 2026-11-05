@@ -22,10 +22,12 @@ O sistema de chat utiliza a seguinte estrutura no Firebase Realtime Database:
 ├── {convId}
 │   ├── title: string
 │   ├── participants: array
+│   ├── bookClub: { id, titulo, autor, link_capa, link_acesso } | null
 │   ├── createdAt: number
 │   ├── createdBy: string
 │   ├── lastMessage: string
 │   ├── lastTimestamp: number
+│   ├── lastMessageSenderId: string (opcional)
 │   └── avatar: string (opcional)
 
 /chat_users
@@ -53,14 +55,39 @@ O sistema de chat utiliza a seguinte estrutura no Firebase Realtime Database:
 │   ├── bio: string
 │   └── ...
 
+O login usa Firebase Authentication, mas o identificador de perfil continua sendo a chave existente em `/usuarios` para preservar conversas, publicações e progresso. O UID autenticado fica no campo `authUid` desse perfil. As regras do Realtime Database devem validar essa associação e restringir as gravações administrativas a contas autorizadas; autenticar o usuário, por si só, não concede essas permissões.
+
 /chat_media (Storage)
 ├── {convId}/
-│   ├── {userId}/img_*.jpg|png|webp
-│   ├── {userId}/audio_*.webm|ogg|m4a
+│   ├── {authUid}/img_*.jpg|png|webp
+│   ├── {authUid}/audio_*.webm|ogg|m4a
 │   └── video_*.mp4
 ```
 
 Áudios e imagens são enviados ao Firebase Storage; as mensagens guardam a URL e o tipo do arquivo para exibição ou reprodução. Os arquivos permanecem no Storage enquanto a mensagem existir; não há expiração automática configurada.
+
+Conversas e grupos podem vincular um livro do catálogo em `chat_metadata/{convId}/bookClub`. O cartão do clube de leitura aparece no chat para os participantes e pode ser alterado ou removido. O player de áudio fica disponível diretamente na mensagem; o som de mensagens recebidas é reproduzido na aba aberta após a primeira interação do usuário, independentemente da permissão para notificações do sistema. O campo `lastMessageSenderId`, mantido pela Cloud Function, permite evitar o alerta sonoro para as mensagens enviadas pelo próprio usuário.
+
+### Regras do Firebase Storage para mídias do chat
+
+No Console do Firebase, abra **Storage > Rules** e adicione/mescle este bloco dentro de `match /b/{bucket}/o`. Não substitua as regras existentes de outros arquivos do Storage:
+
+```javascript
+match /chat_media/{conversationId}/{authUid}/{fileName} {
+  allow create: if request.auth != null
+    && request.auth.uid == authUid
+    && request.resource.size <= 20 * 1024 * 1024
+    && request.resource.contentType != null
+    && (
+      request.resource.contentType.matches('image/.*')
+      || request.resource.contentType.matches('audio/.*')
+    );
+  allow read: if request.auth != null && request.auth.uid == authUid;
+  allow update, delete: if false;
+}
+```
+
+O caminho de upload usa o UID do Firebase Authentication, não a chave antiga do perfil. O chat compartilha a URL de download da mídia na mensagem; trate essa URL como privada, pois quem a obtiver poderá acessá-la. Essas regras do Storage são separadas das regras do Realtime Database usadas para mensagens e conversas.
 
 ##  Regras do Firebase (Security Rules)
 

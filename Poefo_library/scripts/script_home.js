@@ -99,6 +99,7 @@ async function loadApp() {
             
             renderFilters(genres);
             renderHero(allBooksPoefo[0]);
+            listenForFeaturedBook(allBooksPoefo);
             await renderMostRecentReading(allBooksPoefo);
             renderGenreSections(genres);
             renderGrid(allBooksPoefo, gridPoefo);
@@ -109,6 +110,25 @@ async function loadApp() {
     } catch (err) {
         console.error("Erro ao carregar app:", err);
         if(gridPoefo) gridPoefo.innerHTML = "<p>Erro ao carregar livros da biblioteca.</p>";
+    }
+}
+
+function listenForFeaturedBook(books) {
+    try {
+        if (typeof firebase === 'undefined' || !window.POEFO_FIREBASE_CONFIG) {
+            throw new Error('Configuração do Firebase não disponível.');
+        }
+        if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
+
+        firebase.database().ref('configuracoes/livroDestaqueId').on('value', snapshot => {
+            const featuredBookId = snapshot.val();
+            const featuredBook = books.find(book => String(book.id) === String(featuredBookId)) || books[0];
+            renderHero(featuredBook);
+        }, error => {
+            console.warn('Não foi possível receber o livro em destaque do painel:', error);
+        });
+    } catch (error) {
+        console.warn('Não foi possível conectar ao destaque do painel; mantendo o primeiro livro:', error);
     }
 }
 

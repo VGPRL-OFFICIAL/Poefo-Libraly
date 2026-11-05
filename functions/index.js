@@ -73,7 +73,7 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
       if (!current) return current;
       const currentTimestamp = Number(current.lastTimestamp) || 0;
       return lastTimestamp >= currentTimestamp
-        ? { ...current, lastMessage, lastTimestamp }
+        ? { ...current, lastMessage, lastTimestamp, lastMessageSenderId: msg.userId || null }
         : current;
     });
 
@@ -88,6 +88,9 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
           ...meta,
           lastMessage: keepLatestPreview ? previous.lastMessage : lastMessage,
           lastTimestamp: Math.max(previousTimestamp, lastTimestamp),
+          lastMessageSenderId: keepLatestPreview
+            ? (previous.lastMessageSenderId || meta.lastMessageSenderId || null)
+            : (msg.userId || null),
           unreadCount: uid === msg.userId ? 0 : (Number(previous.unreadCount) || 0) + 1
         };
       });

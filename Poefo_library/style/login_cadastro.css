@@ -269,4 +269,77 @@ h1 {
     position: relative;
     z-index: 2;
     transition: color var(--transition-duration);
-} 
+}
+.forgot-password {
+    display: block;
+    margin: 0;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    color: var(--primary-color);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+.login-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -14px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 2;
+}
+.forgot-password:hover {
+    text-decoration: underline;
+}
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 10px;
+    padding: 11px 16px;
+    border: 1px solid #dedbd8;
+    border-radius: 25px;
+    background: #fff;
+    color: #383637;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+    transition: background-color var(--transition-duration), border-color var(--transition-duration), transform 0.2s, box-shadow var(--transition-duration);
+}
+.btn-google i {
+    color: #4285f4;
+    font-size: 18px;
+}
+.btn-google:hover:not(:disabled) {
+    border-color: #bcb8b4;
+    background: #f8f7f6;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.1);
+}
+.btn-google:active:not(:disabled) {
+    transform: translateY(0);
+}
+.btn-google:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.auth-feedback {
+    min-height: 1.25em;
+    margin: 8px 0 0;
+    color: var(--secondary-color);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+    position: relative;
+    z-index: 2;
+}

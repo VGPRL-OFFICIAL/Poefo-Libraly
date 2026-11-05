@@ -22,37 +22,63 @@ let recordingConvId = null;
 let selectedParticipantIds = new Set();
 let pendingBookChatInvite = null;
 let pendingGameChallenge = null;
+let notificationAudioContext = null;
+let lastNotificationSoundAt = 0;
+const notificationTimestamps = new Map();
+let bookCatalogPromise = null;
+let selectedBookClub = null;
+let conversationBookClub = null;
 
-// Notificação sonora simples
-function playBeep() {
+function primeNotificationAudio() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
     try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.value = 700;
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start();
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
-        setTimeout(() => { o.stop(); ctx.close(); }, 250);
-    } catch (e) {
-        // ignora se WebAudio não suportado
+        if (!notificationAudioContext || notificationAudioContext.state === 'closed') {
+            notificationAudioContext = new AudioContextClass();
+        }
+        if (notificationAudioContext.state === 'suspended') {
+            notificationAudioContext.resume().catch(error => {
+                console.warn('Não foi possível ativar o áudio das notificações:', error);
+            });
+        }
+    } catch (error) {
+        console.warn('Não foi possível preparar o áudio das notificações:', error);
     }
 }
+
+function playNotificationSound() {
+    const now = Date.now();
+    if (now - lastNotificationSoundAt < 900) return;
+    lastNotificationSoundAt = now;
+    primeNotificationAudio();
+    if (!notificationAudioContext || notificationAudioContext.state !== 'running') return;
+
+    [0, 0.16].forEach((delay, index) => {
+        const oscillator = notificationAudioContext.createOscillator();
+        const gain = notificationAudioContext.createGain();
+        const startAt = notificationAudioContext.currentTime + delay;
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(index === 0 ? 740 : 880, startAt);
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.12, startAt + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.22);
+        oscillator.connect(gain);
+        gain.connect(notificationAudioContext.destination);
+        oscillator.start(startAt);
+        oscillator.stop(startAt + 0.23);
+    });
+}
+
+document.addEventListener('pointerdown', primeNotificationAudio);
+document.addEventListener('keydown', primeNotificationAudio);
 
 function showDesktopNotification(title, body, icon) {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
         try {
             const n = new Notification(title, { body, icon });
-            playBeep();
             setTimeout(() => n.close(), 5000);
         } catch (e) { console.warn('Notification error', e); }
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') showDesktopNotification(title, body, icon);
-        });
     }
 }
 
@@ -371,6 +397,7 @@ async function registerFcmAndSaveToken() {
         messaging.onMessage(payload => {
             try {
                 const notif = payload.notification || {};
+                playNotificationSound();
                 showDesktopNotification(notif.title || 'Nova mensagem', notif.body || '', notif.icon || null);
             } catch (e) { console.warn('onMessage error', e); }
         });
@@ -398,6 +425,215 @@ function showCallOptions() {
 
 function showChatInfo() {
     alert(`Conversa: ${document.getElementById('header-name').textContent}\nParticipantes: ${currentParticipants.length}`);
+}
+
+function getBookCatalog() {
+    if (!bookCatalogPromise) {
+        bookCatalogPromise = (async () => {
+            const urls = [
+                window.POEFO_FIREBASE_URLS?.allBooksDataUrl,
+                '../base_dados/livros.json'
+            ].filter(Boolean);
+            let lastError;
+            for (const url of urls) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Falha ao carregar o catálogo (${response.status}).`);
+                    const data = await response.json();
+                    const books = Array.isArray(data) ? data : Object.values(data || {});
+                    return books.filter(book => book && (book.titulo || book.title));
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error('O catálogo de livros não está disponível.');
+        })().catch(error => {
+            bookCatalogPromise = null;
+            throw error;
+        });
+    }
+    return bookCatalogPromise;
+}
+
+function normalizeBookClub(book) {
+    if (!book) return null;
+    const title = String(book.titulo || book.title || '').trim();
+    if (!title) throw new Error('Este livro não possui um título válido.');
+    return {
+        id: String(book.id ?? book.bookId ?? title),
+        titulo: title,
+        autor: String(book.autor || book.author || '').trim(),
+        link_capa: String(book.link_capa || book.coverUrl || ''),
+        link_acesso: String(book.link_acesso || book.readUrl || '')
+    };
+}
+
+function renderBookClubBooks(books) {
+    const list = document.getElementById('book-club-books');
+    const query = document.getElementById('book-club-search').value.trim().toLocaleLowerCase('pt-BR');
+    const filtered = books.filter(book =>
+        `${book.titulo || book.title || ''} ${book.autor || book.author || ''}`
+            .toLocaleLowerCase('pt-BR').includes(query)
+    ).slice(0, 80);
+    list.replaceChildren();
+
+    filtered.forEach(book => {
+        const normalized = normalizeBookClub(book);
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'book-club-option' + (selectedBookClub?.id === normalized.id ? ' selected' : '');
+        item.setAttribute('aria-pressed', String(selectedBookClub?.id === normalized.id));
+        const cover = document.createElement('img');
+        cover.src = normalized.link_capa || '../images/Logo_Poefo.png';
+        cover.alt = '';
+        cover.loading = 'lazy';
+        const details = document.createElement('span');
+        details.className = 'book-club-option-info';
+        const title = document.createElement('strong');
+        title.textContent = normalized.titulo;
+        const author = document.createElement('small');
+        author.textContent = normalized.autor || 'Autor não informado';
+        details.append(title, author);
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-check-circle';
+        item.append(cover, details, icon);
+        item.addEventListener('click', () => {
+            selectedBookClub = normalized;
+            renderBookClubBooks(books);
+            renderBookClubSelection();
+        });
+        list.appendChild(item);
+    });
+
+    if (!filtered.length) {
+        const empty = document.createElement('p');
+        empty.className = 'book-club-empty';
+        empty.textContent = query ? 'Nenhum livro encontrado.' : 'Nenhum livro disponível no catálogo.';
+        list.appendChild(empty);
+    }
+}
+
+function renderBookClubSelection() {
+    const selection = document.getElementById('book-club-selection');
+    document.getElementById('save-book-club').disabled = !selectedBookClub;
+    selection.replaceChildren();
+    if (!selectedBookClub) return;
+    const label = document.createElement('span');
+    label.className = 'book-club-selected-label';
+    label.innerHTML = '<i class="fas fa-star"></i>';
+    label.appendChild(document.createTextNode(` Selecionado: ${selectedBookClub.titulo}`));
+    selection.appendChild(label);
+}
+
+async function openBookClubPicker() {
+    if (!currentConvId) {
+        alert('Selecione uma conversa ou crie um grupo antes de adicionar um livro.');
+        return;
+    }
+    selectedBookClub = conversationBookClub ? { ...conversationBookClub } : null;
+    document.getElementById('book-club-search').value = '';
+    document.getElementById('book-club-selection').replaceChildren();
+    document.getElementById('save-book-club').disabled = !selectedBookClub;
+    document.getElementById('book-club-books').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    document.getElementById('remove-book-club').hidden = !conversationBookClub;
+    document.getElementById('book-club-modal').classList.add('active');
+    try {
+        const books = await getBookCatalog();
+        renderBookClubBooks(books);
+        renderBookClubSelection();
+    } catch (error) {
+        console.error('Não foi possível carregar os livros para o clube:', error);
+        const list = document.getElementById('book-club-books');
+        list.replaceChildren();
+        const message = document.createElement('p');
+        message.className = 'book-club-empty book-club-error';
+        message.textContent = 'Não foi possível carregar os livros. Verifique sua conexão e tente novamente.';
+        list.appendChild(message);
+    }
+}
+
+function closeBookClubPicker() {
+    document.getElementById('book-club-modal').classList.remove('active');
+}
+
+async function saveBookClubSelection(book = selectedBookClub) {
+    if (!currentConvId) return;
+    let normalized;
+    try {
+        normalized = normalizeBookClub(book);
+    } catch (error) {
+        alert(error.message);
+        return;
+    }
+    const saveButton = document.getElementById('save-book-club');
+    const removeButton = document.getElementById('remove-book-club');
+    saveButton.disabled = true;
+    removeButton.disabled = true;
+    try {
+        const convId = currentConvId;
+        const metaRef = db.ref(`chat_metadata/${convId}`);
+        const snapshot = await metaRef.once('value');
+        if (!snapshot.exists()) throw new Error('Não foi possível encontrar os dados desta conversa.');
+        await metaRef.update({ bookClub: normalized });
+        await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({ bookClub: normalized });
+        if (currentConvId !== convId) {
+            closeBookClubPicker();
+            return;
+        }
+        conversationBookClub = normalized;
+        renderBookClubPanel(normalized);
+        closeBookClubPicker();
+    } catch (error) {
+        console.error('Não foi possível atualizar o livro do clube:', error);
+        alert(`Não foi possível atualizar o livro do clube: ${error.message}`);
+    } finally {
+        saveButton.disabled = false;
+        removeButton.disabled = false;
+    }
+}
+
+function renderBookClubPanel(book) {
+    const panel = document.getElementById('book-club-panel');
+    panel.replaceChildren();
+    panel.hidden = !book;
+    if (!book) return;
+
+    const cover = document.createElement('img');
+    cover.className = 'book-club-cover';
+    cover.src = book.link_capa || '../images/Logo_Poefo.png';
+    cover.alt = `Capa de ${book.titulo}`;
+    const copy = document.createElement('div');
+    copy.className = 'book-club-copy';
+    const eyebrow = document.createElement('span');
+    eyebrow.className = 'book-club-eyebrow';
+    eyebrow.innerHTML = '<i class="fas fa-users"></i> CLUBE DE LEITURA';
+    const title = document.createElement('strong');
+    title.textContent = book.titulo;
+    const author = document.createElement('small');
+    author.textContent = book.autor || 'Leiam juntos e compartilhem suas impressões';
+    copy.append(eyebrow, title, author);
+    const actions = document.createElement('div');
+    actions.className = 'book-club-panel-actions';
+    if (book.link_acesso) {
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'book-club-open';
+        open.innerHTML = '<i class="fas fa-book-open"></i> Ler';
+        open.addEventListener('click', () => {
+            sessionStorage.setItem('selectedBook', JSON.stringify(book));
+            window.location.href = './livro.html';
+        });
+        actions.appendChild(open);
+    }
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'book-club-edit';
+    edit.setAttribute('aria-label', 'Alterar livro do clube');
+    edit.title = 'Alterar livro do clube';
+    edit.innerHTML = '<i class="fas fa-pen"></i>';
+    edit.addEventListener('click', openBookClubPicker);
+    actions.appendChild(edit);
+    panel.append(cover, copy, actions);
 }
 
 function closeMobileConversation() {
@@ -712,6 +948,8 @@ function setAudioRecordingUI(recording) {
 async function uploadChatMedia(file, convId) {
     if (!convId) throw new Error('Selecione uma conversa antes de enviar o arquivo.');
     if (!currentUserId) throw new Error('Entre na sua conta antes de enviar arquivos.');
+    const authUser = firebase.auth().currentUser;
+    if (!authUser) throw new Error('Sua sessão expirou. Entre novamente para enviar arquivos.');
 
     const status = document.getElementById('media-status');
     const imageButton = document.getElementById('image-attach-btn');
@@ -722,15 +960,32 @@ async function uploadChatMedia(file, convId) {
     status.textContent = 'Enviando arquivo...';
 
     try {
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        const inferredType = {
+            m4a: 'audio/mp4',
+            mp3: 'audio/mpeg',
+            mp4: 'audio/mp4',
+            oga: 'audio/ogg',
+            ogg: 'audio/ogg',
+            opus: 'audio/ogg',
+            wav: 'audio/wav',
+            webm: 'audio/webm'
+        }[extension] || '';
+        const mediaType = (file.type || inferredType).split(';')[0].trim();
+        if (!mediaType) throw new Error('Não foi possível identificar o formato do arquivo.');
+
         const safeName = file.name.replace(/[^\w.-]/g, '_');
-        const path = `chat_media/${convId}/${currentUserId}/${Date.now()}_${safeName}`;
+        const path = `chat_media/${convId}/${authUser.uid}/${Date.now()}_${safeName}`;
         const fileRef = storage.ref().child(path);
         const snapshot = await fileRef.put(file, {
-            contentType: file.type,
+            contentType: mediaType,
             customMetadata: { conversationId: convId, senderId: currentUserId }
         });
         const url = await snapshot.ref.getDownloadURL();
-        const sent = await sendMessage('', url, file.type, null, convId);
+        if (!url || !/^https?:\/\//i.test(url)) {
+            throw new Error('O Firebase não retornou um link válido para o arquivo.');
+        }
+        const sent = await sendMessage('', url, mediaType, null, convId);
         if (!sent) {
             await snapshot.ref.delete();
             throw new Error('O arquivo foi enviado, mas a mensagem não pôde ser entregue.');
@@ -812,7 +1067,8 @@ async function updateChatMetadata(convId, text, mediaUrl, mediaType) {
         const meta = {
             ...metadata,
             lastMessage: preview,
-            lastTimestamp: Date.now()
+            lastTimestamp: Date.now(),
+            lastMessageSenderId: currentUserId
         };
 
         await db.ref(`chat_users/${currentUserId}/conversations/${convId}`).update({
@@ -851,6 +1107,21 @@ function subscribeConversations() {
         const data = snap.exists() ? snap.val() : {};
         const convList = document.getElementById('conversations-list');
         convList.innerHTML = '';
+        Object.entries(data).forEach(([convId, meta]) => {
+            const timestamp = Number(meta.lastTimestamp) || 0;
+            const previousTimestamp = notificationTimestamps.get(convId);
+            if (
+                previousTimestamp !== undefined
+                && timestamp > previousTimestamp
+                && convId !== currentConvId
+                && meta.lastMessage
+                && meta.lastMessageSenderId !== currentUserId
+            ) {
+                playNotificationSound();
+                showDesktopNotification(meta.title || 'Nova mensagem', meta.lastMessage, meta.avatar || null);
+            }
+            notificationTimestamps.set(convId, timestamp);
+        });
         if (Object.keys(data).length === 0) {
             convList.innerHTML = '<div style="padding: 16px; text-align: center; color: #65676b;">Sem conversas</div>';
             return;
@@ -865,6 +1136,8 @@ function subscribeConversations() {
 
 async function openConversation(convId, participants, title) {
     currentConvId = convId;
+    conversationBookClub = null;
+    renderBookClubPanel(null);
     document.body.classList.add('mobile-chat-open');
     
     // Converter participants para array se for objeto
@@ -880,6 +1153,14 @@ async function openConversation(convId, participants, title) {
     document.getElementById('compose-section').style.display = 'flex';
     document.getElementById('header-name').textContent = title || participantsArray.join(', ');
     document.getElementById('header-status').textContent = 'Online';
+    try {
+        const metadataSnapshot = await db.ref(`chat_metadata/${convId}`).once('value');
+        if (currentConvId !== convId) return;
+        conversationBookClub = metadataSnapshot.val()?.bookClub || null;
+        renderBookClubPanel(conversationBookClub);
+    } catch (error) {
+        console.warn('Não foi possível carregar o livro do clube:', error);
+    }
     
     // Atualizar avatares no header
     const otherIds = participantsArray.filter(id => id !== currentUserId);
@@ -907,6 +1188,7 @@ async function openConversation(convId, participants, title) {
     
     // Limpar e recarregar
     const snapshot = await messagesRef.limitToLast(200).once('value');
+    if (currentConvId !== convId) return;
     const renderedMessageIds = new Set();
     if (snapshot.exists()) {
         const msgs = [];
@@ -948,8 +1230,17 @@ function renderMessage(msg, container) {
         bubble.appendChild(text);
     }
 
-    if (msg.mediaUrl) {
-        const mediaType = msg.mediaType || '';
+    const rawMediaUrl = msg.mediaUrl || msg.mediaURL || msg.audioUrl || msg.fileUrl || '';
+    const rawMediaPath = msg.mediaPath || msg.storagePath || '';
+    const mediaReference = rawMediaUrl || rawMediaPath;
+    if (mediaReference) {
+        const inferredPath = `${rawMediaUrl} ${rawMediaPath}`.toLowerCase();
+        const mediaType = String(msg.mediaType || msg.mimeType || '').split(';')[0].trim().toLowerCase()
+            || (/\.(mp3)(?:[?#\s]|$)/i.test(inferredPath) ? 'audio/mpeg' : '')
+            || (/\.(m4a|mp4)(?:[?#\s]|$)/i.test(inferredPath) ? 'audio/mp4' : '')
+            || (/\.(ogg|oga|opus)(?:[?#\s]|$)/i.test(inferredPath) ? 'audio/ogg' : '')
+            || (/\.(wav)(?:[?#\s]|$)/i.test(inferredPath) ? 'audio/wav' : '')
+            || (/\.(webm)(?:[?#\s]|$)/i.test(inferredPath) ? 'audio/webm' : '');
         const media = mediaType.startsWith('image/')
             ? document.createElement('img')
             : mediaType.startsWith('audio/')
@@ -958,17 +1249,174 @@ function renderMessage(msg, container) {
                     ? document.createElement('video')
                     : null;
         if (media) {
-            media.src = msg.mediaUrl;
             media.className = 'message-media';
             if (media instanceof HTMLImageElement) {
+                media.src = rawMediaUrl;
                 media.alt = 'Imagem enviada';
                 media.loading = 'lazy';
             } else {
                 media.controls = true;
                 media.preload = 'metadata';
+                media.setAttribute('playsinline', '');
             }
-            bubble.appendChild(media);
+            if (media instanceof HTMLAudioElement) {
+                media.controls = false;
+                media.classList.add('audio-source-hidden');
+                const player = document.createElement('div');
+                player.className = 'audio-player-shell';
+                const audioIcon = document.createElement('span');
+                audioIcon.className = 'audio-player-icon';
+                audioIcon.innerHTML = '<i class="fas fa-headphones"></i>';
+                const audioContent = document.createElement('div');
+                audioContent.className = 'audio-player-content';
+                const audioTitle = document.createElement('span');
+                audioTitle.className = 'audio-player-title';
+                audioTitle.textContent = isSent ? 'Áudio enviado' : `Áudio de ${msg.userName || 'contato'}`;
+                const playButton = document.createElement('button');
+                playButton.type = 'button';
+                playButton.className = 'audio-play-button';
+                playButton.setAttribute('aria-label', 'Reproduzir áudio');
+                playButton.innerHTML = '<i class="fas fa-play"></i>';
+                const seek = document.createElement('input');
+                seek.type = 'range';
+                seek.className = 'audio-seek';
+                seek.min = '0';
+                seek.max = '1000';
+                seek.value = '0';
+                seek.setAttribute('aria-label', 'Progresso do áudio');
+                const currentTime = document.createElement('span');
+                currentTime.className = 'audio-time';
+                currentTime.textContent = '0:00';
+                const duration = document.createElement('span');
+                duration.className = 'audio-time audio-duration';
+                duration.textContent = '--:--';
+                const audioError = document.createElement('span');
+                audioError.className = 'audio-player-error';
+                audioError.hidden = true;
+                audioError.textContent = 'Não foi possível reproduzir este áudio.';
+                const formatAudioTime = seconds => {
+                    if (!Number.isFinite(seconds) || seconds < 0) return '--:--';
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = Math.floor(seconds % 60);
+                    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+                };
+                const updateProgress = () => {
+                    const total = media.duration;
+                    const played = Number.isFinite(total) && total > 0
+                        ? Math.min(1000, Math.round((media.currentTime / total) * 1000))
+                        : 0;
+                    seek.value = String(played);
+                    seek.style.setProperty('--audio-progress', `${played / 10}%`);
+                    currentTime.textContent = formatAudioTime(media.currentTime);
+                    duration.textContent = formatAudioTime(total);
+                };
+                const updatePlaybackState = () => {
+                    const playing = !media.paused && !media.ended;
+                    player.classList.toggle('is-playing', playing);
+                    playButton.setAttribute('aria-label', playing ? 'Pausar áudio' : 'Reproduzir áudio');
+                    playButton.innerHTML = playing
+                        ? '<i class="fas fa-pause"></i>'
+                        : '<i class="fas fa-play"></i>';
+                };
+                playButton.addEventListener('click', async () => {
+                    if (media.paused) {
+                        try {
+                            await media.play();
+                        } catch (error) {
+                            console.error('Não foi possível reproduzir o áudio:', error);
+                            audioError.hidden = false;
+                        }
+                    } else {
+                        media.pause();
+                    }
+                });
+                seek.addEventListener('input', () => {
+                    seek.style.setProperty('--audio-progress', `${Number(seek.value) / 10}%`);
+                    if (Number.isFinite(media.duration) && media.duration > 0) {
+                        const targetTime = (Number(seek.value) / 1000) * media.duration;
+                        currentTime.textContent = formatAudioTime(targetTime);
+                    }
+                });
+                seek.addEventListener('change', () => {
+                    if (Number.isFinite(media.duration) && media.duration > 0) {
+                        media.currentTime = (Number(seek.value) / 1000) * media.duration;
+                    }
+                });
+                const wave = document.createElement('span');
+                wave.className = 'audio-waveform';
+                wave.setAttribute('aria-hidden', 'true');
+                for (let i = 0; i < 20; i += 1) {
+                    const bar = document.createElement('i');
+                    bar.style.height = `${[6, 10, 14, 8, 12][i % 5]}px`;
+                    bar.style.animationDelay = `${-i * 35}ms`;
+                    wave.appendChild(bar);
+                }
+                const audioTopRow = document.createElement('div');
+                audioTopRow.className = 'audio-top-row';
+                const audioVisual = document.createElement('div');
+                audioVisual.className = 'audio-visual';
+                audioVisual.append(wave, playButton);
+                audioTopRow.append(audioTitle, audioVisual);
+                const controls = document.createElement('div');
+                controls.className = 'audio-custom-controls';
+                controls.append(currentTime, seek, duration);
+                audioContent.append(audioTopRow, controls, media, audioError);
+                const openAudio = document.createElement('a');
+                openAudio.className = 'audio-open-link';
+                openAudio.target = '_blank';
+                openAudio.rel = 'noopener noreferrer';
+                openAudio.textContent = 'Abrir áudio';
+                openAudio.hidden = true;
+                audioContent.appendChild(openAudio);
+                player.append(audioIcon, audioContent);
+                media.addEventListener('play', updatePlaybackState);
+                media.addEventListener('pause', updatePlaybackState);
+                media.addEventListener('ended', () => {
+                    updatePlaybackState();
+                    updateProgress();
+                });
+                media.addEventListener('timeupdate', updateProgress);
+                media.addEventListener('loadedmetadata', updateProgress);
+                media.addEventListener('durationchange', updateProgress);
+                media.addEventListener('error', () => {
+                    player.classList.remove('is-playing');
+                    updatePlaybackState();
+                    audioError.hidden = false;
+                    openAudio.hidden = !media.currentSrc;
+                });
+                media.addEventListener('loadedmetadata', () => {
+                    audioError.hidden = true;
+                    openAudio.hidden = true;
+                });
+                const setAudioSource = url => {
+                    if (!url) throw new Error('A mensagem não contém um link de áudio.');
+                    media.src = url;
+                    openAudio.href = url;
+                    media.load();
+                };
+                const isHttpUrl = /^https?:\/\//i.test(rawMediaUrl);
+                if (isHttpUrl) {
+                    setAudioSource(rawMediaUrl);
+                } else {
+                    const mediaRef = rawMediaUrl.startsWith('gs://')
+                        ? storage.refFromURL(rawMediaUrl)
+                        : storage.ref(rawMediaPath || rawMediaUrl);
+                    mediaRef.getDownloadURL().then(setAudioSource).catch(error => {
+                        console.error('Não foi possível obter o link de reprodução do áudio:', error);
+                        audioError.hidden = false;
+                    });
+                }
+                bubble.appendChild(player);
+            } else {
+                media.src = rawMediaUrl;
+                bubble.appendChild(media);
+            }
         }
+    } else if (String(msg.mediaType || msg.mimeType || '').toLowerCase().startsWith('audio/')) {
+        const unavailable = document.createElement('div');
+        unavailable.className = 'audio-link-unavailable';
+        unavailable.textContent = 'O link deste áudio não está disponível na mensagem.';
+        bubble.appendChild(unavailable);
     }
 
     div.appendChild(bubble);
@@ -1014,6 +1462,41 @@ function escapeHtml(text) {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('book-club-search')?.addEventListener('input', async () => {
+        try {
+            renderBookClubBooks(await getBookCatalog());
+        } catch (error) {
+            console.warn('Não foi possível filtrar o catálogo do clube:', error);
+        }
+    });
+
+    document.getElementById('book-club-modal')?.addEventListener('click', event => {
+        if (event.target.id === 'book-club-modal') closeBookClubPicker();
+    });
+
+    const authUser = await new Promise(resolve => {
+        let unsubscribe = () => {};
+        unsubscribe = firebase.auth().onAuthStateChanged(user => {
+            unsubscribe();
+            resolve(user);
+        });
+    });
+    if (!authUser) {
+        window.location.replace('./login.html');
+        return;
+    }
+
+    const profile = await PoefoAuthProfile.findByAuthUid(authUser.uid);
+    if (!profile || profile.data.bloqueado === true) {
+        await firebase.auth().signOut();
+        window.location.replace('./login.html');
+        return;
+    }
+    PoefoAuthProfile.saveSession(profile, authUser);
+    currentUserId = profile.id;
+    currentUserName = profile.data.nome_usuario || profile.data.nome_completo || currentUserName;
+    currentUserAvatar = profile.data.foto_perfil || currentUserAvatar;
+
     document.getElementById('mobile-chat-back')?.addEventListener('click', closeMobileConversation);
 
     // Carregar usuários primeiro
@@ -1164,22 +1647,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-        // Listener para notificações de conversas (quando metadata muda)
-        try {
-            const convsRef = db.ref(`chat_users/${currentUserId}/conversations`);
-            convsRef.on('child_changed', snap => {
-                const meta = snap.val();
-                const convId = snap.key;
-                if (!meta) return;
-                // Se não for a conversa atual, notificar
-                if (convId !== currentConvId) {
-                    const title = meta.title || convId;
-                    const body = meta.lastMessage || 'Nova mensagem';
-                    showDesktopNotification(title, body, meta.avatar || null);
-                }
-            });
-        } catch (e) { /* ignore */ }
-
         // Registrar service worker / FCM
-        registerFcmAndSaveToken().catch(() => {});
+        registerFcmAndSaveToken().catch(error => {
+            console.warn('Não foi possível ativar as notificações push:', error);
+        });
 });

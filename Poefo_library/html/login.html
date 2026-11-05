@@ -14,6 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="../scripts/auth-profile.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Link para o Manifest -->
@@ -40,20 +42,23 @@
         <form id="loginForm">
             <div class="input-group">
                 <i class="fa-solid fa-user"></i>
-                <input type="text" placeholder="Usuário" id="usuario" required>
+                <input type="text" placeholder="E-mail ou nome de usuário" id="usuario" required autocomplete="username">
             </div>
 
             <div class="input-group password-group"> <i class="fa-solid fa-lock"></i>
-                <input type="password" placeholder="Senha" id="senha" required>
+                <input type="password" placeholder="Senha" id="senha" required autocomplete="current-password">
                 <button type="button" class="toggle-password" id="togglePassword">
                     <i class="fa-solid fa-eye"></i>
                 </button>
             </div>
+            <div class="login-form-actions">
+                <button type="button" id="btn-esqueci-senha" class="forgot-password">Esqueci a senha</button>
+            </div>
 
-            <div class="remember-me-group">
+         <!-- <div class="remember-me-group">
                 <input type="checkbox" id="remember-me">
                 <label for="remember-me">Lembrar Login</label>
-            </div>
+            </div> -->
 
             <p id="feedback"
                 style="color: var(--secondary-color); text-align: center; margin-bottom: 15px; font-weight: 600;"></p>
@@ -61,6 +66,11 @@
             <button type="submit" id="btn-entrar" class="btn-primary">Entrar</button>
         </form>
 
+        <button type="button" id="btn-google" class="btn-google">
+            <i class="fa-brands fa-google" aria-hidden="true"></i>
+            <span>Continuar com Google</span>
+        </button>
+        <p id="auth-feedback" role="status" aria-live="polite" class="auth-feedback"></p>
         <a href="./cadastro.html" class="criaracont">Não possui login ?/ Criar Conta</a> <i
             class="fa-solid fa-square-code watermark-icon"></i>
     </div>
@@ -70,7 +80,7 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
         }
-        const database = firebase.database();
+        const auth = firebase.auth();
 
         document.addEventListener('DOMContentLoaded', () => {
             const loginForm = document.getElementById('loginForm');
@@ -79,6 +89,9 @@
             const rememberMeCheckbox = document.getElementById('remember-me');
             const feedback = document.getElementById('feedback');
             const btnEntrar = document.getElementById('btn-entrar');
+            const btnGoogle = document.getElementById('btn-google');
+            const btnForgotPassword = document.getElementById('btn-esqueci-senha');
+            const authFeedback = document.getElementById('auth-feedback');
 
             // NOVO: Lógica do botão de visualizar senha
             const togglePasswordButton = document.getElementById('togglePassword');
@@ -94,12 +107,40 @@
                 const savedUsername = localStorage.getItem('rememberedUsername');
                 if (savedUsername) {
                     usuarioInput.value = savedUsername;
-                    rememberMeCheckbox.checked = true;
+                    if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
                     senhaInput.focus();
                 }
             }
 
             loadSavedLogin();
+
+            async function completeLogin(authUser, profile) {
+                if (profile.data.bloqueado === true) {
+                    await auth.signOut();
+                    throw new Error('Esta conta está bloqueada. Entre em contato com a administração.');
+                }
+
+                profile = await PoefoAuthProfile.attachAuthUser(profile, authUser);
+                PoefoAuthProfile.saveSession(profile, authUser);
+                if (rememberMeCheckbox?.checked) {
+                    localStorage.setItem('rememberedUsername', profile.data.nome_usuario || authUser.email);
+                } else if (rememberMeCheckbox) {
+                    localStorage.removeItem('rememberedUsername');
+                }
+                feedback.textContent = `Login efetuado como ${profile.data.nome_usuario || authUser.email}! Redirecionando...`;
+                window.setTimeout(() => {
+                    window.location.href = './splash.html';
+                }, 800);
+            }
+
+            function isInvalidCredentialsError(error) {
+                return [
+                    'auth/user-not-found',
+                    'auth/invalid-credential',
+                    'auth/invalid-login-credentials'
+                ].includes(error.code)
+                    || String(error.message || '').includes('INVALID_LOGIN_CREDENTIALS');
+            }
 
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -116,58 +157,107 @@
                 }
 
                 try {
-                    const userSnapshot = await database.ref('usuarios')
-                        .orderByChild('nome_usuario')
-                        .equalTo(enteredUsername)
-                        .once('value');
-
-                    if (userSnapshot.exists()) {
-                        const userKey = Object.keys(userSnapshot.val())[0];
-                        const userData = userSnapshot.val()[userKey];
-
-                        if (userData.senha === enteredPassword) {
-
-                            feedback.textContent = ` Login efetuado como ${userData.nome_usuario}! Redirecionando...`;
-
-                            // 🟢 LÓGICA CHAVE: SALVAR DADOS NA SESSION STORAGE
-                            sessionStorage.setItem('currentUserId', userKey);
-                            sessionStorage.setItem('currentUserName', userData.nome_usuario);
-                            if (userData.foto_perfil) {
-                                sessionStorage.setItem('currentUserPic', userData.foto_perfil);
-                            }
-
-                            // Mantém um fallback no localStorage para páginas abertas em novas guias
-                            localStorage.setItem('currentUserId', userKey);
-                            localStorage.setItem('currentUserName', userData.nome_usuario);
-                            if (userData.foto_perfil) {
-                                localStorage.setItem('currentUserPic', userData.foto_perfil);
-                            }
-
-                            // Lógica de Lembrar Login
-                            if (rememberMeCheckbox.checked) {
-                                localStorage.setItem('rememberedUsername', userData.nome_usuario);
-                            } else {
-                                localStorage.removeItem('rememberedUsername');
-                            }
-
-                            setTimeout(() => {
-                                window.location.href = './splash.html';
-                            }, 1000);
-
-                        } else {
-                            feedback.textContent = '❌ Erro: Senha incorreta.';
+                    let profile = null;
+                    let email = enteredUsername;
+                    if (!enteredUsername.includes('@')) {
+                        profile = await PoefoAuthProfile.findByLogin(enteredUsername);
+                        if (!profile) throw new Error('Usuário não encontrado.');
+                        if (profile.data.bloqueado === true) {
+                            throw new Error('Esta conta está bloqueada. Entre em contato com a administração.');
                         }
-                    } else {
-                        feedback.textContent = '❌ Erro: Usuário não encontrado.';
+                        email = profile.data.email;
                     }
 
+                    if (!email || !email.includes('@')) {
+                        throw new Error('Esta conta não possui um e-mail válido vinculado.');
+                    }
+
+                    try {
+                        const credential = await auth.signInWithEmailAndPassword(email, enteredPassword);
+                        profile = profile || await PoefoAuthProfile.findByEmail(credential.user.email);
+                        profile = profile || await PoefoAuthProfile.createProfileForAuthUser(credential.user);
+                        await completeLogin(credential.user, profile);
+                    } catch (authError) {
+                        if (!isInvalidCredentialsError(authError)) throw authError;
+                        profile = profile || await PoefoAuthProfile.findByEmail(email);
+                        if (!profile || profile.data.senha == null || String(profile.data.senha) !== enteredPassword) {
+                            throw new Error('E-mail ou senha incorretos. Confira os dados ou use “Esqueci a senha”.');
+                        }
+                        if (profile.data.bloqueado === true) {
+                            throw new Error('Esta conta está bloqueada. Entre em contato com a administração.');
+                        }
+
+                        try {
+                            const credential = await auth.createUserWithEmailAndPassword(email, enteredPassword);
+                            await completeLogin(credential.user, profile);
+                        } catch (migrationError) {
+                            if (migrationError.code !== 'auth/email-already-in-use') throw migrationError;
+                            await auth.sendPasswordResetEmail(email);
+                            throw new Error('Esta conta já está vinculada ao Firebase. Enviamos um link para redefinir a senha e concluir o acesso.');
+                        }
+                    }
                 } catch (error) {
                     console.error("Erro no Login:", error);
-                    feedback.textContent = `❌ Erro ao tentar logar: ${error.message}.`;
+                    feedback.textContent = `❌ ${error.message || 'Não foi possível entrar. Verifique suas credenciais.'}`;
+                    if (auth.currentUser && feedback.textContent.indexOf('Redirecionando') === -1) {
+                        try {
+                            await auth.signOut();
+                        } catch (signOutError) {
+                            console.error('Não foi possível encerrar a sessão após falha no login:', signOutError);
+                        }
+                    }
                 }
 
                 if (feedback.textContent.indexOf('Redirecionando') === -1) {
                     btnEntrar.disabled = false;
+                }
+            });
+
+            btnGoogle.addEventListener('click', async () => {
+                btnGoogle.disabled = true;
+                authFeedback.textContent = 'Conectando com o Google...';
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const credential = await auth.signInWithPopup(provider);
+                    const profile = await PoefoAuthProfile.createProfileForAuthUser(credential.user);
+                    PoefoAuthProfile.saveSession(profile, credential.user);
+                    authFeedback.textContent = 'Login efetuado. Redirecionando...';
+                    window.location.href = './splash.html';
+                } catch (error) {
+                    console.error('Erro no login com Google:', error);
+                    authFeedback.textContent = `Não foi possível entrar com Google: ${error.message}`;
+                    if (auth.currentUser) {
+                        try {
+                            await auth.signOut();
+                        } catch (signOutError) {
+                            console.error('Não foi possível encerrar a sessão Google após falha:', signOutError);
+                        }
+                    }
+                } finally {
+                    btnGoogle.disabled = false;
+                }
+            });
+
+            btnForgotPassword.addEventListener('click', async () => {
+                const identifier = usuarioInput.value.trim();
+                if (!identifier) {
+                    authFeedback.textContent = 'Informe seu e-mail ou nome de usuário para receber o link de recuperação.';
+                    usuarioInput.focus();
+                    return;
+                }
+
+                btnForgotPassword.disabled = true;
+                try {
+                    const profile = identifier.includes('@') ? null : await PoefoAuthProfile.findByLogin(identifier);
+                    const email = identifier.includes('@') ? identifier : profile?.data.email || '';
+                    if (!email) throw new Error('Não encontramos um e-mail vinculado a esse nome de usuário.');
+                    await auth.sendPasswordResetEmail(email);
+                    authFeedback.textContent = 'Se houver uma conta com esse e-mail, o link de recuperação será enviado.';
+                } catch (error) {
+                    console.error('Erro ao solicitar recuperação de senha:', error);
+                    authFeedback.textContent = `Não foi possível enviar o link de recuperação: ${error.message}`;
+                } finally {
+                    btnForgotPassword.disabled = false;
                 }
             });
         });

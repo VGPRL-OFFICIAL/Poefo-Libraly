@@ -316,8 +316,181 @@ body {
     margin: 4px 0;
 }
 
-.message-bubble audio {
-    max-width: 100%;
+.audio-player-shell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(320px, 72vw);
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+    animation: audio-player-arrive 420ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.audio-player-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 15px;
+}
+
+.audio-player-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.audio-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+}
+
+.audio-player-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    opacity: .8;
+}
+
+.audio-visual {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.audio-waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 16px;
+}
+
+.audio-waveform i {
+    width: 3px;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: .55;
+    transform-origin: center;
+}
+
+.audio-player-shell.is-playing .audio-waveform i {
+    animation: audio-wave 650ms ease-in-out infinite alternate;
+}
+
+.audio-player-shell audio.message-media {
+    display: none;
+}
+
+.audio-custom-controls {
+    display: grid;
+    grid-template-columns: auto minmax(60px, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+}
+
+.audio-play-button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .2);
+    color: inherit;
+    cursor: pointer;
+    transition: transform .18s ease, background .18s ease;
+}
+
+.audio-play-button:hover {
+    transform: scale(1.08);
+    background: rgba(255, 255, 255, .32);
+}
+
+.audio-seek {
+    width: 100%;
+    height: 5px;
+    margin: 0;
+    border-radius: 99px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: linear-gradient(
+        to right,
+        currentColor 0 var(--audio-progress, 0%),
+        rgba(255, 255, 255, .3) var(--audio-progress, 0%) 100%
+    );
+    cursor: pointer;
+}
+
+.audio-seek::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--primary-color);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .2);
+}
+
+.audio-seek::-moz-range-thumb {
+    width: 9px;
+    height: 9px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    background: var(--primary-color);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .2);
+}
+
+.audio-time {
+    min-width: 28px;
+    color: inherit;
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+    opacity: .8;
+    text-align: center;
+}
+
+.audio-player-error,
+.audio-open-link,
+.audio-link-unavailable {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+}
+
+.audio-player-error {
+    color: #b42318;
+}
+
+.audio-player-error[hidden],
+.audio-open-link[hidden] {
+    display: none;
+}
+
+.audio-open-link {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.audio-link-unavailable {
+    color: #b42318;
+}
+
+@keyframes audio-player-arrive {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes audio-wave {
+    to { transform: scaleY(1.7); opacity: 1; }
 }
 
 /* Compose Section */
@@ -697,6 +870,233 @@ video.message-media {
     display: none;
 }
 
+.book-club-action {
+    color: #b47a2c;
+}
+
+.book-club-panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 12px 20px 0;
+    padding: 12px 16px;
+    overflow: hidden;
+    border: 1px solid rgba(201, 157, 90, .28);
+    border-radius: 18px;
+    background:
+        radial-gradient(ellipse at 0% 50%, rgba(240, 197, 121, .24), transparent 60%),
+        linear-gradient(115deg, rgba(255, 250, 239, .98), rgba(246, 238, 221, .92));
+    box-shadow: 0 8px 24px rgba(106, 77, 37, .1);
+    animation: club-panel-arrive 500ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.book-club-panel[hidden] {
+    display: none;
+}
+
+.book-club-cover {
+    width: 46px;
+    height: 62px;
+    flex: 0 0 46px;
+    object-fit: cover;
+    border-radius: 7px;
+    box-shadow: 0 5px 12px rgba(49, 39, 24, .24);
+}
+
+.book-club-copy {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.book-club-eyebrow {
+    color: #94652c;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .12em;
+}
+
+.book-club-copy strong {
+    overflow: hidden;
+    color: #382f22;
+    font-family: Georgia, serif;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-club-copy small {
+    overflow: hidden;
+    color: #786b58;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-club-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.book-club-panel-actions button {
+    min-height: 34px;
+    padding: 0 11px;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.book-club-panel-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(74, 54, 29, .16);
+}
+
+.book-club-open {
+    color: #fff;
+    background: #98672e;
+}
+
+.book-club-edit {
+    color: #765735;
+    background: rgba(123, 92, 48, .1);
+}
+
+.book-club-modal-content {
+    width: min(92vw, 560px);
+    max-height: min(82vh, 720px);
+    border: 1px solid rgba(201, 157, 90, .3);
+    box-shadow: 0 28px 80px rgba(30, 25, 18, .35);
+}
+
+.book-club-modal {
+    background: rgba(25, 22, 18, .62);
+    backdrop-filter: blur(7px);
+}
+
+.book-club-modal-content .modal-header {
+    color: #493722;
+    font-family: Georgia, serif;
+    font-size: 19px;
+}
+
+.book-club-books {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    align-content: start;
+    gap: 9px;
+    padding: 12px 16px 16px;
+}
+
+.book-club-option {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: var(--background-light);
+    color: var(--secondary-color);
+    cursor: pointer;
+    text-align: left;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.book-club-option:hover {
+    transform: translateY(-2px);
+    border-color: #bf9458;
+    box-shadow: 0 7px 18px rgba(67, 49, 26, .12);
+}
+
+.book-club-option.selected {
+    border-color: #b47a2c;
+    background: rgba(201, 157, 90, .12);
+    box-shadow: 0 0 0 2px rgba(180, 122, 44, .12);
+}
+
+.book-club-option img {
+    width: 42px;
+    height: 58px;
+    flex: 0 0 42px;
+    object-fit: cover;
+    border-radius: 5px;
+    box-shadow: 0 3px 8px rgba(30, 25, 18, .16);
+}
+
+.book-club-option-info {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.book-club-option-info strong,
+.book-club-option-info small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-club-option-info strong {
+    font-size: 13px;
+}
+
+.book-club-option-info small {
+    color: var(--text-medium);
+    font-size: 11px;
+}
+
+.book-club-option > i {
+    color: #b47a2c;
+    opacity: 0;
+}
+
+.book-club-option.selected > i {
+    opacity: 1;
+}
+
+.book-club-selection,
+.book-club-empty {
+    padding: 10px 16px 0;
+    color: var(--text-medium);
+    font-size: 13px;
+}
+
+.book-club-selected-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #94652c;
+    font-weight: 700;
+}
+
+.book-club-error {
+    color: #aa3434;
+}
+
+.book-club-remove {
+    color: #9c4141;
+    background: rgba(156, 65, 65, .1);
+}
+
+.book-club-remove[hidden] {
+    display: none;
+}
+
+@keyframes club-panel-arrive {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 @media (min-width: 769px) {
     .chat-page .app-container {
         width: 100%;
@@ -817,5 +1217,22 @@ video.message-media {
 
     .message-bubble {
         max-width: 85%;
+    }
+
+    .book-club-panel {
+        margin: 8px 10px 0;
+        padding: 10px 12px;
+    }
+
+    .book-club-panel-actions button {
+        padding: 0 9px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .audio-player-shell,
+    .audio-player-shell.is-playing .audio-waveform i,
+    .book-club-panel {
+        animation: none;
     }
 }

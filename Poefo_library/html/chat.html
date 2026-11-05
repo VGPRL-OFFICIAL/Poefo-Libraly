@@ -72,12 +72,14 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="header-btn book-club-action" type="button" onclick="openBookClubPicker()" title="Adicionar livro ao clube" aria-label="Adicionar livro ao clube"><i class="fas fa-book-open"></i></button>
                     <button class="header-btn" onclick="showCallOptions()" title="Chamada"><i class="fas fa-phone"></i></button>
                     <button class="header-btn" onclick="showChatInfo()" title="Info"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
 
-            
+            <section id="book-club-panel" class="book-club-panel" aria-live="polite" hidden></section>
+
             <div id="chat-content">
                 <div class="empty-state" id="empty-state">
                     <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
@@ -130,12 +132,30 @@
         </div>
     </div>
 
+    <div class="modal-overlay book-club-modal" id="book-club-modal" role="dialog" aria-modal="true" aria-labelledby="book-club-modal-title">
+        <div class="modal-content book-club-modal-content">
+            <div class="modal-header" id="book-club-modal-title">Escolha o livro do clube</div>
+            <div class="modal-search">
+                <input type="search" id="book-club-search" placeholder="Buscar por título ou autor..." autocomplete="off">
+            </div>
+            <div class="book-club-selection" id="book-club-selection" aria-live="polite"></div>
+            <div class="modal-body book-club-books" id="book-club-books"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" type="button" onclick="closeBookClubPicker()">Cancelar</button>
+                <button class="btn-secondary book-club-remove" id="remove-book-club" type="button" onclick="saveBookClubSelection(null)">Desvincular livro</button>
+                <button class="btn-primary" id="save-book-club" type="button" onclick="saveBookClubSelection()">Vincular livro</button>
+            </div>
+        </div>
+    </div>
+
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+    <script src="../scripts/auth-profile.js"></script>
     <script>
         if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
     </script>

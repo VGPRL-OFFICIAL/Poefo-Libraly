@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="../scripts/firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 </head>
 <body>
@@ -386,11 +387,18 @@
         }
     }
     
-    function handleLogout(e) {
+    async function handleLogout(e) {
         e.preventDefault();
-        sessionStorage.clear(); 
-        localStorage.removeItem('rememberedUsername'); 
-        window.location.href = './login.html';
+        try {
+            await firebase.auth().signOut();
+            sessionStorage.clear();
+            ['currentUserId', 'currentUserName', 'currentUserPic', 'currentUserAvatar', 'currentUserAuthUid', 'rememberedUsername']
+                .forEach(key => localStorage.removeItem(key));
+            window.location.href = './login.html';
+        } catch (error) {
+            console.error('Erro ao sair da conta:', error);
+            showCustomMessage(`Não foi possível encerrar a sessão: ${error.message}`);
+        }
     }
 
     // === LISTENERS ===

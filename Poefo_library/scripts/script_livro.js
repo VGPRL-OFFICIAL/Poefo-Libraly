@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                currentUserId = user.uid;
+                currentUserId = sessionStorage.getItem('currentUserId') || user.uid;
                 currentUserName = sessionStorage.getItem('currentUserName') || user.displayName || 'Usuário Poefo';
                 currentUserPic = sessionStorage.getItem('currentUserPic') || user.photoURL || '../images/user_ic.png';
             } else {

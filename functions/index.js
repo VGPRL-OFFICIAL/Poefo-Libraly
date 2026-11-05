@@ -157,9 +157,12 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
       try {
         const userSnapshot = await admin.database().ref(`/usuarios/${uid}`).once('value');
         const user = userSnapshot.val();
-        if (user && user.chatSilentMode === true) continue;
         const token = user && user.fcmToken;
-        if (token) recipients.push({ userId: uid, token });
+        if (token) recipients.push({
+          userId: uid,
+          token,
+          silentMode: Boolean(user && user.chatSilentMode === true)
+        });
       } catch (e) { console.warn('Erro lendo token', uid, e); }
     }
 
@@ -191,17 +194,20 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
 
     try {
       const results = [];
-      for (let start = 0; start < uniqueRecipients.length; start += 500) {
-        const batch = uniqueRecipients.slice(start, start + 500);
-        const response = await admin.messaging().sendEachForMulticast({
-          tokens: batch.map(recipient => recipient.token),
-          data: payload.data,
-          webpush: { headers: { Urgency: 'high' } }
-        });
-        results.push(...response.responses.map((result, index) => ({
-          recipient: batch[index],
-          result
-        })));
+      for (const silentMode of [false, true]) {
+        const recipientsBySound = uniqueRecipients.filter(recipient => recipient.silentMode === silentMode);
+        for (let start = 0; start < recipientsBySound.length; start += 500) {
+          const batch = recipientsBySound.slice(start, start + 500);
+          const response = await admin.messaging().sendEachForMulticast({
+            tokens: batch.map(recipient => recipient.token),
+            data: { ...payload.data, silentMode: String(silentMode) },
+            webpush: { headers: { Urgency: 'high' } }
+          });
+          results.push(...response.responses.map((result, index) => ({
+            recipient: batch[index],
+            result
+          })));
+        }
       }
 
       const staleTokens = results.filter(({ result }) =>

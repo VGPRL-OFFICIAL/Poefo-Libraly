@@ -76,21 +76,16 @@ body {
     justify-content: center;
 }
 
-.chat-silent-toggle.is-silent {
-    color: #b42318;
-}
-
 .chat-notifications-toggle.is-enabled {
     color: #238636;
 }
 
-.chat-notifications-toggle:disabled {
-    cursor: not-allowed;
-    opacity: .6;
+.chat-notifications-toggle.is-silent {
+    color: #b42318;
 }
 
-.chat-silent-toggle:disabled {
-    cursor: wait;
+.chat-notifications-toggle:disabled {
+    cursor: not-allowed;
     opacity: .6;
 }
 
@@ -1249,7 +1244,7 @@ video.message-media {
     }
 
     .chat-page .conversations-sidebar {
-        border-right: 0;
+        border-right: 1px solid var(--border-light);
     }
 
     .chat-page .sidebar {

@@ -61,7 +61,7 @@ window.POEFO_FCM_VAPID_KEY = 'COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI';
       const data = payload.data || {};
       const notification = payload.notification || {};
       if (!data.convId || data.senderId === profileId) return;
-      if (localStorage.getItem(`chatSilentMode:${profileId}`) === 'true') return;
+      const isMuted = localStorage.getItem(`chatSilentMode:${profileId}`) === 'true';
 
       registration.showNotification(
         data.title || notification.title || 'Nova mensagem',
@@ -70,6 +70,7 @@ window.POEFO_FCM_VAPID_KEY = 'COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI';
           icon: data.icon || notification.icon || '/images/ic_chat.png',
           tag: `chat-${data.convId}`,
           renotify: false,
+          silent: isMuted,
           data: { convId: data.convId }
         }
       ).catch(error => {

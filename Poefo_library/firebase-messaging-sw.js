@@ -23,6 +23,7 @@ messaging.setBackgroundMessageHandler(function(payload) {
     icon: data.icon || '/images/ic_chat.png',
     tag: data.convId ? `chat-${data.convId}` : undefined,
     renotify: false,
+    silent: data.silentMode === 'true',
     data: { convId: data.convId || '' }
   });
 });

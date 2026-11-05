@@ -86,14 +86,14 @@ document.addEventListener('pointerdown', primeNotificationAudio);
 document.addEventListener('keydown', primeNotificationAudio);
 
 function showDesktopNotification(title, body, icon, tag) {
-    if (chatSilentMode) return;
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
         navigator.serviceWorker?.ready.then(registration => registration.showNotification(title, {
             body,
             icon,
             tag: tag || `chat-${title}-${body}`,
-            renotify: false
+            renotify: false,
+            silent: chatSilentMode
         })).catch(error => {
             console.error('Não foi possível mostrar a notificação do chat:', error);
         });
@@ -101,7 +101,7 @@ function showDesktopNotification(title, body, icon, tag) {
 }
 
 function notifyIncomingMessage(convId, title, body, icon, messageId) {
-    if (chatSilentMode || isConversationVisible(convId)) return;
+    if (isConversationVisible(convId)) return;
     const now = Date.now();
     const eventKey = `${convId}:${messageId || `${title}:${body}`}`;
     if (recentNotificationEvents.has(eventKey)) return;
@@ -124,13 +124,19 @@ function updateNotificationsButton() {
 
     const permission = Notification.permission;
     const isEnabled = permission === 'granted' && Boolean(sessionStorage.getItem('chatFcmTokenReady'));
+    const isMuted = chatSilentMode;
     button.classList.toggle('is-enabled', isEnabled);
+    button.classList.toggle('is-silent', isEnabled && isMuted);
+    button.setAttribute('aria-pressed', String(isEnabled && !isMuted));
     button.disabled = permission === 'denied';
     button.title = permission === 'denied'
         ? 'Notificações bloqueadas pelo navegador'
-        : isEnabled ? 'Notificações ativadas' : 'Ativar notificações';
+        : !isEnabled ? 'Ativar notificações'
+            : isMuted ? 'Ativar som das notificações' : 'Desativar som das notificações';
     button.setAttribute('aria-label', button.title);
-    button.innerHTML = `<i class="fas fa-bell${isEnabled ? '' : '-slash'}" aria-hidden="true"></i>`;
+    button.innerHTML = isEnabled
+        ? `<i class="fas fa-bell${isMuted ? '-slash' : ''}" aria-hidden="true"></i>`
+        : '<i class="fas fa-bell-slash" aria-hidden="true"></i>';
 }
 
 async function enableChatNotifications() {
@@ -139,6 +145,13 @@ async function enableChatNotifications() {
         alert('Este navegador não oferece suporte a notificações.');
         return;
     }
+
+    const tokenReady = Boolean(sessionStorage.getItem('chatFcmTokenReady'));
+    if (Notification.permission === 'granted' && tokenReady) {
+        await toggleChatSilentMode();
+        return;
+    }
+
     if (Notification.permission === 'denied') {
         alert('As notificações estão bloqueadas nas permissões do navegador. Permita notificações para este site e tente novamente.');
         return;
@@ -156,6 +169,12 @@ async function enableChatNotifications() {
         if (!sessionStorage.getItem('chatFcmTokenReady')) {
             throw new Error('O navegador não forneceu um token push. Verifique a configuração Web Push/VAPID do Firebase.');
         }
+        if (chatSilentMode) {
+            const savePreference = firebase.functions().httpsCallable('setChatSilentMode');
+            await savePreference({ profileId: currentUserId, silentMode: false });
+            chatSilentMode = false;
+            localStorage.setItem(`chatSilentMode:${currentUserId}`, 'false');
+        }
     } catch (error) {
         console.error('Não foi possível ativar as notificações do chat:', error);
         alert(`Não foi possível ativar as notificações: ${error.message || 'tente novamente.'}`);
@@ -165,26 +184,16 @@ async function enableChatNotifications() {
     }
 }
 
-function updateSilentModeButton() {
-    const button = document.getElementById('chat-silent-toggle');
-    if (!button) return;
-    button.setAttribute('aria-pressed', String(chatSilentMode));
-    button.title = chatSilentMode ? 'Desativar modo silencioso' : 'Ativar modo silencioso';
-    button.setAttribute('aria-label', button.title);
-    button.innerHTML = `<i class="fas fa-volume-${chatSilentMode ? 'mute' : 'up'}" aria-hidden="true"></i>`;
-    button.classList.toggle('is-silent', chatSilentMode);
-}
-
 async function toggleChatSilentMode() {
     const nextValue = !chatSilentMode;
-    const button = document.getElementById('chat-silent-toggle');
+    const button = document.getElementById('chat-notifications-toggle');
     if (button) button.disabled = true;
     try {
         const savePreference = firebase.functions().httpsCallable('setChatSilentMode');
         await savePreference({ profileId: currentUserId, silentMode: nextValue });
         chatSilentMode = nextValue;
         localStorage.setItem(`chatSilentMode:${currentUserId}`, String(chatSilentMode));
-        updateSilentModeButton();
+        updateNotificationsButton();
     } catch (error) {
         console.error('Não foi possível atualizar o modo silencioso:', error);
         alert(`Não foi possível atualizar o modo silencioso: ${error.message || 'tente novamente.'}`);
@@ -1910,8 +1919,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatSilentMode = typeof profile.data.chatSilentMode === 'boolean'
         ? profile.data.chatSilentMode
         : storedSilentMode === 'true';
-    updateSilentModeButton();
-    document.getElementById('chat-silent-toggle')?.addEventListener('click', toggleChatSilentMode);
     startPresenceTracking();
 
     document.getElementById('mobile-chat-back')?.addEventListener('click', closeMobileConversation);

@@ -1,4 +1,4 @@
-// Helper de progresso e persistência no Firebase Realtime Database
+// Eu salvo e consulto o progresso de leitura no Firebase Realtime Database.
 const FIREBASE_PROGRESS_CONFIG = window.POEFO_FIREBASE_CONFIG;
 
 function ensureFirebaseProgress() {

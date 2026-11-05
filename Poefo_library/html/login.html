@@ -93,7 +93,7 @@
             const btnForgotPassword = document.getElementById('btn-esqueci-senha');
             const authFeedback = document.getElementById('auth-feedback');
 
-            // NOVO: Lógica do botão de visualizar senha
+            // Aqui eu controlo o botão que mostra ou oculta a senha.
             const togglePasswordButton = document.getElementById('togglePassword');
             togglePasswordButton.addEventListener('click', () => {
                 const type = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';

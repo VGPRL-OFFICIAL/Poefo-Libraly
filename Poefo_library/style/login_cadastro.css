@@ -136,7 +136,7 @@ h1 {
     opacity: 0.7;
 }
 
-/* NOVO: Estilo para o botão de visualizar senha */
+/* Aqui eu estilizo o botão que mostra ou oculta a senha. */
 .password-group {
     padding-right: 40px; /* Espaço para o botão */
 }

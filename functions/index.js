@@ -19,7 +19,7 @@ function getMessagePreview(msg) {
   return msg.mediaUrl ? '[Arquivo]' : '';
 }
 
-// Cria o índice da conversa para todos os membros, mantendo chat_users privado por usuário.
+// Eu crio o índice da conversa para cada membro e mantenho chat_users privado por usuário.
 exports.indexNewConversation = functions.database.ref('/chat_metadata/{convId}')
   .onCreate(async (snap, context) => {
     const meta = snap.val();
@@ -53,7 +53,7 @@ exports.indexNewConversation = functions.database.ref('/chat_metadata/{convId}')
     }
   });
 
-// Atualiza a lista e o contador de não lidas de cada membro ao receber uma mensagem.
+// Eu atualizo a lista e o contador de não lidas de cada membro quando recebo uma mensagem.
 exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messages/{msgId}')
   .onCreate(async (snap, context) => {
     const msg = snap.val();
@@ -103,7 +103,7 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
     return null;
   });
 
-// Envia push para participantes quando uma nova mensagem é criada
+// Eu envio uma notificação push aos participantes quando uma nova mensagem é criada.
 exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgId}')
   .onCreate(async (snap, context) => {
     const msg = snap.val();
@@ -111,14 +111,14 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
 
     if (!msg) return null;
 
-    // obter participantes da conversa
+    // Eu busco os participantes da conversa.
     const metaSnap = await admin.database().ref(`/chat_metadata/${convId}/participants`).once('value');
     const participantsObj = metaSnap.exists() ? metaSnap.val() : {};
     const participants = Array.isArray(participantsObj) ? participantsObj : Object.keys(participantsObj || {});
 
     if (!participants || participants.length === 0) return null;
 
-    // coletar tokens
+    // Eu reúno os tokens de notificação dos participantes.
     const tokens = [];
     for (const uid of participants) {
       if (uid === msg.userId) continue; // não notificar remetente

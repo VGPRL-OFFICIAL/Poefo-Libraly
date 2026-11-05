@@ -217,7 +217,7 @@ body {
     text-align: justify;
 }
 
-/* ⭐️ Estilos para Comentários (do código anterior, com ajustes de delete) ⭐️ */
+/* Aqui eu estilizo os comentários e os controles de exclusão. */
 .comment-list {
     display: flex;
     flex-direction: column;
@@ -261,7 +261,7 @@ body {
     margin-top: 2px; /* */
 }
 
-/* ⭐️ Container para tempo e botão de deletar */
+/* Aqui eu organizo o tempo e o botão de exclusão. */
 .comment-actions {
     display: flex;
     align-items: center;
@@ -275,7 +275,7 @@ body {
     opacity: 0.8;
 }
 
-/* ⭐️ Estilo para o ícone de exclusão */
+/* Aqui eu estilizo o ícone de exclusão. */
 .delete-icon {
     color: #dc3545; /* Cor vermelha para exclusão */
     font-size: 1.1em;

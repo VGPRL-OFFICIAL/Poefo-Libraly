@@ -709,7 +709,7 @@
                     // 2. DELETA TODOS OS LIVROS ANTERIORES
                     await deleteAllFirestoreBooks();
 
-                    // 3. IMPORTA OS NOVOS LIVROS
+                    // Aqui eu importo os novos livros.
                     showFeedback(`Iniciando importação de ${jsonContent.length} novos livros...`, 'info');
                     
                     let importCount = 0;

@@ -394,7 +394,7 @@
         // --- FUNÇÕES DE EXPORTAÇÃO ATUALIZADAS (PDF REAL E POEFO COM FILE PICKER) ---
 
         /**
-         * NOVO: Converte o conteúdo do rascunho em um arquivo PDF estruturado (usando jsPDF).
+         * Aqui eu converto o conteúdo do rascunho em um PDF estruturado com jsPDF.
          */
         function exportDraftFromEditor() {
             saveDraft();
@@ -594,7 +594,7 @@
             reader.readAsText(file);
         }
 
-        // --- NOVO: Função para Excluir o Rascunho ---
+        // Aqui eu excluo o rascunho selecionado.
         function deleteDraft() {
             const bookTitle = currentDraft.title;
             const confirmDelete = confirm(`ATENÇÃO: Você realmente deseja EXCLUIR permanentemente o rascunho "${bookTitle}"? Esta ação não pode ser desfeita.`);

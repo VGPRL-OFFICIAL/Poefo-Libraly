@@ -168,16 +168,16 @@ async function loadCurrentUserProfile() {
         if (snapshot.exists()) {
             const userData = snapshot.val();
             
-            // Atualiza o nome
+            // Eu atualizo o nome exibido.
             currentUserName = userData.nome_completo || userData.nome_usuario || 'Usuário';
             
-            // ⭐️ ATUALIZA A FOTO DE PERFIL COM A CHAVE CORRETA: "foto_perfil"
+            // Eu carrego a foto de perfil salva em foto_perfil.
             currentUserPic = userData.foto_perfil || '../images/user_ic.png'; 
             
             sessionStorage.setItem('currentUserName', currentUserName);
             sessionStorage.setItem('currentUserPic', currentUserPic);
             
-            // Atualiza a imagem de perfil na top bar mobile imediatamente
+            // Eu atualizo imediatamente o avatar da barra superior no celular.
             const mobilePicElement = document.getElementById('mobile-profile-pic');
             if(mobilePicElement) {
                 mobilePicElement.src = currentUserPic;
@@ -494,7 +494,7 @@ function createPostElement(post) {
 
     const postAuthorId = author.userId;
     const postUserName = author.userName;
-    // ⭐️ Usa a foto do JSON com fallback robusto (onerror)
+    // Eu uso a foto salva no JSON e mantenho um fallback caso ela não carregue.
     const postProfilePic = author.userProfilePic || '../images/user_ic.png';
     
     const postHandle = (postUserName.replace(/\s/g, '').toLowerCase() + postAuthorId.slice(-4));
@@ -640,7 +640,7 @@ function createPostElement(post) {
         }
     });
 
-    // ⭐️ MUDANÇA: Listener para Anexo de Livro (CHAMANDO openBookDetails)
+    // Eu abro os detalhes do livro quando alguém seleciona o anexo.
     const bookAttachment = postDiv.querySelector('.clickable-attachment');
     if (bookAttachment) {
         bookAttachment.addEventListener('click', () => {
@@ -692,7 +692,7 @@ function createPostElement(post) {
 // FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL
 // ----------------------------------------------------------------------
 async function loadFeed() {
-    // 1. ⭐️ Carrega as informações do usuário logado (foto_perfil)
+    // Eu carrego os dados do usuário conectado, incluindo a foto do perfil.
     await loadCurrentUserProfile(); 
     
     feedContainer.innerHTML = '';

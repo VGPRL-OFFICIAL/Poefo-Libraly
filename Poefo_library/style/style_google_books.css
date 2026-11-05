@@ -265,7 +265,7 @@ html {
     align-items: flex-end; 
 }
 
-/* NOVO: Capa de Fundo com Blur */
+/* Aqui eu aplico uma capa de fundo desfocada. */
 .featured-card.carousel-item::before {
     content: '';
     position: absolute;

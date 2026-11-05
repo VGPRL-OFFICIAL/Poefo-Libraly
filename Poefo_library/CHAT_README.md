@@ -1,10 +1,10 @@
-#  Sistema de Chat - Poefo Libraly
+#  Como eu organizei o chat do Poefo Libraly
 
-##  Estrutura do Firebase (RTDB)
+##  Como eu organizo os dados no Firebase (RTDB)
 
-O sistema de chat utiliza a seguinte estrutura no Firebase Realtime Database:
+Eu organizo as conversas nesta estrutura do Firebase Realtime Database:
 
-### Pastas principais do Chat:
+### Estrutura principal que eu uso no chat:
 
 ```
 /chat
@@ -43,7 +43,7 @@ O sistema de chat utiliza a seguinte estrutura no Firebase Realtime Database:
 ├── ...
 ```
 
-### Outras pastas necessárias:
+### Outras estruturas que eu uso:
 
 ```
 /usuarios
@@ -54,9 +54,11 @@ O sistema de chat utiliza a seguinte estrutura no Firebase Realtime Database:
 │   ├── foto_perfil: string
 │   ├── bio: string
 │   └── ...
+```
 
-O login usa Firebase Authentication, mas o identificador de perfil continua sendo a chave existente em `/usuarios` para preservar conversas, publicações e progresso. O UID autenticado fica no campo `authUid` desse perfil. As regras do Realtime Database devem validar essa associação e restringir as gravações administrativas a contas autorizadas; autenticar o usuário, por si só, não concede essas permissões.
+Eu uso Firebase Authentication para o login e mantenho como identificador de perfil a chave existente em `/usuarios`, preservando conversas, publicações e progresso. Guardo o UID autenticado no campo `authUid` do perfil. Nas regras do Realtime Database, valido essa associação e restrinjo gravações administrativas a contas autorizadas: autenticar alguém, por si só, não concede essas permissões.
 
+```text
 /chat_media (Storage)
 ├── {convId}/
 │   ├── {authUid}/img_*.jpg|png|webp
@@ -64,13 +66,13 @@ O login usa Firebase Authentication, mas o identificador de perfil continua send
 │   └── video_*.mp4
 ```
 
-Áudios e imagens são enviados ao Firebase Storage; as mensagens guardam a URL e o tipo do arquivo para exibição ou reprodução. Os arquivos permanecem no Storage enquanto a mensagem existir; não há expiração automática configurada.
+Eu envio áudios e imagens ao Firebase Storage e guardo na mensagem a URL e o tipo de arquivo para exibir ou reproduzir a mídia. Os arquivos permanecem no Storage enquanto a mensagem existir; não configurei expiração automática.
 
-Conversas e grupos podem vincular um livro do catálogo em `chat_metadata/{convId}/bookClub`. O cartão do clube de leitura aparece no chat para os participantes e pode ser alterado ou removido. O player de áudio fica disponível diretamente na mensagem; o som de mensagens recebidas é reproduzido na aba aberta após a primeira interação do usuário, independentemente da permissão para notificações do sistema. O campo `lastMessageSenderId`, mantido pela Cloud Function, permite evitar o alerta sonoro para as mensagens enviadas pelo próprio usuário.
+Eu permito vincular um livro do catálogo a conversas e grupos em `chat_metadata/{convId}/bookClub`. O cartão do clube de leitura aparece para os participantes e pode ser alterado ou removido. Também disponibilizo o player de áudio na própria mensagem. Depois da primeira interação do usuário, reproduzo o som das mensagens recebidas na aba aberta, sem depender da permissão para notificações do sistema. Mantenho `lastMessageSenderId` pela Cloud Function para não tocar o alerta das mensagens que o próprio usuário enviou.
 
-### Regras do Firebase Storage para mídias do chat
+### Regras que eu uso no Firebase Storage para mídias do chat
 
-No Console do Firebase, abra **Storage > Rules** e adicione/mescle este bloco dentro de `match /b/{bucket}/o`. Não substitua as regras existentes de outros arquivos do Storage:
+No Console do Firebase, eu abro **Storage > Rules** e adiciono ou mesclo o bloco abaixo dentro de `match /b/{bucket}/o`. Preservo as regras existentes para os outros arquivos do Storage:
 
 ```javascript
 match /chat_media/{conversationId}/{authUid}/{fileName} {
@@ -87,12 +89,12 @@ match /chat_media/{conversationId}/{authUid}/{fileName} {
 }
 ```
 
-O caminho de upload usa o UID do Firebase Authentication, não a chave antiga do perfil. O chat compartilha a URL de download da mídia na mensagem; trate essa URL como privada, pois quem a obtiver poderá acessá-la. Essas regras do Storage são separadas das regras do Realtime Database usadas para mensagens e conversas.
+No caminho de upload, uso o UID do Firebase Authentication, não a chave antiga do perfil. Compartilho na mensagem a URL de download da mídia; por isso, considero essa URL privada, pois quem a obtiver poderá acessar o arquivo. Mantenho essas regras do Storage separadas das regras do Realtime Database para mensagens e conversas.
 
-##  Regras do Firebase (Security Rules)
+##  Como configuro as regras do Firebase (Security Rules)
 
-### Opção 1: Com Autenticação (Produção)
-Cole as regras abaixo no console do Firebase > Realtime Database > Rules:
+### Opção 1: Como configuro a autenticação em produção
+No Console do Firebase, eu colo as regras abaixo em Realtime Database > Rules:
 
 ```json
 {
@@ -154,8 +156,8 @@ Cole as regras abaixo no console do Firebase > Realtime Database > Rules:
 }
 ```
 
-### Opção 2: Desenvolvimento (Sem Autenticação - USE TEMPORARIAMENTE)
-Se está desenvolvendo e quer testar SEM autenticação, use estas regras:
+### Opção 2: Como testo temporariamente sem autenticação
+Quando estou desenvolvendo e preciso testar sem autenticação, uso estas regras apenas temporariamente:
 
 ```json
 {
@@ -166,10 +168,10 @@ Se está desenvolvendo e quer testar SEM autenticação, use estas regras:
 }
 ```
 
-** AVISO**: Esta regra permite acesso a TODOS! Nunca use em produção!
+**Aviso:** com estas regras, eu libero o acesso a todos. Nunca as uso em produção.
 
-### Opção 3: Desenvolvimento com Validação (Recomendado)
-Regras mais seguras para desenvolvimento:
+### Opção 3: Como valido regras durante o desenvolvimento
+Para desenvolver com mais segurança, uso estas regras:
 
 ```json
 {
@@ -223,14 +225,17 @@ Regras mais seguras para desenvolvimento:
 }
 ```
 
-## Como Mudar as Regras:
+## Como eu publico as regras
 
-1. Acesse o [Firebase Console](https://console.firebase.google.com)
-2. Vá para seu projeto "captu-libraly"
-3. Clique em "Realtime Database" no menu esquerdo
-4. Clique na aba "Rules"
-5. Cole uma das regras acima
-6. Clique em "Publish"    "follows": {
+1. Eu acesso o [Firebase Console](https://console.firebase.google.com).
+2. Abro o projeto `captu-libraly`.
+3. No menu, seleciono **Realtime Database**.
+4. Abro a aba **Rules**.
+5. Colo as regras que escolhi.
+6. Clico em **Publish**.
+
+```json
+    "follows": {
       "$userId": {
         ".read": true,
         ".write": "auth.uid !== null"
@@ -256,9 +261,9 @@ Regras mais seguras para desenvolvimento:
 }
 ```
 
-### Regras do Firebase Storage
+### Regras que eu publico no Firebase Storage
 
-Cole as regras abaixo no console > Storage > Rules:
+No Console do Firebase, eu colo as regras abaixo em **Storage > Rules**:
 
 ```
 rules_version = '2';
@@ -266,7 +271,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     match /chat_media/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.size < 52428800; // 50MB max
+      allow write: if request.auth != null && request.size < 52428800; // Eu limito o envio a 50 MB
     }
     match /livros_json/{allPaths=**} {
       allow read: if true;
@@ -280,62 +285,57 @@ service firebase.storage {
 }
 ```
 
-##  Funcionalidades Implementadas
+##  O que eu implementei
 
-**Chat Direto**: Conversa entre dois usuários  
- **Chat em Grupo**: Selecione dois ou mais contatos e, opcionalmente, informe um nome para o grupo.
-  **Mensagens de Texto**: Envio e recebimento de mensagens  
- **Imagens**: Upload e visualização de imagens  
- **Áudio**: Gravação e envio de mensagens de áudio  
- **Vídeo**: Suporte para upload de vídeos  
- **Busca**: Buscar conversas por nome  
- **Perfil do Usuário**: Visualizar perfil ao clicar no header  
- **Lista de Conversas**: Com último título e mensagem  
-**Design Responsivo**: Desktop e Mobile (Instagram/X inspired)  
- **Modal de Nova Conversa/Grupo**: Seletor com fotos de perfil dos participantes
+- Eu permito conversas diretas entre duas pessoas e grupos com vários participantes.
+- Eu envio e recebo mensagens de texto, imagens, áudios e vídeos.
+- Eu ofereço busca por conversas e acesso ao perfil pelo cabeçalho do chat.
+- Eu mostro na lista o título e a última mensagem de cada conversa.
+- Eu adapto o layout para desktop, tablet e celular.
+- Eu uso um modal para iniciar conversas e selecionar participantes.
 
-As Cloud Functions `indexNewConversation` e `syncConversationOnMessage` criam a conversa na lista de cada participante e mantêm as prévias e contagens de mensagens não lidas atualizadas. Faça o deploy das Functions para habilitar a sincronização entre participantes:
+Com as Cloud Functions `indexNewConversation` e `syncConversationOnMessage`, crio a conversa na lista de cada participante e mantenho as prévias e as contagens de mensagens não lidas atualizadas. Para habilitar a sincronização, faço o deploy das Functions:
 
 ```shell
 firebase deploy --only functions
 ```
 
-##  Como Usar
+##  Como eu uso o chat
 
-### 1. **Abrir Chat**
-Acesse `/Captu_library/html/chat.html`
+### 1. **Como eu abro o chat**
+Eu acesso `/Poefo_library/html/chat.html`.
 
-### 2. **Iniciar Conversa Direta**
-- Clique no avatar de um usuário em qualquer página
-- Selecione "Mensagem"
-- A conversa será aberta automaticamente
+### 2. **Como eu inicio uma conversa direta**
+- Eu clico no avatar de alguém em qualquer página.
+- Eu seleciono **Mensagem**.
+- O chat abre a conversa para mim.
 
-### 3. **Criar Grupo**
-- Clique no ícone  (novo) no header de Mensagens
-- Selecione usuários
-- Clique em "Criar"
+### 3. **Como eu crio um grupo**
+- Eu clico no ícone de nova conversa no cabeçalho de Mensagens.
+- Eu seleciono os participantes.
+- Eu clico em **Criar**.
 
-### 4. **Enviar Mensagens**
-- Digite texto e envie
-- Clique em para imagem
-- Clique em para gravar áudio
+### 4. **Como eu envio mensagens**
+- Eu digito uma mensagem de texto e envio.
+- Eu seleciono o controle de imagem para anexar uma imagem.
+- Eu seleciono o controle de áudio para gravar e enviar uma mensagem de voz.
 
-### 5. **Ver Perfil do Destinatário**
-- Clique no header (nome do usuário)
-- Abre a página de visualização de perfil
+### 5. **Como eu abro o perfil de alguém**
+- Eu clico no nome da pessoa no cabeçalho.
+- O chat abre a página de visualização do perfil.
 
-##  Ajustes Necessários
+##  Como eu configuro o chat
 
-### 1. **Definir usuário logado**
-No `sessionStorage`, certifique-se de ter:
+### 1. **Como eu identifico a pessoa conectada**
+Eu mantenho os dados da sessão no `sessionStorage`:
 ```javascript
 sessionStorage.setItem('currentUserId', 'seu_user_id_firebase');
 sessionStorage.setItem('currentUserName', 'Seu Nome');
 sessionStorage.setItem('currentUserAvatar', 'url_da_avatar');
 ```
 
-### 2. **Dados do banco**
-Certifique-se de que `/usuarios` tem estrutura:
+### 2. **Como eu organizo o perfil no banco**
+Eu mantenho `/usuarios` com esta estrutura:
 ```json
 {
   "userId1": {
@@ -348,39 +348,39 @@ Certifique-se de que `/usuarios` tem estrutura:
 }
 ```
 
-### 3. **Permitir uploads**
-Certifique-se de que as regras do Storage estão corretas para permitir uploads em `chat_media/`
+### 3. **Como eu habilito uploads**
+Eu configuro as regras do Storage para permitir os uploads em `chat_media/`.
 
-##  Responsividade
+##  Como eu adapto o layout a cada tela
 
-- **Desktop**: Sidebar + Chat lado a lado
-- **Mobile**: Sidebar se recolhe, use o hamburger (☰) para abrir
-- **Tablet**: Modo intermediário
+- **Desktop**: Eu mostro a lista de conversas e o chat lado a lado.
+- **Celular**: Eu recolho a lista e permito abri-la pelo botão de menu (☰).
+- **Tablet**: Eu uso um layout intermediário.
 
-##  Limitações e Notas
+##  Limites que eu configurei
 
-1. **Máximo de upload**: 50MB por arquivo
-2. **Tipos suportados**: Imagem (jpg, png, webp), Áudio (webm), Vídeo (mp4)
-3. **Limite de conversas**: Sem limite (mas considere paginação se >1000)
-4. **Tempo real**: Usa listeners do Firebase (pode ter latência)
+1. **Tamanho máximo**: Eu aceito arquivos de até 50 MB.
+2. **Formatos documentados**: Eu aceito imagens (jpg, png, webp), áudio (webm) e vídeo (mp4).
+3. **Conversas**: Eu não imponho um limite; para mais de 1.000, recomendo considerar paginação.
+4. **Atualizações em tempo real**: Eu uso listeners do Firebase, que podem apresentar latência.
 
-##  Troubleshooting
-### "Permission denied" ao enviar mensagem
-- Verifique as regras do Firebase Realtime Database
-- Certifique-se de que o usuário está autenticado
-- Verifique se `sessionStorage.currentUserId` é válido
+##  Como eu investigo problemas
+### Se eu receber "Permission denied" ao enviar mensagem
+- Eu confiro as regras do Firebase Realtime Database.
+- Eu confirmo que a pessoa está autenticada.
+- Eu verifico se `sessionStorage.currentUserId` contém o ID correto do perfil.
 
-### Imagens/áudio não carregam
-- Verifique as regras do Firebase Storage
-- Confirme que o upload foi bem-sucedido
-- Verifique a URL de download gerada
+### Se imagens ou áudios não carregarem
+- Eu confiro as regras do Firebase Storage.
+- Eu confirmo que o upload terminou com sucesso.
+- Eu verifico a URL de download gerada.
 
-### Chat não carrega conversas
-- Verifique se `/chat_users/{userId}/conversations` existe
-- Confirme permissões de leitura
-- Abra console > Network para ver erros
+### Se o chat não carregar as conversas
+- Eu confiro se `/chat_users/{userId}/conversations` existe.
+- Eu confirmo as permissões de leitura.
+- Eu verifico erros na aba **Network** do console do navegador.
 
-##  Referências
+##  Documentação que eu consulto
 
 - [Firebase Realtime Database](https://firebase.google.com/docs/database)
 - [Firebase Storage](https://firebase.google.com/docs/storage)
@@ -390,4 +390,4 @@ Certifique-se de que as regras do Storage estão corretas para permitir uploads 
 
 **Versão**: 1.0  
 **Última atualização**: 20 de fevereiro de 2026  
-**Status**:  Pronto para produção (com testes)
+**Status**: Eu considero o chat pronto para produção após concluir os testes do projeto.

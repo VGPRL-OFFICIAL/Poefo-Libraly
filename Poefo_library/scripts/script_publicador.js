@@ -298,7 +298,7 @@ function renderDraftsList(draftsToRender) {
     }
 }
 
-// MODIFICADO: Apenas busca o rascunho e chama showNewBookForm para ENFORÇAR a seleção da capa
+// Aqui eu localizo o rascunho e abro o formulário para preencher a capa.
 function selectDraftToAttach(draftId) {
     const selectedDraft = userDrafts.find(draft => String(draft.id) === String(draftId));
     
@@ -311,7 +311,7 @@ function selectDraftToAttach(draftId) {
 }
 
 
-// NOVO/MODIFICADO: Função para mostrar o formulário de detalhes/upload
+// Aqui eu abro o formulário de detalhes e de envio do livro.
 function showNewBookForm(isDraft = false, draftData = null) {
     const searchContainer = document.getElementById('book-search-and-preview-container');
     const formContainer = document.getElementById('book-form-container');
@@ -375,7 +375,7 @@ function showNewBookForm(isDraft = false, draftData = null) {
 }
 
 
-// NOVO: Funções para manipulação dos uploads no formulário de livro/rascunho
+// Aqui eu atualizo os campos e as prévias dos arquivos que seleciono.
 function updateCoverFileStatus(event) {
     const input = event.target;
     const statusElement = document.getElementById('cover-file-status');
@@ -402,7 +402,7 @@ function updateCoverFileStatus(event) {
     }
 }
 
-// MODIFICADO: Agora recebe o evento para consistência
+// Aqui eu recebo o evento do campo para atualizar o conteúdo selecionado.
 function updateContentFileStatus(event) {
     const input = event.target;
     const statusElement = document.getElementById('file-status');
@@ -423,10 +423,10 @@ function updateContentFileStatus(event) {
 
 
 // -------------------------------------------------------------------
-// --- FUNÇÕES DE ANEXO DE MÍDIA E LIVROS (NOVO UNIFICADO) ---
+// Aqui eu reúno as ações para anexar imagens e livros às publicações.
 // -------------------------------------------------------------------
 
-// NOVO: Função para selecionar o tipo de anexo
+// Aqui eu escolho e abro o seletor do tipo de anexo.
 function selectAttachment(type) {
     if (type === 'image') {
         // Abre o seletor de arquivos de imagem
@@ -435,7 +435,7 @@ function selectAttachment(type) {
     // Outros tipos de anexo podem ser adicionados aqui (ex: vídeo)
 }
 
-// NOVO: Função para lidar com a seleção da imagem e criar a prévia
+// Aqui eu leio a imagem selecionada e preparo a prévia.
 function handleImageSelection(event) {
     const file = event.target.files[0];
     
@@ -548,8 +548,8 @@ function dataUrlToFile(dataUrl, fileName) {
 
 
 /**
- * MODIFICADO: Anexa um livro EXISTENTE (sem upload de conteúdo/capa pendente).
- * Chamado por selectBookFromSearch.
+ * Aqui eu anexo um livro existente sem exigir novo envio de conteúdo ou capa.
+ * Eu chamo esta função ao selecionar um livro na busca.
  */
 function attachBookToPost(selectedBookData) {
     if (!selectedBookData || !selectedBookData.id) {
@@ -573,7 +573,7 @@ function removeAttachment() {
     checkPostValidity();
 }
 
-// MODIFICADO: saveBookDetails agora valida se a capa e o conteúdo foram selecionados
+// Aqui eu valido se selecionei a capa e o conteúdo antes de salvar os dados do livro.
 function saveBookDetails() {
     const bookId = document.getElementById('book-id').value;
     const titulo = document.getElementById('book-titulo').value.trim();
@@ -681,7 +681,7 @@ async function uploadFile(file, path) {
 }
 
 /**
- * MODIFICADO: Função principal de submissão, agora suporta upload de Capa, Imagem e FECHAMENTO AUTOMÁTICO.
+ * Aqui eu envio a publicação, incluindo capa ou imagem, e fecho o formulário ao concluir.
  */
 async function handlePostSubmission() {
     
@@ -740,7 +740,7 @@ async function handlePostSubmission() {
             }
         }
     } 
-    // 2. PROCESSAMENTO E UPLOAD DO LIVRO (NOVO OU RASCUNHO)
+    // Aqui eu processo e envio o livro novo ou o rascunho selecionado.
     else if (currentAttachment && currentAttachment.type === 'book') {
         let finalBookJSON = currentAttachment.data;
         

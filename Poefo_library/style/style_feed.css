@@ -639,7 +639,7 @@ input[type="text"] {
     left: 0;
     width: 100%;
     background-color: var(--navbar-bg);
-    /* REMOVIDA BORDER TOP - SUBSTITUÍDA POR SOMBRA MAIS PROEMINENTE */
+    /* Aqui eu substituo a borda superior por uma sombra mais visível. */
     /* border-top: 1px solid #eee; */
     display: flex;
     justify-content: space-around;

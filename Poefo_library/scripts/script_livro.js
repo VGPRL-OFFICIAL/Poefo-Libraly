@@ -145,7 +145,7 @@ async function handleComment(inputElement, bookId) {
     const commentButton = document.querySelector('.bottom-bar .send-icon');
     commentButton.style.opacity = '0.5'; 
     
-    // ⭐️ AQUI É ONDE O NÓ book_comments É CRIADO, SE NÃO EXISTIR
+    // Aqui eu crio o nó book_comments quando ele ainda não existe.
     const commentRef = db.ref(`book_comments/${bookId}`).push();
     
     const newComment = {
@@ -261,7 +261,6 @@ async function loadBookDetails() {
 }
 
 function renderBookDetails(book) {
-    // ... (A lógica de renderização HTML permanece a mesma) ...
     const container = document.getElementById('book-details-container');
     const coverUrl = book.link_capa || 'https://via.placeholder.com/150x200?text=Capa+Ausente';
     const title = book.titulo || 'Título Não Informado';

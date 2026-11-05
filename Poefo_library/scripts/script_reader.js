@@ -198,7 +198,7 @@ function setupPageFlip() {
     });
 }
 
-// Lógica da Barra de Filtros
+// Aqui eu configuro a barra de filtros.
 document.getElementById('filter-btn').onclick = () => {
     document.getElementById('filter-bar').classList.toggle('active');
 };
@@ -208,7 +208,7 @@ function applyFilter(filter) {
     book.className = filter === 'none' ? '' : filter;
 }
 
-// Lógica de Desenho e Bloqueio de Página
+// Aqui eu controlo o desenho e o bloqueio da página.
 document.getElementById('pencil-tool').onclick = function() {
     isDrawingMode = !isDrawingMode;
     this.classList.toggle('active');

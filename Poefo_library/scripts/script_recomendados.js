@@ -1,10 +1,10 @@
 // script_recomendados.js
-// Carrega e exibe a seção de livros recomendados a partir de um JSON hospedado no Firebase
+// Eu carrego e exibo os livros recomendados a partir do JSON hospedado no Firebase.
 
-// Carregar recomendados localmente a partir de base_dados/recomendados.json
+// Eu também posso carregar recomendações locais de base_dados/recomendados.json.
 const RECOMENDADOS_URL = '../base_dados/recomendados.json';
 
-// Elemento onde os recomendados serão exibidos
+// Eu uso este elemento para exibir as recomendações.
 const recomendadosListElement = document.getElementById('recomendados-list');
 
 function renderRecomendadoItem(bookData, index) {
@@ -34,7 +34,7 @@ async function loadRecomendados() {
         const recomendados = await response.json();
         if (recomendados && recomendados.length > 0) {
             recomendadosListElement.innerHTML = recomendados.map((book, idx) => renderRecomendadoItem(book, idx)).join('');
-            // Se a função attachBookItemHandlers estiver disponível (definida em script_home.js), use-a
+            // Se script_home.js disponibilizar attachBookItemHandlers, eu conecto os controles dos livros.
             if (typeof attachBookItemHandlers === 'function') attachBookItemHandlers();
         } else {
             recomendadosListElement.innerHTML = '<p class="error-message">Nenhum livro recomendado encontrado.</p>';

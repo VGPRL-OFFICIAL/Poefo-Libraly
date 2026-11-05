@@ -19,7 +19,7 @@ function initDOMElements() {
 }
 
 // --- CONFIGURAÇÃO DOS CARDS DE REDIRECIONAMENTO POR CATEGORIA ---
-// Adicione ou edite imagens/textos nesta lista para alterar o conteúdo entre categorias!
+// Eu edito esta lista para alterar os textos e as imagens entre categorias.
 const REDIRECT_CARDS_DATA = {
     // Card Padrão da página de Games para a Primeira Categoria
     0: {

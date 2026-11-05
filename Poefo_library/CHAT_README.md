@@ -83,7 +83,9 @@ Eu removo conversas diretas duplicadas pelo mesmo par de participantes ao montar
 
 Eu envio notificações push com dados para o service worker poder exibi-las mesmo com o chat fechado. Cada conversa usa uma notificação do sistema que é atualizada em vez de duplicada; ao tocar nela, eu abro a conversa correspondente. O botão de volume no cabeçalho da lista ativa ou desativa o modo silencioso, que eu salvo no perfil e aplico aos sons e notificações push.
 
-Para habilitar as notificações com a página fechada, eu configuro a chave pública Web Push em **Firebase Console > Configurações do projeto > Cloud Messaging > Certificados Web Push**. Substituo `COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI` por essa chave em `scripts/firebase-config.js` e `html/chat.html`. Também permito notificações para o site nas configurações do navegador. Sem a chave VAPID e a permissão do navegador, o Firebase não consegue entregar push em segundo plano.
+Eu peço a permissão do navegador somente quando a pessoa ativa o botão de sino no chat. Depois salvo o token FCM no perfil, registro o listener para a aba aberta e mantenho o service worker para receber push em segundo plano. Também carrego o listener de primeiro plano nas outras páginas que usam a configuração Firebase, para que uma aba aberta fora do chat mostre a notificação do sistema. Eu uso o envio HTTP v1 do Firebase Admin SDK e removo tokens expirados para não deixar registros inválidos acumularem.
+
+Para habilitar as notificações com a página fechada, eu ativo o botão de sino uma vez e permito notificações para o site nas configurações do navegador. Se o navegador não gerar um token push, eu configuro a chave pública Web Push em **Firebase Console > Configurações do projeto > Cloud Messaging > Certificados Web Push** e substituo `COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI` pela chave pública em `scripts/firebase-config.js` e `html/chat.html`. Sem permissão do navegador ou token FCM válido, não há como entregar notificações em segundo plano.
 
 Eu publico o controle de modo silencioso e o envio de push com:
 

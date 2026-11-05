@@ -35,6 +35,8 @@ let lastNotificationSoundAt = 0;
 const notificationTimestamps = new Map();
 const notificationUnreadCounts = new Map();
 let chatSilentMode = false;
+let foregroundMessagingListenerRegistered = false;
+const recentNotificationEvents = new Map();
 let bookCatalogPromise = null;
 let selectedBookClub = null;
 let conversationBookClub = null;
@@ -83,14 +85,83 @@ function playNotificationSound() {
 document.addEventListener('pointerdown', primeNotificationAudio);
 document.addEventListener('keydown', primeNotificationAudio);
 
-function showDesktopNotification(title, body, icon) {
+function showDesktopNotification(title, body, icon, tag) {
     if (chatSilentMode) return;
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
-        try {
-            const n = new Notification(title, { body, icon });
-            setTimeout(() => n.close(), 5000);
-        } catch (e) { console.warn('Notification error', e); }
+        navigator.serviceWorker?.ready.then(registration => registration.showNotification(title, {
+            body,
+            icon,
+            tag: tag || `chat-${title}-${body}`,
+            renotify: false
+        })).catch(error => {
+            console.error('Não foi possível mostrar a notificação do chat:', error);
+        });
+    }
+}
+
+function notifyIncomingMessage(convId, title, body, icon, messageId) {
+    if (chatSilentMode || isConversationVisible(convId)) return;
+    const now = Date.now();
+    const eventKey = `${convId}:${messageId || `${title}:${body}`}`;
+    if (recentNotificationEvents.has(eventKey)) return;
+    recentNotificationEvents.set(eventKey, now);
+    if (recentNotificationEvents.size > 200) {
+        for (const [key, timestamp] of recentNotificationEvents) {
+            if (now - timestamp > 10 * 60 * 1000) recentNotificationEvents.delete(key);
+        }
+    }
+    playNotificationSound();
+    showDesktopNotification(title, body, icon, `chat-${convId}`);
+}
+
+function updateNotificationsButton() {
+    const button = document.getElementById('chat-notifications-toggle');
+    if (!button) return;
+    const supported = 'Notification' in window && 'serviceWorker' in navigator && Boolean(firebase.messaging);
+    button.hidden = !supported;
+    if (!supported) return;
+
+    const permission = Notification.permission;
+    const isEnabled = permission === 'granted' && Boolean(sessionStorage.getItem('chatFcmTokenReady'));
+    button.classList.toggle('is-enabled', isEnabled);
+    button.disabled = permission === 'denied';
+    button.title = permission === 'denied'
+        ? 'Notificações bloqueadas pelo navegador'
+        : isEnabled ? 'Notificações ativadas' : 'Ativar notificações';
+    button.setAttribute('aria-label', button.title);
+    button.innerHTML = `<i class="fas fa-bell${isEnabled ? '' : '-slash'}" aria-hidden="true"></i>`;
+}
+
+async function enableChatNotifications() {
+    const button = document.getElementById('chat-notifications-toggle');
+    if (!('Notification' in window)) {
+        alert('Este navegador não oferece suporte a notificações.');
+        return;
+    }
+    if (Notification.permission === 'denied') {
+        alert('As notificações estão bloqueadas nas permissões do navegador. Permita notificações para este site e tente novamente.');
+        return;
+    }
+
+    if (button) button.disabled = true;
+    try {
+        if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Permissão não concedida. Autorize notificações para receber mensagens fora do chat.');
+            }
+        }
+        await registerFcmAndSaveToken();
+        if (!sessionStorage.getItem('chatFcmTokenReady')) {
+            throw new Error('O navegador não forneceu um token push. Verifique a configuração Web Push/VAPID do Firebase.');
+        }
+    } catch (error) {
+        console.error('Não foi possível ativar as notificações do chat:', error);
+        alert(`Não foi possível ativar as notificações: ${error.message || 'tente novamente.'}`);
+    } finally {
+        updateNotificationsButton();
+        if (button) button.disabled = Notification.permission === 'denied';
     }
 }
 
@@ -582,85 +653,55 @@ function createConversationItem(convId, meta) {
 
 // ===== FCM: registro de service worker e token =====
 async function registerFcmAndSaveToken() {
-    if (!('serviceWorker' in navigator) || !('Notification' in window) || !firebase.messaging) return;
-    try {
-        // Registrar service worker no escopo raiz para permitir background notifications
-        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        const messaging = firebase.messaging();
-
-        // Request permission if not already
-        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-            try { await Notification.requestPermission(); } catch (e) { /* ignore */ }
-        }
-
-        // Tentar obter token FCM (usa VAPID key se fornecida em `window.FCM_VAPID_KEY`)
-        try {
-            const vapidKey = [window.FCM_VAPID_KEY, window.POEFO_FCM_VAPID_KEY]
-                .find(key => key && !key.startsWith('COLOQUE_SUA_')) || null;
-            let currentToken = null;
-            if (vapidKey) {
-                // firebase v8 suporta messaging.usePublicVapidKey
-                if (typeof messaging.usePublicVapidKey === 'function') {
-                    try { messaging.usePublicVapidKey(vapidKey); } catch(e) { /* ignore */ }
-                }
-                try {
-                    currentToken = await messaging.getToken({ vapidKey });
-                } catch (e) {
-                    // fallback para getToken sem opções
-                    try { currentToken = await messaging.getToken(); } catch(err2) { throw err2; }
-                }
-            } else {
-                try {
-                    currentToken = await messaging.getToken();
-                } catch (e) {
-                    console.warn('Não foi possível registrar notificações push. Configure a chave pública VAPID no Firebase.', e);
-                }
-            }
-
-            if (currentToken) {
-                // garantir que temos um currentUserId válido antes de salvar
-                currentUserId = sessionStorage.getItem('currentUserId') || currentUserId;
-                if (!currentUserId) {
-                    // esperar curto período até o usuário logar (se aplicável)
-                    const start = Date.now();
-                    while (!currentUserId && (Date.now() - start) < 30000) {
-                        await new Promise(r => setTimeout(r, 1000));
-                        currentUserId = sessionStorage.getItem('currentUserId') || currentUserId;
-                    }
-                }
-                if (currentUserId) {
-                    await db.ref(`usuarios/${currentUserId}/fcmToken`).set(currentToken);
-                    console.log('FCM token salvo para', currentUserId);
-                } else {
-                    console.warn('Token FCM obtido mas usuário não autenticado; token não salvo.');
-                }
-            } else {
-                console.warn('Nenhum token FCM disponível. Defina `window.FCM_VAPID_KEY` com a public VAPID key se necessário.');
-            }
-        } catch (e) {
-            console.warn('Erro ao obter token FCM:', e);
-        }
-
-        // Re-salvar token em caso de refresh (v8)
-        try {
-            if (typeof messaging.onTokenRefresh === 'function') {
-                messaging.onTokenRefresh && messaging.onTokenRefresh(async () => {
-                    try {
-                        const newToken = await messaging.getToken();
-                        const uid = sessionStorage.getItem('currentUserId') || null;
-                        if (newToken && uid) {
-                            await db.ref(`usuarios/${uid}/fcmToken`).set(newToken);
-                            console.log('FCM token atualizado para', uid);
-                        }
-                    } catch (err) { console.warn('Erro token refresh', err); }
-                });
-            }
-        } catch (err) { /* ignore */ }
-
-        // Mostrar notificações enquanto a aba está aberta (mensagens de foreground)
-    } catch (err) {
-        console.warn('Registro FCM falhou', err);
+    if (!('serviceWorker' in navigator) || !('Notification' in window) || !firebase.messaging) {
+        throw new Error('Este navegador não oferece suporte a notificações push.');
     }
+    if (Notification.permission !== 'granted') {
+        updateNotificationsButton();
+        return false;
+    }
+
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    await navigator.serviceWorker.ready;
+    const messaging = firebase.messaging();
+    const vapidKey = [window.FCM_VAPID_KEY, window.POEFO_FCM_VAPID_KEY]
+        .find(key => key && !key.startsWith('COLOQUE_SUA_'));
+    if (vapidKey && typeof messaging.usePublicVapidKey === 'function') {
+        messaging.usePublicVapidKey(vapidKey);
+    }
+
+    const tokenOptions = { serviceWorkerRegistration: registration };
+    if (vapidKey) tokenOptions.vapidKey = vapidKey;
+    const currentToken = await messaging.getToken(tokenOptions);
+    if (!currentToken) {
+        throw new Error('O Firebase não retornou um token push. Confira a configuração Web Push/VAPID.');
+    }
+    if (!currentUserId) {
+        throw new Error('Não foi possível identificar seu perfil para salvar o token push.');
+    }
+
+    await db.ref(`usuarios/${currentUserId}/fcmToken`).set(currentToken);
+    sessionStorage.setItem('chatFcmTokenReady', 'true');
+    updateNotificationsButton();
+
+    if (!foregroundMessagingListenerRegistered) {
+        messaging.onMessage(payload => {
+            const data = payload.data || {};
+            const notification = payload.notification || {};
+            const convId = data.convId || '';
+            if (!convId) return;
+            notifyIncomingMessage(
+                convId,
+                data.title || notification.title || 'Nova mensagem',
+                data.body || notification.body || '',
+                data.icon || notification.icon || '/images/ic_chat.png',
+                data.messageId || ''
+            );
+        });
+        foregroundMessagingListenerRegistered = true;
+    }
+
+    return true;
 }
 
 // ===== UI FUNCTIONS =====
@@ -1387,16 +1428,17 @@ function subscribeConversations() {
                 && meta.lastMessageSenderId !== currentUserId
                 && (hasNewMessage || hasNewUnread || (isNewConversation && unreadCount > 0))
             ) {
-                playNotificationSound();
                 const participants = Array.isArray(meta.participants)
                     ? meta.participants
                     : Object.keys(meta.participants || {});
                 const otherId = getOtherParticipantId(convId, participants);
                 const otherUser = otherId ? allUsers[otherId] : null;
-                showDesktopNotification(
+                notifyIncomingMessage(
+                    convId,
                     otherUser ? getParticipantDisplayName(otherUser, otherId) : meta.title || 'Nova mensagem',
                     meta.lastMessage,
-                    otherUser ? otherUser.foto_perfil || null : meta.avatar || null
+                    otherUser ? otherUser.foto_perfil || null : meta.avatar || null,
+                    meta.lastMessageId || ''
                 );
             }
             notificationTimestamps.set(convId, timestamp);
@@ -1873,6 +1915,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     startPresenceTracking();
 
     document.getElementById('mobile-chat-back')?.addEventListener('click', closeMobileConversation);
+    document.getElementById('chat-notifications-toggle')?.addEventListener('click', enableChatNotifications);
 
     // Carregar usuários primeiro
     allUsers = (await safeReadRef('usuarios')) || {};
@@ -1962,11 +2005,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const preOther = sessionStorage.getItem('chatWithUserId');
     const preOtherName = sessionStorage.getItem('chatWithUserName');
     
-        // Pedir permissão de notificações (se disponível)
-        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-            try { Notification.requestPermission(); } catch (e) { /* ignore */ }
-        }
-
         if (preOther) {
         // Se vindo do visualizador, criar conversa antes de carregar lista
         const participants = [currentUserId, preOther];
@@ -2066,8 +2104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-        // Registrar service worker / FCM
-        registerFcmAndSaveToken().catch(error => {
-            console.warn('Não foi possível ativar as notificações push:', error);
-        });
+        updateNotificationsButton();
+        if (Notification.permission === 'granted') {
+            registerFcmAndSaveToken().catch(error => {
+                console.error('Não foi possível restaurar o registro de notificações push:', error);
+                sessionStorage.removeItem('chatFcmTokenReady');
+                updateNotificationsButton();
+            });
+        }
 });

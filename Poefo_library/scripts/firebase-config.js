@@ -17,3 +17,70 @@ window.POEFO_FIREBASE_URLS = {
 };
 
 window.POEFO_FCM_VAPID_KEY = 'COLOQUE_SUA_PUBLIC_VAPID_KEY_AQUI';
+
+(() => {
+  let messagingSdkPromise;
+
+  function loadMessagingSdk() {
+    if (typeof firebase.messaging === 'function') return Promise.resolve();
+    if (messagingSdkPromise) return messagingSdkPromise;
+
+    messagingSdkPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Não foi possível carregar o Firebase Messaging.'));
+      document.head.appendChild(script);
+    });
+    return messagingSdkPromise;
+  }
+
+  async function registerForegroundChatNotifications() {
+    if (window.location.pathname.endsWith('/html/chat.html')
+      || !('Notification' in window)
+      || Notification.permission !== 'granted'
+      || !('serviceWorker' in navigator)) return;
+
+    const profileId = sessionStorage.getItem('currentUserId')
+      || localStorage.getItem('currentUserId');
+    if (!profileId) return;
+
+    if (!firebase.apps.length) firebase.initializeApp(window.POEFO_FIREBASE_CONFIG);
+    await loadMessagingSdk();
+
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    await navigator.serviceWorker.ready;
+    const messaging = firebase.messaging();
+    if (typeof messaging.useServiceWorker === 'function') {
+      messaging.useServiceWorker(registration);
+    }
+
+    messaging.onMessage(payload => {
+      if (document.visibilityState !== 'visible') return;
+
+      const data = payload.data || {};
+      const notification = payload.notification || {};
+      if (!data.convId || data.senderId === profileId) return;
+      if (localStorage.getItem(`chatSilentMode:${profileId}`) === 'true') return;
+
+      registration.showNotification(
+        data.title || notification.title || 'Nova mensagem',
+        {
+          body: data.body || notification.body || '',
+          icon: data.icon || notification.icon || '/images/ic_chat.png',
+          tag: `chat-${data.convId}`,
+          renotify: false,
+          data: { convId: data.convId }
+        }
+      ).catch(error => {
+        console.error('Não foi possível mostrar a notificação do chat:', error);
+      });
+    });
+  }
+
+  window.addEventListener('load', () => {
+    registerForegroundChatNotifications().catch(error => {
+      console.error('Não foi possível ativar notificações fora da página do chat:', error);
+    });
+  }, { once: true });
+})();

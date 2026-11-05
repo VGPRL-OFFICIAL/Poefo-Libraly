@@ -80,6 +80,15 @@ body {
     color: #b42318;
 }
 
+.chat-notifications-toggle.is-enabled {
+    color: #238636;
+}
+
+.chat-notifications-toggle:disabled {
+    cursor: not-allowed;
+    opacity: .6;
+}
+
 .chat-silent-toggle:disabled {
     cursor: wait;
     opacity: .6;

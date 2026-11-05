@@ -96,7 +96,13 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
       if (!current) return current;
       const currentTimestamp = Number(current.lastTimestamp) || 0;
       return lastTimestamp >= currentTimestamp
-        ? { ...current, lastMessage, lastTimestamp, lastMessageSenderId: msg.userId || null }
+        ? {
+          ...current,
+          lastMessage,
+          lastTimestamp,
+          lastMessageSenderId: msg.userId || null,
+          lastMessageId: context.params.msgId
+        }
         : current;
     });
 
@@ -113,6 +119,9 @@ exports.syncConversationOnMessage = functions.database.ref('/chat/{convId}/messa
           ...presentation,
           lastMessage: keepLatestPreview ? previous.lastMessage : lastMessage,
           lastTimestamp: Math.max(previousTimestamp, lastTimestamp),
+          lastMessageId: keepLatestPreview
+            ? (previous.lastMessageId || meta.lastMessageId || null)
+            : context.params.msgId,
           lastMessageSenderId: keepLatestPreview
             ? (previous.lastMessageSenderId || meta.lastMessageSenderId || null)
             : (msg.userId || null),
@@ -142,7 +151,7 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
     if (!participants || participants.length === 0) return null;
 
     // Eu reúno os tokens de notificação dos participantes.
-    const tokens = [];
+    const recipients = [];
     for (const uid of participants) {
       if (uid === msg.userId) continue; // não notificar remetente
       try {
@@ -150,11 +159,17 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
         const user = userSnapshot.val();
         if (user && user.chatSilentMode === true) continue;
         const token = user && user.fcmToken;
-        if (token) tokens.push(token);
+        if (token) recipients.push({ userId: uid, token });
       } catch (e) { console.warn('Erro lendo token', uid, e); }
     }
 
-    if (tokens.length === 0) return null;
+    const uniqueRecipients = Array.from(
+      new Map(recipients.map(recipient => [recipient.token, recipient])).values()
+    );
+    if (uniqueRecipients.length === 0) {
+      console.info(`Nenhum token push ativo para a conversa ${convId}.`);
+      return null;
+    }
 
     const body = msg.text
       ? (msg.text.length > 200 ? msg.text.substring(0, 200) + '...' : msg.text)
@@ -167,6 +182,7 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
       data: {
         convId: String(convId),
         senderId: String(msg.userId || ''),
+        messageId: String(context.params.msgId),
         title: String(msg.userName || 'Nova mensagem'),
         body: String(body),
         icon: '/images/ic_chat.png'
@@ -174,11 +190,47 @@ exports.notifyNewMessage = functions.database.ref('/chat/{convId}/messages/{msgI
     };
 
     try {
-      const res = await admin.messaging().sendToDevice(tokens, payload);
-      return res;
+      const results = [];
+      for (let start = 0; start < uniqueRecipients.length; start += 500) {
+        const batch = uniqueRecipients.slice(start, start + 500);
+        const response = await admin.messaging().sendEachForMulticast({
+          tokens: batch.map(recipient => recipient.token),
+          data: payload.data,
+          webpush: { headers: { Urgency: 'high' } }
+        });
+        results.push(...response.responses.map((result, index) => ({
+          recipient: batch[index],
+          result
+        })));
+      }
+
+      const staleTokens = results.filter(({ result }) =>
+        !result.success
+        && ['messaging/invalid-registration-token', 'messaging/registration-token-not-registered']
+          .includes(result.error && result.error.code)
+      );
+      await Promise.all(staleTokens.map(({ recipient }) =>
+        admin.database().ref(`usuarios/${recipient.userId}/fcmToken`)
+          .transaction(currentToken => currentToken === recipient.token ? null : undefined)
+      ));
+
+      const failedCount = results.filter(({ result }) => !result.success).length;
+      if (failedCount > 0) {
+        console.error(`Falha ao enviar ${failedCount} de ${results.length} notificações push.`, results
+          .filter(({ result }) => !result.success)
+          .map(({ recipient, result }) => ({
+            userId: recipient.userId,
+            code: result.error && result.error.code,
+            message: result.error && result.error.message
+          })));
+      }
+      return {
+        successCount: results.length - failedCount,
+        failureCount: failedCount
+      };
     } catch (e) {
-      console.error('Erro enviando notificação', e);
-      return null;
+      console.error('Erro enviando notificação push do chat:', e);
+      throw e;
     }
   });
 

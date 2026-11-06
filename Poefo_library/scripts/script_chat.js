@@ -41,6 +41,16 @@ let bookCatalogPromise = null;
 let selectedBookClub = null;
 let conversationBookClub = null;
 
+function updateChatViewportHeight() {
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    document.documentElement.style.setProperty('--chat-visible-height', `${Math.round(viewportHeight)}px`);
+}
+
+updateChatViewportHeight();
+window.addEventListener('resize', updateChatViewportHeight);
+window.addEventListener('orientationchange', updateChatViewportHeight);
+window.visualViewport?.addEventListener('resize', updateChatViewportHeight);
+
 function primeNotificationAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
@@ -1506,6 +1516,14 @@ async function openConversation(convId, participants, title) {
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('messages-area').style.display = 'flex';
     document.getElementById('compose-section').style.display = 'flex';
+    updateChatViewportHeight();
+    requestAnimationFrame(() => {
+        const chatMain = document.querySelector('.chat-main');
+        const messagesArea = document.getElementById('messages-area');
+        if (chatMain && window.getComputedStyle(chatMain).display !== 'none') {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+    });
     const otherId = getOtherParticipantId(convId, participantsArray);
     const otherUser = otherId ? allUsers[otherId] : null;
     const displayTitle = otherUser

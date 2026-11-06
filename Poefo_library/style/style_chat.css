@@ -19,6 +19,8 @@ html,
 body {
     height: 100%;
     width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 body {
@@ -33,6 +35,9 @@ body {
     display: flex;
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* Sidebar com conversas */
@@ -182,14 +187,18 @@ body {
 /* Main Chat Area */
 .chat-main {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     background: var(--background-light);
+    overflow: hidden;
 }
 
 /* Chat Header */
 .chat-header {
     display: flex;
+    flex: 0 0 60px;
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
@@ -272,7 +281,9 @@ body {
 
 /* Chat Content Area */
 #chat-content {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -314,7 +325,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    max-width: 85%;
+    min-width: 0;
+    max-width: min(85%, 100%);
     margin-bottom: 8px;
 }
 
@@ -328,10 +340,12 @@ body {
 }
 
 .message-bubble {
+    min-width: 0;
     max-width: 100%;
     padding: 12px 16px;
     border-radius: 18px;
     word-wrap: break-word;
+    overflow-wrap: anywhere;
     font-size: 14px;
 }
 
@@ -394,9 +408,11 @@ body {
 .audio-player-shell {
     display: flex;
     align-items: center;
-    gap: 12px;
-    width: min(320px, 72vw);
-    padding: 10px 12px;
+    gap: clamp(6px, 2vw, 12px);
+    width: min(320px, 100%);
+    max-width: 100%;
+    min-width: 0;
+    padding: clamp(8px, 2.5vw, 12px);
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 16px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
@@ -406,9 +422,9 @@ body {
 .audio-player-icon {
     display: grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
-    flex: 0 0 38px;
+    width: clamp(30px, 10vw, 38px);
+    height: clamp(30px, 10vw, 38px);
+    flex: 0 0 clamp(30px, 10vw, 38px);
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.18);
     font-size: 15px;
@@ -423,12 +439,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: clamp(4px, 1.5vw, 12px);
+    min-width: 0;
     margin-bottom: 7px;
 }
 
 .audio-player-title {
     display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .02em;
@@ -438,18 +459,22 @@ body {
 .audio-visual {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: clamp(4px, 1.5vw, 12px);
+    min-width: 0;
 }
 
 .audio-waveform {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
     height: 16px;
 }
 
 .audio-waveform i {
-    width: 3px;
+    width: 2px;
+    flex: 0 1 3px;
     border-radius: 3px;
     background: currentColor;
     opacity: .55;
@@ -466,9 +491,10 @@ body {
 
 .audio-custom-controls {
     display: grid;
-    grid-template-columns: auto minmax(60px, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 7px;
+    gap: clamp(4px, 1.5vw, 7px);
+    min-width: 0;
 }
 
 .audio-play-button {
@@ -525,7 +551,7 @@ body {
 }
 
 .audio-time {
-    min-width: 28px;
+    min-width: 24px;
     color: inherit;
     font-variant-numeric: tabular-nums;
     font-size: 10px;
@@ -573,6 +599,7 @@ body {
     display: flex;
     flex-direction: column;
     flex: 0 0 auto;
+    width: 100%;
     min-width: 0;
     background: var(--background-light);
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
@@ -1262,8 +1289,10 @@ video.message-media {
 
 @media (max-width: 768px) {
     .chat-page .app-container {
-        height: calc(100vh - 56px);
-        height: calc(100dvh - 56px);
+        height: calc(var(--chat-visible-height, 100dvh) - 56px);
+    }
+
+    .chat-page .app-container {
         min-height: 0;
         width: 100%;
         overflow: hidden;
@@ -1306,6 +1335,24 @@ video.message-media {
 
     body.mobile-chat-open .chat-main {
         display: flex;
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .chat-header,
+    #book-club-panel,
+    #compose-section {
+        flex-shrink: 0;
+    }
+
+    #chat-content {
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #messages-area {
+        min-height: 0;
+        overscroll-behavior: contain;
     }
 
     .mobile-chat-back {
@@ -1347,6 +1394,32 @@ video.message-media {
 
     .book-club-panel-actions button {
         padding: 0 9px;
+    }
+}
+
+@media (max-width: 420px) {
+    #messages-area {
+        padding: 12px 10px;
+    }
+
+    .message {
+        max-width: 92%;
+    }
+
+    .audio-player-shell {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .audio-player-icon {
+        width: 30px;
+        height: 30px;
+        flex-basis: 30px;
+        font-size: 13px;
+    }
+
+    .audio-waveform i:nth-child(n + 13) {
+        display: none;
     }
 }
 

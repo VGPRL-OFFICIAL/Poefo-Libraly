@@ -2,21 +2,22 @@
   "name": "Poefo Library",
   "short_name": "Poefo Library",
   "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#777777",
   "icons": [
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/poefo_lib%2Fimg%2Ficon_logo_192.png?alt=media&token=71c6cc5f-cf77-40df-a3a1-24f5b440ae7e",
+      "src": "../images/icon_logo_192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/captu-libraly.firebasestorage.app/o/poefo_lib%2Fimg%2Ficon_logo_512.png?alt=media&token=c4f978e6-a628-4224-a577-ab6553513e45",
+      "src": "../images/icon_logo_512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

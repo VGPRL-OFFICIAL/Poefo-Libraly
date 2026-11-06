@@ -9,6 +9,9 @@ let readerTimerInterval = null;
 let readerBookId = null;
 let readerBookProgress = null;
 let readerCurrentPage = 1;
+let readerViewMode = getInitialReaderViewMode();
+let pendingReaderPage = null;
+let toolbarHideTimeout = null;
 let pageWrappers = [];
 const renderedPages = new Map();
 const pageRenderPromises = new Map();
@@ -22,7 +25,18 @@ let lastPosX = 0, lastPosY = 0;
 let isDragging = false;
 let lastDist = 0;
 
+function getInitialReaderViewMode() {
+    try {
+        const savedMode = localStorage.getItem('poefo_reader_view_mode');
+        if (savedMode === 'single' || savedMode === 'double' || savedMode === 'scroll') return savedMode;
+    } catch (error) {
+        console.warn('Não foi possível carregar a preferência de visualização:', error);
+    }
+    return window.innerWidth < 768 ? 'single' : 'double';
+}
+
 async function initReader() {
+    hideReaderToolbar();
     const url = sessionStorage.getItem('readerUrl');
     if (!url) {
         showReaderError();
@@ -48,6 +62,10 @@ async function initReader() {
         createPageSlots();
         setupPageFlip();
         await renderPagesAround(readerCurrentPage);
+        if (readerViewMode === 'scroll') {
+            scrollToReaderPage(readerCurrentPage, 'auto');
+        }
+        updatePageIndicator();
         if (typeof loadUserProgressSummary === 'function') {
             loadUserProgressSummary()
                 .then(data => {
@@ -58,6 +76,7 @@ async function initReader() {
                 .catch(() => loadUserProgressFallback());
         }
         startReaderTimer();
+        hideReaderToolbar();
         
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('pdf-book').style.visibility = 'visible';
@@ -121,6 +140,9 @@ async function renderPage(pageNumber) {
         canvas.width = viewport.width;
         drawCanvas.height = canvas.height;
         drawCanvas.width = canvas.width;
+        if (readerViewMode === 'scroll') {
+            pageWrapper.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
+        }
 
         await page.render({ canvasContext: context, viewport }).promise;
         page.cleanup();
@@ -154,7 +176,8 @@ async function renderPage(pageNumber) {
 async function renderPagesAround(pageNumber) {
     const requestId = ++pageRenderRequestId;
     const firstPage = Math.max(1, pageNumber - 1);
-    const lastPage = Math.min(pdfDoc.numPages, pageNumber + 1);
+    const pagesAhead = readerViewMode === 'double' && pageNumber > 1 ? 3 : 2;
+    const lastPage = Math.min(pdfDoc.numPages, pageNumber + pagesAhead);
     const pagesToRender = [];
     for (let page = firstPage; page <= lastPage; page++) {
         pagesToRender.push(renderPage(page));
@@ -173,30 +196,147 @@ async function renderPagesAround(pageNumber) {
 }
 
 function setupPageFlip() {
-    const isMobile = window.innerWidth < 768;
+    if (readerViewMode === 'scroll') {
+        applyReaderViewMode();
+        return;
+    }
+
     const bookEl = document.getElementById('pdf-book');
     
     pageFlip = new St.PageFlip(bookEl, {
         width: 550, height: 800,
         size: "stretch",
+        minWidth: 160,
+        maxWidth: 550,
+        minHeight: 300,
+        maxHeight: 800,
         showCover: true,
         useMouseEvents: !isDrawingMode,
         drawShadow: false, // Estética limpa (sem fundo branco/sombras na dobra)
         flippingTime: 800,
-        usePortrait: isMobile,
+        usePortrait: readerViewMode === 'single',
         startPage: Math.max(0, readerCurrentPage - 1)
     });
     pageFlip.loadFromHTML(document.querySelectorAll('.page-wrapper'));
+    applyReaderViewMode();
     pageFlip.on('flip', (e) => {
-        readerCurrentPage = e.data + 1;
-        document.getElementById('page-num').textContent = readerCurrentPage;
-        renderPagesAround(readerCurrentPage).catch(error => {
-            console.error('Não foi possível renderizar as páginas do PDF:', error);
-            showReaderError();
-        });
-        saveCurrentBookProgress();
+        pendingReaderPage = e.data + 1;
+        showReaderToolbar();
+        if (pageFlip.getState() === 'read') completePageTurn();
+    });
+    pageFlip.on('changeState', (e) => {
+        const modeSelect = document.getElementById('page-view-mode');
+        if (modeSelect) {
+            modeSelect.disabled = e.data !== 'read';
+        }
+        if (e.data === 'read') completePageTurn();
     });
 }
+
+function applyReaderViewMode() {
+    const bookEl = document.getElementById('pdf-book');
+    const zoomArea = document.getElementById('zoom-container');
+    const isSinglePage = readerViewMode === 'single';
+    const isScrollMode = readerViewMode === 'scroll';
+
+    bookEl.classList.toggle('reader-scroll-mode', isScrollMode);
+    zoomArea.classList.toggle('reader-scroll-container', isScrollMode);
+    zoomArea.style.overflowX = isScrollMode && scale > 1 ? 'auto' : 'hidden';
+    zoomArea.style.touchAction = isScrollMode ? (scale > 1 ? 'pan-x pan-y' : 'pan-y') : 'none';
+
+    bookEl.style.maxWidth = isSinglePage ? '540px' : isScrollMode ? 'none' : '1100px';
+    bookEl.style.minWidth = isSinglePage ? '275px' : isScrollMode ? '0' : '320px';
+    bookEl.style.width = isScrollMode ? `${Math.min(640, Math.max(1, zoomArea.clientWidth - 24)) * scale}px` : '';
+    bookEl.style.transform = isScrollMode ? 'none' : `translate(${posX}px, ${posY}px) scale(${scale})`;
+
+    if (pageFlip) {
+        pageFlip.getSettings().usePortrait = isSinglePage;
+        pageFlip.getSettings().minWidth = isSinglePage ? 275 : 160;
+        pageFlip.update();
+    }
+
+    const modeSelect = document.getElementById('page-view-mode');
+    if (modeSelect) {
+        modeSelect.value = readerViewMode;
+        modeSelect.disabled = false;
+    }
+    updatePageIndicator();
+}
+
+function completePageTurn() {
+    if (pendingReaderPage === null) return;
+
+    readerCurrentPage = pendingReaderPage;
+    pendingReaderPage = null;
+    updatePageIndicator();
+    renderPagesAround(readerCurrentPage).catch(error => {
+        console.error('Não foi possível renderizar as páginas do PDF:', error);
+        showReaderError();
+    });
+    saveCurrentBookProgress();
+}
+
+function updatePageIndicator() {
+    const pageNumber = document.getElementById('page-num');
+    if (!pageNumber) return;
+
+    const isLandscapeSpread = readerViewMode === 'double'
+        && pageFlip
+        && pageFlip.getOrientation() === 'landscape';
+    const isSingleCover = readerCurrentPage === 1 || readerCurrentPage === pdfDoc?.numPages;
+    if (isLandscapeSpread && !isSingleCover) {
+        pageNumber.textContent = `${readerCurrentPage}-${Math.min(readerCurrentPage + 1, pdfDoc.numPages)}`;
+    } else {
+        pageNumber.textContent = readerCurrentPage;
+    }
+}
+
+async function changeReaderViewMode(nextMode) {
+    if (!['single', 'double', 'scroll'].includes(nextMode) || nextMode === readerViewMode) return;
+    showReaderToolbar();
+    readerViewMode = nextMode;
+    try {
+        localStorage.setItem('poefo_reader_view_mode', readerViewMode);
+    } catch (error) {
+        console.warn('Não foi possível salvar a preferência de visualização:', error);
+    }
+
+    if (!pdfDoc) {
+        applyReaderViewMode();
+        return;
+    }
+
+    try {
+        pageRenderRequestId += 1;
+        await Promise.allSettled(Array.from(pageRenderPromises.values()));
+        for (const [pageNumber, renderedPage] of renderedPages) {
+            if (renderedPage.hasDrawing) {
+                pageDrawings.set(pageNumber, renderedPage.drawCanvas.toDataURL('image/png'));
+            }
+        }
+        if (pageFlip) {
+            pageFlip.destroy();
+            pageFlip = null;
+        }
+        renderedPages.clear();
+        pageRenderPromises.clear();
+        createPageSlots();
+        resetZoom();
+        setupPageFlip();
+
+        await renderPagesAround(readerCurrentPage);
+        if (readerViewMode === 'scroll') {
+            scrollToReaderPage(readerCurrentPage, 'auto');
+        }
+    } catch (error) {
+        console.error('Não foi possível preparar as páginas do PDF:', error);
+        showReaderError();
+    }
+}
+
+document.getElementById('page-view-mode').addEventListener('change', (event) => {
+    changeReaderViewMode(event.target.value);
+});
 
 // Aqui eu configuro a barra de filtros.
 document.getElementById('filter-btn').onclick = () => {
@@ -205,7 +345,8 @@ document.getElementById('filter-btn').onclick = () => {
 
 function applyFilter(filter) {
     const book = document.getElementById('pdf-book');
-    book.className = filter === 'none' ? '' : filter;
+    ['sepia', 'dark', 'warm', 'grayscale', 'blue', 'green', 'contrast', 'cinema']
+        .forEach(filterClass => book.classList.toggle(filterClass, filterClass === filter));
 }
 
 // Aqui eu controlo o desenho e o bloqueio da página.
@@ -216,10 +357,12 @@ document.getElementById('pencil-tool').onclick = function() {
     // Reseta zoom e posição ao entrar no modo desenho para evitar bugs de coordenadas
     resetZoom();
 
-    pageFlip.updateConfig({
-        useMouseEvents: !isDrawingMode,
-        clickEventForward: !isDrawingMode
-    });
+    if (pageFlip && typeof pageFlip.updateConfig === 'function') {
+        pageFlip.updateConfig({
+            useMouseEvents: !isDrawingMode,
+            clickEventForward: !isDrawingMode
+        });
+    }
 
     document.querySelectorAll('.draw-canvas').forEach(c => {
         c.style.pointerEvents = isDrawingMode ? 'all' : 'none';
@@ -299,7 +442,20 @@ const zoomContainer = document.getElementById('zoom-container');
 const bookEl = document.getElementById('pdf-book');
 
 function updateTransform() {
+    if (readerViewMode === 'scroll') {
+        const baseWidth = Math.min(640, Math.max(1, zoomContainer.clientWidth - 24));
+        bookEl.style.width = `${baseWidth * scale}px`;
+        bookEl.style.maxWidth = 'none';
+        bookEl.style.minWidth = '0';
+        bookEl.style.transform = 'none';
+        zoomContainer.style.overflowX = scale > 1 ? 'auto' : 'hidden';
+        zoomContainer.style.touchAction = scale > 1 ? 'pan-x pan-y' : 'pan-y';
+        return;
+    }
+
     bookEl.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    zoomContainer.style.overflowX = 'hidden';
+    zoomContainer.style.touchAction = 'none';
 }
 
 function resetZoom() {
@@ -307,21 +463,25 @@ function resetZoom() {
     updateTransform();
 }
 
+function setReaderScale(targetScale) {
+    scale = Math.min(Math.max(0.5, Number(targetScale) || 1), 4);
+    if (scale <= 1) { posX = 0; posY = 0; }
+    updateTransform();
+}
+
 // Mouse Wheel Zoom (Ctrl + Scroll)
 zoomContainer.addEventListener('wheel', (e) => {
+    showReaderToolbar();
     if (e.ctrlKey) {
         e.preventDefault();
         const delta = e.deltaY * -0.001;
-        const newScale = Math.min(Math.max(1, scale + delta), 4);
-        scale = newScale;
-        if(scale === 1) { posX = 0; posY = 0; }
-        updateTransform();
+        setReaderScale(scale + delta);
     }
 }, { passive: false });
 
 // Início do Arrastre (Mouse e Touch)
 const startDragging = (e) => {
-    if (isDrawingMode || scale <= 1) return;
+    if (isDrawingMode || scale <= 1 || readerViewMode === 'scroll' && e.target.closest('.page-wrapper')) return;
     isDragging = true;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -342,9 +502,10 @@ const stopDragging = () => { isDragging = false; };
 
 // Pinch Zoom (Pinça no Touch)
 zoomContainer.addEventListener('touchstart', (e) => {
+    showReaderToolbar();
     if (e.touches.length === 2) {
         lastDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-    } else {
+    } else if (readerViewMode !== 'scroll') {
         startDragging(e);
     }
 });
@@ -353,22 +514,103 @@ zoomContainer.addEventListener('touchmove', (e) => {
     if (e.touches.length === 2) {
         e.preventDefault();
         const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        scale = Math.min(Math.max(1, scale * (dist / lastDist)), 4);
+        setReaderScale(scale * (dist / lastDist));
         lastDist = dist;
-        updateTransform();
-    } else {
+    } else if (readerViewMode !== 'scroll') {
         doDragging(e);
     }
 }, { passive: false });
 
 zoomContainer.addEventListener('touchend', stopDragging);
 zoomContainer.addEventListener('mousedown', startDragging);
+zoomContainer.addEventListener('pointerdown', showReaderToolbar);
+zoomContainer.addEventListener('pointermove', showReaderToolbar);
 window.addEventListener('mousemove', doDragging);
 window.addEventListener('mouseup', stopDragging);
 window.addEventListener('beforeunload', stopReaderTimer);
 window.addEventListener('pagehide', stopReaderTimer);
 
-document.getElementById('prev-page').onclick = () => { if(!isDrawingMode && pageFlip) pageFlip.flipPrev(); };
-document.getElementById('next-page').onclick = () => { if(!isDrawingMode && pageFlip) pageFlip.flipNext(); };
+function moveReaderPage(direction) {
+    showReaderToolbar();
+    if (readerViewMode === 'scroll') {
+        const targetPage = Math.min(Math.max(1, readerCurrentPage + direction), pdfDoc ? pdfDoc.numPages : 1);
+        if (targetPage === readerCurrentPage) return;
+        scrollToReaderPage(targetPage, 'smooth');
+        return;
+    }
+
+    if (!isDrawingMode && pageFlip) {
+        if (direction < 0) pageFlip.flipPrev();
+        else pageFlip.flipNext();
+    }
+}
+
+document.getElementById('prev-page').onclick = () => moveReaderPage(-1);
+document.getElementById('next-page').onclick = () => moveReaderPage(1);
+
+document.getElementById('zoom-in').addEventListener('click', () => {
+    showReaderToolbar();
+    setReaderScale(scale + 0.25);
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+    showReaderToolbar();
+    setReaderScale(scale - 0.25);
+});
+
+function scrollToReaderPage(pageNumber, behavior = 'smooth') {
+    const wrapper = pageWrappers[pageNumber - 1];
+    if (!wrapper) return;
+    const containerTop = zoomContainer.getBoundingClientRect().top;
+    const targetTop = wrapper.getBoundingClientRect().top - containerTop + zoomContainer.scrollTop;
+    zoomContainer.scrollTo({ top: targetTop, behavior });
+}
+
+zoomContainer.addEventListener('scroll', () => {
+    if (readerViewMode !== 'scroll' || !pageWrappers.length || !pdfDoc) return;
+    showReaderToolbar();
+    const targetY = zoomContainer.getBoundingClientRect().top + zoomContainer.clientHeight * 0.45;
+    let activePage = readerCurrentPage;
+    let nearestDistance = Infinity;
+    for (let i = 0; i < pageWrappers.length; i += 1) {
+        const rect = pageWrappers[i].getBoundingClientRect();
+        const distance = Math.abs((rect.top + rect.bottom) / 2 - targetY);
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            activePage = i + 1;
+        }
+    }
+    if (activePage !== readerCurrentPage) {
+        readerCurrentPage = activePage;
+        updatePageIndicator();
+        saveCurrentBookProgress();
+        renderPagesAround(readerCurrentPage).catch(error => {
+            console.error('Não foi possível renderizar as páginas durante a rolagem:', error);
+            showReaderError();
+        });
+    }
+});
+
+function showReaderToolbar() {
+    const toolbar = document.querySelector('.reader-toolbar');
+    if (!toolbar) return;
+    toolbar.classList.add('is-visible');
+    toolbar.setAttribute('aria-hidden', 'false');
+    toolbar.inert = false;
+    clearTimeout(toolbarHideTimeout);
+    toolbarHideTimeout = window.setTimeout(hideReaderToolbar, 4000);
+}
+
+function hideReaderToolbar() {
+    const toolbar = document.querySelector('.reader-toolbar');
+    if (!toolbar) return;
+    toolbar.classList.remove('is-visible');
+    toolbar.setAttribute('aria-hidden', 'true');
+    toolbar.inert = true;
+}
+
+const readerToolbar = document.querySelector('.reader-toolbar');
+readerToolbar.addEventListener('pointerdown', showReaderToolbar);
+readerToolbar.addEventListener('focusin', showReaderToolbar);
+readerToolbar.addEventListener('click', showReaderToolbar);
 
 initReader();
